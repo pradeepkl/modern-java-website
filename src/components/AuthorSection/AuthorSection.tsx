@@ -1,6 +1,7 @@
 import { Quote } from 'lucide-react';
 import { assets } from '../../data/assets';
 import { authorFocus, authorProfile } from '../../data/author';
+import { SectionEyebrow } from '../shared/SectionEyebrow';
 import { SocialLinks } from '../shared/SocialLinks';
 import './AuthorSection.css';
 
@@ -34,7 +35,9 @@ export function AuthorSection() {
           </div>
 
           <div className="author-profile__content">
-            <p className="author-profile__eyebrow">{authorProfile.eyebrow}</p>
+            <SectionEyebrow className="author-profile__eyebrow">
+              {authorProfile.eyebrow}
+            </SectionEyebrow>
             <h2 id="author-heading" className="author-profile__name">
               {authorProfile.name}
             </h2>

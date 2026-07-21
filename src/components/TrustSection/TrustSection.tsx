@@ -1,4 +1,5 @@
 import { CheckCircle2 } from 'lucide-react';
+import { SectionEyebrow } from '../shared/SectionEyebrow';
 import './TrustSection.css';
 
 const trustPoints = [
@@ -18,7 +19,9 @@ export function TrustSection() {
     >
       <div className="trust-section__inner page-container">
         <header className="trust-section__intro">
-          <p className="trust-section__eyebrow">Built from experience</p>
+          <SectionEyebrow className="trust-section__eyebrow">
+            Built from experience
+          </SectionEyebrow>
           <h2 id="trust-heading" className="trust-section__title">
             Why you can trust this book
           </h2>

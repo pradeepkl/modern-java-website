@@ -17,6 +17,7 @@ import {
   guideIntro,
   guideValues,
 } from '../../data/guide';
+import { SectionEyebrow } from '../shared/SectionEyebrow';
 import './GuideSection.css';
 
 const featureIcons = {
@@ -59,7 +60,9 @@ export function GuideSection() {
     >
       <div className="guide-section__inner page-container">
         <header className="guide-content">
-          <p className="guide-content__eyebrow">{guideIntro.eyebrow}</p>
+          <SectionEyebrow className="guide-content__eyebrow">
+            {guideIntro.eyebrow}
+          </SectionEyebrow>
           <h2 id="guide-heading" className="guide-content__title">
             {guideIntro.title}
           </h2>

@@ -50,6 +50,14 @@
   text-transform: uppercase;
 }
 
+.hero-eyebrow > span:nth-child(2) {
+  white-space: nowrap;
+}
+
+.hero-eyebrow .section-eyebrow__line {
+  width: 30px;
+}
+
 .hero-title {
   max-width: 620px;
   margin: 0;

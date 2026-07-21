@@ -15,6 +15,7 @@ import {
   testimonialsIntro,
   type QuotePart,
 } from '../../data/testimonials';
+import { SectionEyebrow } from '../shared/SectionEyebrow';
 import './TestimonialsSection.css';
 
 const statIcons = {
@@ -67,7 +68,9 @@ export function TestimonialsSection() {
       <div className="reviews-section__inner page-container">
         <div className="reviews-top">
           <aside className="reviews-intro">
-            <p className="reviews-intro__eyebrow">{testimonialsIntro.eyebrow}</p>
+            <SectionEyebrow className="reviews-intro__eyebrow">
+              {testimonialsIntro.eyebrow}
+            </SectionEyebrow>
             <h2 id="reviews-heading" className="reviews-intro__title">
               {testimonialsIntro.title}
             </h2>

@@ -1,6 +1,7 @@
 import { ArrowRight } from 'lucide-react';
 import { assets } from '../../data/assets';
 import { DecorativeImage } from '../shared/Icon';
+import { SectionEyebrow } from '../shared/SectionEyebrow';
 import './Hero.css';
 
 export function Hero() {
@@ -21,7 +22,9 @@ export function Hero() {
 
       <div className="hero-inner page-container">
         <div className="hero-copy">
-          <p className="hero-eyebrow">FOR EXPERIENCED JAVA DEVELOPERS</p>
+          <SectionEyebrow className="hero-eyebrow">
+            FOR EXPERIENCED JAVA DEVELOPERS
+          </SectionEyebrow>
 
           <h1 id="hero-heading" className="hero-title">
             Write Java <span>with intent.</span>

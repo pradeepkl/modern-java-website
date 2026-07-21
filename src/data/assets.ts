@@ -48,6 +48,7 @@ export const assets = {
   decorations: {
     headingDivider: '/assets/decorations/heading-divider.svg',
     sectionOrnament: '/assets/decorations/section-ornament.svg',
+    eyebrowLine: '/assets/decorations/eyebrow-line.svg',
     footerCircuit: '/assets/decorations/footer-circuit.svg',
   },
 

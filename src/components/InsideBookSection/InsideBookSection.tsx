@@ -12,6 +12,7 @@ import {
   chapterHighlights,
   chapters,
 } from '../../data/chapters';
+import { SectionEyebrow } from '../shared/SectionEyebrow';
 import './InsideBookSection.css';
 
 const highlightIcons = {
@@ -51,7 +52,9 @@ export function InsideBookSection() {
       <div className="inside-section__inner page-container">
         <div className="inside-layout">
           <aside className="inside-intro">
-            <p className="inside-intro__eyebrow">Inside the book</p>
+            <SectionEyebrow className="inside-intro__eyebrow">
+              Inside the book
+            </SectionEyebrow>
             <h2 id="inside-heading" className="inside-intro__title">
               Explore the chapters at a glance
             </h2>

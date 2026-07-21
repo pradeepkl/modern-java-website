@@ -26,6 +26,32 @@
   }
 }
 
+.section-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-eyebrow__line {
+  width: clamp(34px, 4vw, 58px);
+  height: 8px;
+  flex-shrink: 0;
+  background-color: currentColor;
+  -webkit-mask: url('/assets/decorations/eyebrow-line.svg') center / contain
+    no-repeat;
+  mask: url('/assets/decorations/eyebrow-line.svg') center / contain no-repeat;
+}
+
+@media (max-width: 560px) {
+  .section-eyebrow {
+    gap: 8px;
+  }
+
+  .section-eyebrow__line {
+    width: 30px;
+  }
+}
+
 .section-heading {
   display: flex;
   align-items: center;

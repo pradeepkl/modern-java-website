@@ -4,6 +4,7 @@ import {
   purposeIntro,
   purposePoints,
 } from '../../data/purpose';
+import { SectionEyebrow } from '../shared/SectionEyebrow';
 import './PurposeSection.css';
 
 export function PurposeSection() {
@@ -16,7 +17,9 @@ export function PurposeSection() {
       <div className="purpose-section__inner page-container">
         <div className="purpose-layout">
           <header className="purpose-intro">
-            <p className="purpose-intro__eyebrow">{purposeIntro.eyebrow}</p>
+            <SectionEyebrow className="purpose-intro__eyebrow">
+              {purposeIntro.eyebrow}
+            </SectionEyebrow>
             <h2 id="purpose-heading" className="purpose-intro__title">
               {purposeIntro.title}
             </h2>

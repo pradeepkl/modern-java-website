@@ -4,6 +4,7 @@ import {
   formatOptions,
   formatTrustItems,
 } from '../../data/formats';
+import { SectionEyebrow } from '../shared/SectionEyebrow';
 import { FormatCard } from './FormatCard';
 import './FormatsSection.css';
 
@@ -23,7 +24,9 @@ export function FormatsSection() {
       <div className="formats-section__inner page-container">
         <div className="formats-header">
           <div className="formats-header__intro">
-            <p className="formats-header__eyebrow">Get your copy</p>
+            <SectionEyebrow className="formats-header__eyebrow">
+              Get your copy
+            </SectionEyebrow>
             <h2 id="formats-heading" className="formats-header__title">
               Choose the format that works best for you
             </h2>

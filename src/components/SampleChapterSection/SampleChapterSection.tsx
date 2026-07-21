@@ -1,5 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { BookOpen, Check, Mail } from 'lucide-react';
+import { SectionEyebrow } from '../shared/SectionEyebrow';
 import './SampleChapterSection.css';
 
 const SAMPLE_API_URL = import.meta.env.VITE_ORDER_API_URL?.replace(/\/$/, '');
@@ -71,7 +72,9 @@ export function SampleChapterSection() {
       <div className="sample-section__inner page-container">
         <div className="sample-card">
           <div className="sample-card__content">
-            <p className="sample-card__eyebrow">Free sample chapter</p>
+            <SectionEyebrow className="sample-card__eyebrow">
+              Free sample chapter
+            </SectionEyebrow>
             <h2 id="sample-heading" className="sample-card__title">
               Read a chapter before you decide
             </h2>
