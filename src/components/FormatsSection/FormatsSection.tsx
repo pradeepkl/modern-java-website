@@ -1,18 +1,7 @@
-import { Globe, RefreshCw, ShieldCheck } from 'lucide-react';
-import {
-  formatBulkOrder,
-  formatOptions,
-  formatTrustItems,
-} from '../../data/formats';
+import { formatBulkOrder, formatOptions } from '../../data/formats';
 import { SectionEyebrow } from '../shared/SectionEyebrow';
 import { FormatCard } from './FormatCard';
 import './FormatsSection.css';
-
-const trustIcons = {
-  shield: ShieldCheck,
-  refresh: RefreshCw,
-  globe: Globe,
-} as const;
 
 export function FormatsSection() {
   return (
@@ -35,25 +24,6 @@ export function FormatsSection() {
               from Modern Java.
             </p>
           </div>
-
-          <ul className="formats-trust">
-            {formatTrustItems.map((item) => {
-              const Icon = trustIcons[item.icon];
-              return (
-                <li key={item.id} className="formats-trust__item">
-                  <span className="formats-trust__icon" aria-hidden="true">
-                    <Icon size={20} strokeWidth={1.75} />
-                  </span>
-                  <div>
-                    <p className="formats-trust__title">{item.title}</p>
-                    <p className="formats-trust__description">
-                      {item.description}
-                    </p>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
         </div>
 
         <div className="formats-grid">

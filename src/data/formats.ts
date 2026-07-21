@@ -1,12 +1,5 @@
 import { book } from './book';
 
-export interface FormatTrustItem {
-  id: string;
-  title: string;
-  description: string;
-  icon: 'shield' | 'refresh' | 'globe';
-}
-
 export interface FormatOption {
   id: string;
   badge: string;
@@ -21,27 +14,6 @@ export interface FormatOption {
   ctaUrl?: string;
   ctaVariant: 'amazon' | 'primary';
 }
-
-export const formatTrustItems: FormatTrustItem[] = [
-  {
-    id: 'secure',
-    title: 'Secure Checkout',
-    description: 'Safe and trusted payment through our partners.',
-    icon: 'shield',
-  },
-  {
-    id: 'updates',
-    title: 'Free Updates',
-    description: 'Get updates and improvements at no extra cost.',
-    icon: 'refresh',
-  },
-  {
-    id: 'shipping',
-    title: 'India Shipping',
-    description: 'Paperbacks ship across India through trusted partners.',
-    icon: 'globe',
-  },
-];
 
 export const formatOptions: FormatOption[] = [
   {
@@ -67,7 +39,7 @@ export const formatOptions: FormatOption[] = [
     id: 'digital',
     badge: 'Direct Digital Edition',
     badgeIcon: 'download',
-    headline: 'PDF + ePub bundle',
+    headline: 'DRM-free PDF + ePub bundle',
     features: [
       'DRM-free PDF + ePub included',
       'Secure download links by email',
