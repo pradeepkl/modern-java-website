@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-labelledby="t">
+<title id="t">Intent-first code</title>
+<g stroke="#0B3B91" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+ <rect x="10" y="12" width="44" height="40" rx="5"/>
+ <path d="M18 22h28M25 29l-6 5 6 5M39 29l6 5-6 5M35 27l-6 14"/>
+</g>
+</svg>

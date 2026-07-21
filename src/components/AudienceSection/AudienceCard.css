@@ -1,0 +1,25 @@
+.audience-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 56px;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-blue-050);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.audience-card__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--color-blue-700);
+}
+
+.audience-card__label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--color-text);
+}

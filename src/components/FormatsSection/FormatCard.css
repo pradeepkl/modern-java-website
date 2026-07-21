@@ -1,0 +1,211 @@
+.format-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  box-sizing: border-box;
+  min-height: 100%;
+  padding: 28px 24px 24px;
+  background: #ffffff;
+  border: 1px solid #d8e1f1;
+  border-radius: 14px;
+  box-shadow: 0 8px 22px rgba(11, 38, 91, 0.04);
+}
+
+.format-card__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: #1755c5;
+}
+
+.format-card__badge-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.format-card__badge-amazon {
+  display: block;
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.format-card__badge-text {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.format-card__headline {
+  margin: 0 0 16px;
+  font-family: var(--font-heading);
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #0b2f72;
+}
+
+.format-card__features {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 0 20px;
+  padding: 0;
+  list-style: none;
+}
+
+.format-card__features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.94rem;
+  line-height: 1.4;
+  color: #3d4656;
+}
+
+.format-card__check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: #e7f7ee;
+  color: #1f9d57;
+}
+
+.format-card__visual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 212px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f5f8fc;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.format-card__visual--kindle {
+  background: #f2f2f2;
+}
+
+.format-card__visual--kindle img {
+  display: block;
+  width: 100%;
+  max-width: 260px;
+  height: auto;
+  object-fit: contain;
+}
+
+.format-card__visual--paperback img {
+  display: block;
+  width: auto;
+  max-width: 150px;
+  height: 180px;
+  object-fit: contain;
+  transform: scale(1.25);
+  filter: drop-shadow(0 16px 24px rgba(4, 25, 70, 0.22));
+}
+
+.format-card__visual--leanpub {
+  gap: 10px;
+  padding-block: 28px;
+}
+
+.format-card__file {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 72px;
+}
+
+.format-card__file img {
+  display: block;
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+}
+
+.format-card__file span {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #4d5666;
+}
+
+.format-card__file--0 span {
+  color: #c0392b;
+}
+
+.format-card__file--1 span {
+  color: #1f9d57;
+}
+
+.format-card__file--2 span {
+  color: #5b6575;
+}
+
+.format-card__pricing {
+  margin: auto 0 16px;
+  text-align: center;
+}
+
+.format-card__price {
+  margin: 0 0 4px;
+  font-family: var(--font-heading);
+  font-size: 1.85rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #0b2f72;
+}
+
+.format-card__availability {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #6a7384;
+}
+
+.format-card__cta {
+  width: 100%;
+  min-height: 50px;
+  margin-bottom: 14px;
+}
+
+.format-card__cta--outline {
+  background: #ffffff;
+  color: #123f8f;
+  border-color: #9eb4d8;
+}
+
+.format-card__cta--outline:hover {
+  background: #f5f8fe;
+  color: #0b2f72;
+  border-color: #7ea0d4;
+}
+
+.format-card__learn-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1755c5;
+  text-decoration: none;
+}
+
+.format-card__learn-more:hover {
+  color: #0e4fc4;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

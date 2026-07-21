@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 28" aria-hidden="true">
+  <g fill="none" stroke="#1F2937" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path fill="#F9D849" stroke="#D4A017" d="M4 5h14a3 3 0 013 3v15a1.5 1.5 0 01-1.65 1.35L14 21.75 8.65 24.35A1.5 1.5 0 017 23V8a3 3 0 013-3z"/>
+    <path d="M8 5V3a2 2 0 012-2h10a2 2 0 012 2v14"/>
+  </g>
+  <text x="28" y="20" font-family="Arial,Helvetica,sans-serif" font-size="17" font-weight="700" fill="#1F2937">Leanpub</text>
+</svg>

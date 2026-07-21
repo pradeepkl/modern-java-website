@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-labelledby="t">
+<title id="t">Enforce boundaries</title>
+<g stroke="#0B3B91" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M32 8l18 7v14c0 12-7 21-18 27-11-6-18-15-18-27V15z"/>
+ <path d="M23 31l6 6 12-13"/>
+</g>
+</svg>

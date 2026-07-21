@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-labelledby="t">
+<title id="t">Make it explicit</title>
+<g stroke="#0B3B91" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M32 10v10M32 20L18 32M32 20l14 12M18 32v10M46 32v10"/>
+ <circle cx="32" cy="9" r="4"/>
+ <circle cx="18" cy="47" r="5"/>
+ <circle cx="46" cy="47" r="5"/>
+</g>
+</svg>

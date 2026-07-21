@@ -1,0 +1,212 @@
+.icon-mask {
+  display: inline-block;
+  flex-shrink: 0;
+  background-color: currentColor;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+.purchase-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5);
+}
+
+.purchase-buttons--stacked {
+  grid-template-columns: 1fr;
+}
+
+@media (max-width: 600px) {
+  .purchase-buttons {
+    grid-template-columns: 1fr;
+  }
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-10);
+  font-family: var(--font-heading);
+  font-size: clamp(1.25rem, 2.2vw, 1.65rem);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--color-section-heading);
+  position: relative;
+}
+
+.section-heading--editorial {
+  gap: 12px;
+  margin-bottom: 22px;
+  font-family: var(--font-section);
+  font-size: 29px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.section-heading--editorial .section-heading__line {
+  width: 42px;
+  height: var(--ornament-line-thickness);
+  background: var(--color-blue-700);
+  opacity: 0.75;
+}
+
+.section-heading--editorial .section-heading__dot {
+  width: var(--ornament-dot-size);
+  height: var(--ornament-dot-size);
+  border-radius: 50%;
+  background: var(--color-blue-700);
+  font-size: 0;
+  line-height: 0;
+  flex-shrink: 0;
+}
+
+.section-heading--landing {
+  gap: 12px;
+  margin-bottom: 36px;
+  font-family: var(--font-body);
+  font-size: clamp(1.35rem, 2vw, 1.65rem);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #123f8f;
+}
+
+.section-heading--landing .section-heading__line {
+  width: 36px;
+  height: 2px;
+  background: var(--color-blue-700);
+  opacity: 0.75;
+}
+
+.section-heading--landing .section-heading__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-blue-700);
+  font-size: 0;
+  line-height: 0;
+  flex-shrink: 0;
+}
+
+.section-heading--landing .section-heading__text {
+  white-space: normal;
+}
+
+.section-heading__ornament {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.section-heading__line {
+  width: clamp(32px, 5vw, 56px);
+  height: var(--ornament-line-thickness);
+  background: var(--color-blue-700);
+  opacity: 0.45;
+}
+
+.section-heading__dot {
+  display: block;
+  width: var(--ornament-dot-size);
+  height: var(--ornament-dot-size);
+  border-radius: 50%;
+  background: var(--color-blue-700);
+  font-size: 0;
+  line-height: 0;
+  flex-shrink: 0;
+}
+
+.section-heading__svg-ornament {
+  display: none;
+}
+
+.section-heading__text {
+  white-space: nowrap;
+}
+
+.check-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.check-list__item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.check-list__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  border-radius: 50%;
+  background: var(--color-blue-100);
+  color: var(--color-blue-700);
+}
+
+.check-list--light .check-list__item {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.check-list--light .check-list__icon {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--color-blue-200);
+}
+
+.social-links {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.social-links__link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  color: inherit;
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.social-links__link:hover {
+  color: var(--color-blue-200);
+}
+
+.brand-button__logo {
+  display: block;
+  height: 18px;
+  width: auto;
+  flex-shrink: 0;
+}
+
+.brand-button__logo--amazon {
+  height: 32px;
+  width: 32px;
+}
+
+.button-large .brand-button__logo {
+  height: 22px;
+}
+
+.button-large .brand-button__logo--amazon {
+  height: 38px;
+  width: 38px;
+}

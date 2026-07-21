@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 64" fill="none" role="img" aria-labelledby="logo-title">
+  <title id="logo-title">Modern Java — The Mindset Shift</title>
+  <g fill="none" stroke="#1357C7" stroke-width="2" stroke-linecap="round">
+    <circle cx="32" cy="32" r="22"/>
+    <circle cx="32" cy="32" r="13"/>
+    <circle cx="32" cy="32" r="4" fill="#1357C7" stroke="none"/>
+    <path d="M32 10v9M32 45v9M10 32h9M45 32h9"/>
+  </g>
+  <text x="70" y="28" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" fill="#111827" letter-spacing="1">MODERN JAVA</text>
+  <text x="70" y="46" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="700" fill="#163E87" letter-spacing="0.8">THE MINDSET SHIFT</text>
+</svg>

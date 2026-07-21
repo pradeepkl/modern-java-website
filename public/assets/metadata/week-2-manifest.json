@@ -1,0 +1,16 @@
+{
+  "vector_assets": [
+    "learning-icons/svg/intent-first.svg",
+    "learning-icons/svg/model-real-domains.svg",
+    "learning-icons/svg/make-explicit.svg",
+    "learning-icons/svg/enforce-boundaries.svg",
+    "learning-icons/svg/design-concurrency.svg",
+    "decorations/footer-circuit.svg"
+  ],
+  "png_assets": [
+    "learning-icons/png/*.png",
+    "book/modern-java-paperback-from-mockup.png",
+    "devices/modern-java-device-montage-from-mockup.png",
+    "author/pradeep-kumar-from-mockup.png"
+  ]
+}

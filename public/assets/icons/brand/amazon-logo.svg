@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" aria-hidden="true">
+  <text
+    x="24"
+    y="27"
+    text-anchor="middle"
+    font-family="Arial,Helvetica,sans-serif"
+    font-size="30"
+    font-weight="700"
+    fill="#0F1111"
+  >a</text>
+  <path
+    fill="#FF9900"
+    d="M7.5 33.5c7.4 5.4 18.1 5.4 25.5 0 .7-.5 1.6.5 1 1.2-8.4 6.4-21.1 6.4-29.5 0-.6-.5.3-1.5 1-1.2z"
+  />
+</svg>
