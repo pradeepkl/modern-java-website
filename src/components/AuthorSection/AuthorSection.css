@@ -188,7 +188,8 @@
 
   .author-profile__portrait-wrap {
     position: static;
-    align-items: flex-start;
+    align-items: center;
+    width: 100%;
   }
 
   .author-profile__portrait-frame {

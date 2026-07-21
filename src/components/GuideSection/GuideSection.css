@@ -271,6 +271,7 @@
   .guide-main {
     grid-template-columns: 1fr;
     gap: 32px;
+    margin-bottom: 0;
   }
 
   .guide-cover {
@@ -289,24 +290,15 @@
   .guide-feature {
     grid-column: auto;
   }
+
+  .guide-values {
+    display: none;
+  }
 }
 
 @media (max-width: 560px) {
   .guide-section {
     padding: 48px 0 64px;
-  }
-
-  .guide-values {
-    grid-template-columns: 1fr;
-  }
-
-  .guide-values__item,
-  .guide-values__item:nth-child(2n) {
-    border-left: 0;
-  }
-
-  .guide-values__item + .guide-values__item {
-    border-top: 1px solid var(--color-border);
   }
 
   .guide-availability {

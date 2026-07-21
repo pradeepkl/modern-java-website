@@ -185,6 +185,15 @@
 }
 
 @media (max-width: 560px) {
+  .hero-eyebrow {
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+  }
+
+  .hero-eyebrow .section-eyebrow__line {
+    width: 18px;
+  }
+
   .hero-title {
     font-size: clamp(2.6rem, 12vw, 3.6rem);
   }

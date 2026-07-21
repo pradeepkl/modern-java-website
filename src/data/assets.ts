@@ -31,7 +31,7 @@ export const assets = {
 
   formats: {
     devices: '/assets/formats/formats.png',
-    guideMockup: '/assets/formats/3Dmockup.jpg',
+    guideMockup: '/assets/formats/3Dmockup-tp.jpg',
     pdf: '/assets/icons/formats/pdf.png',
     epub: '/assets/icons/formats/epub.png',
     mobi: '/assets/icons/formats/mobi.png',
