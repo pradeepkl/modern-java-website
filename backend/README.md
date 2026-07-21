@@ -28,6 +28,7 @@ During guided deployment, provide:
 - `RazorpayWebhookSecret`
 - `AdminEmail` (`admin@classpath.in`)
 - `AllowedOrigin` (the production website origin, without a trailing slash)
+- `SampleChapterUrl` (the public or signed URL of the finished sample PDF)
 
 After deployment:
 
@@ -49,5 +50,7 @@ and set the deployed API URL.
   and emails the customer and administrator.
 - `POST /webhooks/razorpay` verifies webhook signatures and reconciles captured
   payments.
+- `POST /sample-requests` records optional marketing consent and emails the
+  configured sample chapter link.
 
 Razorpay secrets are backend-only. The browser receives only the public key ID.

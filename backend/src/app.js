@@ -14,6 +14,8 @@ const ses = new SESClient({});
 
 const {
   ORDERS_TABLE,
+  SAMPLE_REQUESTS_TABLE,
+  SAMPLE_CHAPTER_URL,
   RAZORPAY_KEY_ID,
   RAZORPAY_KEY_SECRET,
   RAZORPAY_WEBHOOK_SECRET,
@@ -26,6 +28,7 @@ const MAX_QUANTITY = 20;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_PATTERN = /^\d{10}$/;
 const PIN_PATTERN = /^\d{6}$/;
+const SAMPLE_REQUEST_COOLDOWN_MS = 60 * 1000;
 
 const response = (statusCode, body) => ({
   statusCode,
@@ -91,6 +94,90 @@ const validateOrder = (input) => {
     country: 'India',
     notes: String(input.notes || '').trim(),
   };
+};
+
+const requestSampleChapter = async (event) => {
+  const { json } = parseBody(event);
+  const email = String(json.email || '').trim().toLowerCase();
+
+  if (!EMAIL_PATTERN.test(email)) {
+    throw new Error('Invalid email address');
+  }
+
+  if (!SAMPLE_REQUESTS_TABLE || !SAMPLE_CHAPTER_URL) {
+    return response(503, {
+      message: 'Sample delivery is not configured yet. Please try again later.',
+    });
+  }
+
+  const existing = await dynamo.send(
+    new GetCommand({
+      TableName: SAMPLE_REQUESTS_TABLE,
+      Key: { email },
+    }),
+  );
+  const previousRequest = existing.Item?.lastRequestedAt
+    ? Date.parse(existing.Item.lastRequestedAt)
+    : 0;
+
+  if (Date.now() - previousRequest < SAMPLE_REQUEST_COOLDOWN_MS) {
+    return response(200, {
+      message: 'The sample chapter was sent recently. Please check your inbox.',
+    });
+  }
+
+  const marketingConsent = json.marketingConsent === true;
+  const now = new Date().toISOString();
+
+  await ses.send(
+    new SendEmailCommand({
+      Source: ADMIN_EMAIL,
+      Destination: { ToAddresses: [email] },
+      Message: {
+        Subject: { Data: 'Your free Modern Java sample chapter' },
+        Body: {
+          Text: {
+            Data: [
+              'Thank you for your interest in Modern Java: The Mindset Shift.',
+              '',
+              `Download your sample chapter: ${SAMPLE_CHAPTER_URL}`,
+              '',
+              'The sample includes the preface, complete table of contents, Chapter 1, and selected diagrams.',
+              '',
+              marketingConsent
+                ? 'You also asked to receive occasional Modern Java articles and book updates.'
+                : 'You have not been subscribed to marketing updates.',
+            ].join('\n'),
+          },
+        },
+      },
+    }),
+  );
+
+  await dynamo.send(
+    new PutCommand({
+      TableName: SAMPLE_REQUESTS_TABLE,
+      Item: {
+        email,
+        firstRequestedAt: existing.Item?.firstRequestedAt || now,
+        lastRequestedAt: now,
+        requestCount: Number(existing.Item?.requestCount || 0) + 1,
+        marketingConsent:
+          existing.Item?.marketingConsent === true || marketingConsent,
+        marketingConsentAt: marketingConsent
+          ? now
+          : existing.Item?.marketingConsentAt || null,
+        consentVersion: marketingConsent
+          ? String(json.consentVersion || 'unknown')
+          : existing.Item?.consentVersion || null,
+        source: 'sample-chapter-form',
+      },
+    }),
+  );
+
+  return response(200, {
+    message: 'Check your inbox—the sample chapter is on its way.',
+  });
 };
 
 const createRazorpayOrder = async ({ amount, receipt, notes }) => {
@@ -336,6 +423,9 @@ exports.handler = async (event) => {
     const path = event.rawPath;
 
     if (method === 'OPTIONS') return response(204, {});
+    if (method === 'POST' && path === '/sample-requests') {
+      return requestSampleChapter(event);
+    }
     if (method === 'POST' && path === '/orders') return createOrder(event);
     if (method === 'POST' && path === '/orders/verify') {
       return verifyOrder(event);

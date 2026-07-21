@@ -28,7 +28,7 @@ export function Footer() {
           <ul className="site-footer__nav">
             {navigation.map((link) => (
               <li key={link.href}>
-                <a href={link.href} className="site-footer__nav-link">
+                <a href={`/${link.href}`} className="site-footer__nav-link">
                   {link.label}
                 </a>
               </li>
@@ -39,11 +39,11 @@ export function Footer() {
       </div>
 
       <div className="site-footer__legal page-container">
-        <a href="#privacy" className="site-footer__legal-link">
+        <a href="/privacy-policy" className="site-footer__legal-link">
           Privacy Policy
         </a>
         <span aria-hidden="true">·</span>
-        <a href="#terms" className="site-footer__legal-link">
+        <a href="/terms-of-use" className="site-footer__legal-link">
           Terms of Use
         </a>
       </div>

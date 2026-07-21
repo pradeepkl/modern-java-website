@@ -11,6 +11,18 @@ interface PaperbackOrderDialogProps {
 
 const PAPERBACK_PRICE = 899;
 const ORDER_API_URL = import.meta.env.VITE_ORDER_API_URL?.replace(/\/$/, '');
+const TEST_ORDER_DEFAULTS = import.meta.env.DEV
+  ? {
+      name: 'Test Customer',
+      email: 'admin@classpath.in',
+      phone: '9999999999',
+      address: '123 Test Street',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      postalCode: '560001',
+      notes: 'Razorpay test order',
+    }
+  : undefined;
 
 interface RazorpaySuccessResponse {
   razorpay_order_id: string;
@@ -68,43 +80,15 @@ function loadRazorpayCheckout() {
   return razorpayScriptPromise;
 }
 
-const INDIAN_STATES_AND_UTS = [
-  'Andaman and Nicobar Islands',
+const DELIVERY_STATES = [
   'Andhra Pradesh',
-  'Arunachal Pradesh',
-  'Assam',
-  'Bihar',
-  'Chandigarh',
-  'Chhattisgarh',
-  'Dadra and Nagar Haveli and Daman and Diu',
   'Delhi',
-  'Goa',
   'Gujarat',
-  'Haryana',
-  'Himachal Pradesh',
-  'Jammu and Kashmir',
-  'Jharkhand',
   'Karnataka',
   'Kerala',
-  'Ladakh',
-  'Lakshadweep',
-  'Madhya Pradesh',
   'Maharashtra',
-  'Manipur',
-  'Meghalaya',
-  'Mizoram',
-  'Nagaland',
-  'Odisha',
-  'Puducherry',
-  'Punjab',
-  'Rajasthan',
-  'Sikkim',
   'Tamil Nadu',
   'Telangana',
-  'Tripura',
-  'Uttar Pradesh',
-  'Uttarakhand',
-  'West Bengal',
 ] as const;
 
 function RequiredLabel({ children }: { children: string }) {
@@ -317,7 +301,13 @@ export function PaperbackOrderDialog({
           <div className="order-form__grid">
             <label className="order-form__field">
               <RequiredLabel>Full name</RequiredLabel>
-              <input name="name" autoComplete="name" required autoFocus />
+              <input
+                name="name"
+                autoComplete="name"
+                defaultValue={TEST_ORDER_DEFAULTS?.name}
+                required
+                autoFocus
+              />
             </label>
 
             <label className="order-form__field">
@@ -326,6 +316,7 @@ export function PaperbackOrderDialog({
                 type="email"
                 name="email"
                 autoComplete="email"
+                defaultValue={TEST_ORDER_DEFAULTS?.email}
                 title="Enter a valid email address"
                 required
               />
@@ -351,6 +342,7 @@ export function PaperbackOrderDialog({
                   autoComplete="tel-national"
                   pattern="[0-9]{10}"
                   maxLength={10}
+                  defaultValue={TEST_ORDER_DEFAULTS?.phone}
                   title="Enter a 10-digit phone number"
                   aria-label="10-digit phone number"
                   required
@@ -409,6 +401,7 @@ export function PaperbackOrderDialog({
                 name="address"
                 rows={2}
                 autoComplete="street-address"
+                defaultValue={TEST_ORDER_DEFAULTS?.address}
                 required
               />
             </label>
@@ -418,15 +411,21 @@ export function PaperbackOrderDialog({
               <input
                 name="city"
                 autoComplete="address-level2"
+                defaultValue={TEST_ORDER_DEFAULTS?.city}
                 required
               />
             </label>
 
             <label className="order-form__field">
               <RequiredLabel>State</RequiredLabel>
-              <select name="state" autoComplete="address-level1" required>
-                <option value="">Select state or union territory</option>
-                {INDIAN_STATES_AND_UTS.map((state) => (
+              <select
+                name="state"
+                autoComplete="address-level1"
+                defaultValue={TEST_ORDER_DEFAULTS?.state}
+                required
+              >
+                <option value="">Select state</option>
+                {DELIVERY_STATES.map((state) => (
                   <option key={state} value={state}>
                     {state}
                   </option>
@@ -442,6 +441,7 @@ export function PaperbackOrderDialog({
                 autoComplete="postal-code"
                 pattern="[0-9]{6}"
                 maxLength={6}
+                defaultValue={TEST_ORDER_DEFAULTS?.postalCode}
                 title="Enter a valid 6-digit Indian postal code"
                 required
               />
@@ -459,7 +459,11 @@ export function PaperbackOrderDialog({
 
             <label className="order-form__field order-form__field--full">
               <span>Notes (optional)</span>
-              <textarea name="notes" rows={2} />
+              <textarea
+                name="notes"
+                rows={2}
+                defaultValue={TEST_ORDER_DEFAULTS?.notes}
+              />
             </label>
           </div>
 

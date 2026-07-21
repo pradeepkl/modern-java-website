@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Modern Java paperback order and Razorpay payment API
+Description: Modern Java ordering and sample chapter delivery API
 
 Parameters:
   RazorpayKeyId:
@@ -18,15 +18,21 @@ Parameters:
   AllowedOrigin:
     Type: String
     Default: http://localhost:5173
+  SampleChapterUrl:
+    Type: String
+    Default: ''
+    Description: Public or signed URL for the sample chapter PDF
 
 Globals:
   Function:
-    Runtime: nodejs20.x
+    Runtime: nodejs24.x
     Timeout: 15
     MemorySize: 256
     Environment:
       Variables:
         ORDERS_TABLE: !Ref OrdersTable
+        SAMPLE_REQUESTS_TABLE: !Ref SampleRequestsTable
+        SAMPLE_CHAPTER_URL: !Ref SampleChapterUrl
         RAZORPAY_KEY_ID: !Ref RazorpayKeyId
         RAZORPAY_KEY_SECRET: !Ref RazorpayKeySecret
         RAZORPAY_WEBHOOK_SECRET: !Ref RazorpayWebhookSecret
@@ -55,6 +61,8 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref OrdersTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SampleRequestsTable
         - Statement:
             - Effect: Allow
               Action:
@@ -66,6 +74,12 @@ Resources:
           Properties:
             ApiId: !Ref OrderApi
             Path: /orders
+            Method: POST
+        RequestSampleChapter:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref OrderApi
+            Path: /sample-requests
             Method: POST
         VerifyOrder:
           Type: HttpApi
@@ -99,6 +113,19 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  SampleRequestsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: email
+          AttributeType: S
+      KeySchema:
+        - AttributeName: email
+          KeyType: HASH
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
 

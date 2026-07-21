@@ -1,14 +1,21 @@
 .format-card {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(180px, 0.9fr) minmax(220px, 1.1fr);
+  gap: 24px;
   align-items: stretch;
   box-sizing: border-box;
   min-height: 100%;
-  padding: 28px 24px 24px;
+  padding: 24px;
   background: var(--color-white);
   border: 1px solid var(--color-border);
   border-radius: 14px;
   box-shadow: 0 8px 22px rgba(11, 38, 91, 0.04);
+}
+
+.format-card__content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .format-card__badge {
@@ -26,11 +33,30 @@
   flex-shrink: 0;
 }
 
-.format-card__badge-amazon {
-  display: block;
-  width: 18px;
-  height: 18px;
-  object-fit: contain;
+.format-card__badge-amazon-mark {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding-bottom: 3px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 1.65rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-amazon-ink);
+}
+
+.format-card__badge-amazon-mark::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  bottom: 1px;
+  width: 17px;
+  height: 5px;
+  border-bottom: 2px solid #ff9900;
+  border-radius: 0 0 50% 50%;
 }
 
 .format-card__badge-text {
@@ -86,8 +112,7 @@
   justify-content: center;
   box-sizing: border-box;
   width: 100%;
-  height: 212px;
-  margin-bottom: 20px;
+  min-height: 100%;
   padding: 16px;
   background: var(--color-surface-soft);
   border-radius: 12px;
@@ -101,7 +126,7 @@
 .format-card__visual--kindle img {
   display: block;
   width: 100%;
-  max-width: 260px;
+  max-width: 230px;
   height: auto;
   object-fit: contain;
 }
@@ -121,13 +146,39 @@
   text-align: center;
 }
 
+.format-card__price-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+
+.format-card__list-price {
+  color: var(--color-muted-light);
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+}
+
 .format-card__price {
-  margin: 0 0 4px;
+  margin: 0;
   font-family: var(--font-heading);
-  font-size: 1.85rem;
+  font-size: 2.04rem;
   font-weight: 700;
   line-height: 1.1;
   color: var(--color-navy-900);
+}
+
+.format-card__discount {
+  padding: 4px 7px;
+  color: var(--color-blue-700);
+  background: var(--color-blue-100);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .format-card__availability {
@@ -139,7 +190,6 @@
 .format-card__cta {
   width: 100%;
   min-height: 50px;
-  margin-bottom: 14px;
 }
 
 .format-card__cta--outline {
@@ -152,5 +202,30 @@
   background: var(--color-blue-050);
   color: var(--color-navy-900);
   border-color: var(--color-blue-500);
+}
+
+@media (max-width: 960px) {
+  .format-card {
+    grid-template-columns: minmax(220px, 0.9fr) minmax(280px, 1.1fr);
+  }
+
+  .format-card__visual {
+    min-height: 280px;
+  }
+}
+
+@media (max-width: 640px) {
+  .format-card {
+    grid-template-columns: 1fr;
+  }
+
+  .format-card__visual {
+    min-height: 212px;
+  }
+
+  .format-card__visual--kindle img {
+    max-width: 260px;
+  }
+
 }
 

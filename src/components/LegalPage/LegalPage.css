@@ -1,0 +1,144 @@
+.legal-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--color-white);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.legal-header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  min-height: var(--header-height);
+}
+
+.legal-header__logo {
+  display: block;
+  width: clamp(210px, 22vw, 300px);
+  height: auto;
+}
+
+.legal-header__back {
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.legal-page {
+  padding: 72px 0 88px;
+  background: var(--color-surface-soft);
+}
+
+.legal-page__inner {
+  box-sizing: border-box;
+  width: min(100%, 840px);
+  margin-inline: auto;
+  padding-inline: 40px;
+}
+
+.legal-page__eyebrow {
+  margin: 0 0 10px;
+  color: var(--color-blue-600);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.legal-page h1 {
+  margin: 0;
+  color: var(--color-navy-900);
+  font-family: var(--font-heading);
+  font-size: clamp(2.25rem, 5vw, 3.5rem);
+  line-height: 1.08;
+}
+
+.legal-page__updated {
+  margin: 14px 0 40px;
+  color: var(--color-muted-light);
+  font-size: 0.9rem;
+}
+
+.legal-page__content {
+  padding: 44px 48px;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.legal-page__content section + section {
+  margin-top: 36px;
+  padding-top: 36px;
+  border-top: 1px solid var(--color-border);
+}
+
+.legal-page__content h2 {
+  margin: 0 0 14px;
+  color: var(--color-navy-900);
+  font-family: var(--font-heading);
+  font-size: 1.35rem;
+  line-height: 1.25;
+}
+
+.legal-page__content p,
+.legal-page__content li {
+  color: var(--color-text);
+  font-size: 1rem;
+  line-height: 1.75;
+}
+
+.legal-page__content p {
+  margin: 0;
+}
+
+.legal-page__content p + p {
+  margin-top: 14px;
+}
+
+.legal-page__content ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.legal-page__content li + li {
+  margin-top: 8px;
+}
+
+@media (max-width: 800px) {
+  .legal-page {
+    padding: 52px 0 64px;
+  }
+
+  .legal-page__inner {
+    padding-inline: 24px;
+  }
+
+  .legal-page__content {
+    padding: 32px 28px;
+  }
+}
+
+@media (max-width: 560px) {
+  .legal-header__inner {
+    padding-inline: 16px;
+  }
+
+  .legal-header__logo {
+    width: min(58vw, 230px);
+  }
+
+  .legal-header__back {
+    font-size: 0.85rem;
+  }
+
+  .legal-page__inner {
+    padding-inline: 16px;
+  }
+
+  .legal-page__content {
+    padding: 28px 20px;
+  }
+}

@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Book, Check, ShoppingCart } from 'lucide-react';
-import { assets } from '../../data/assets';
+import { BookOpen, Check, ShoppingCart } from 'lucide-react';
 import {
   formatVisuals,
   type FormatOption,
@@ -16,18 +15,16 @@ interface FormatCardProps {
 function FormatBadgeIcon({ type }: { type: FormatOption['badgeIcon'] }) {
   if (type === 'amazon') {
     return (
-      <img
-        src={assets.formats.amazon}
-        alt=""
-        width={18}
-        height={18}
-        className="format-card__badge-amazon"
+      <span
+        className="format-card__badge-amazon-mark"
         aria-hidden="true"
-      />
+      >
+        a
+      </span>
     );
   }
 
-  return <Book size={16} strokeWidth={1.75} aria-hidden="true" />;
+  return <BookOpen size={26} strokeWidth={1.75} aria-hidden="true" />;
 }
 
 function FormatVisual({ visual }: { visual: FormatOption['visual'] }) {
@@ -71,53 +68,63 @@ export function FormatCard({ format }: FormatCardProps) {
   return (
     <>
       <article className={`format-card format-card--${format.id}`}>
-      <div className="format-card__badge">
-        <span className="format-card__badge-icon" aria-hidden="true">
-          <FormatBadgeIcon type={format.badgeIcon} />
-        </span>
-        <span className="format-card__badge-text">{format.badge}</span>
-      </div>
+        <FormatVisual visual={format.visual} />
 
-      <h3 className="format-card__headline">{format.headline}</h3>
-
-      <ul className="format-card__features">
-        {format.features.map((feature) => (
-          <li key={feature}>
-            <span className="format-card__check" aria-hidden="true">
-              <Check size={14} strokeWidth={2.5} />
+        <div className="format-card__content">
+          <div className="format-card__badge">
+            <span className="format-card__badge-icon" aria-hidden="true">
+              <FormatBadgeIcon type={format.badgeIcon} />
             </span>
-            <span>{feature}</span>
-          </li>
-        ))}
-      </ul>
+            <span className="format-card__badge-text">{format.badge}</span>
+          </div>
 
-      <FormatVisual visual={format.visual} />
+          <h3 className="format-card__headline">{format.headline}</h3>
 
-      <div className="format-card__pricing">
-        <p className="format-card__price">{format.price}</p>
-        <p className="format-card__availability">{format.availability}</p>
-      </div>
+          <ul className="format-card__features">
+            {format.features.map((feature) => (
+              <li key={feature}>
+                <span className="format-card__check" aria-hidden="true">
+                  <Check size={14} strokeWidth={2.5} />
+                </span>
+                <span>{feature}</span>
+              </li>
+            ))}
+          </ul>
 
-        {isPaperback ? (
-          <button
-            type="button"
-            className={`${ctaClass} format-card__cta`}
-            onClick={() => setOrderFormOpen(true)}
-          >
-            <ShoppingCart size={18} strokeWidth={2} aria-hidden="true" />
-            {format.ctaLabel}
-          </button>
-        ) : (
-          <a
-            href={format.ctaUrl}
-            className={`${ctaClass} format-card__cta`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <BrandButtonLogo brand="amazon" />
-            {format.ctaLabel}
-          </a>
-        )}
+          <div className="format-card__pricing">
+            <div className="format-card__price-row">
+              <span className="format-card__list-price">
+                {format.listPrice}
+              </span>
+              <p className="format-card__price">{format.price}</p>
+              <span className="format-card__discount">
+                {format.discountLabel}
+              </span>
+            </div>
+            <p className="format-card__availability">{format.availability}</p>
+          </div>
+
+          {isPaperback ? (
+            <button
+              type="button"
+              className={`${ctaClass} format-card__cta`}
+              onClick={() => setOrderFormOpen(true)}
+            >
+              <ShoppingCart size={18} strokeWidth={2} aria-hidden="true" />
+              {format.ctaLabel}
+            </button>
+          ) : (
+            <a
+              href={format.ctaUrl}
+              className={`${ctaClass} format-card__cta`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <BrandButtonLogo brand="amazon" />
+              {format.ctaLabel}
+            </a>
+          )}
+        </div>
       </article>
 
       {isPaperback ? (

@@ -14,6 +14,11 @@
   align-items: start;
 }
 
+.inside-intro {
+  position: sticky;
+  top: calc(var(--header-height) + 28px);
+}
+
 .inside-intro__eyebrow {
   margin: 0 0 10px;
   font-family: var(--font-body);
@@ -431,6 +436,10 @@
   .inside-layout {
     grid-template-columns: 1fr;
     gap: 28px;
+  }
+
+  .inside-intro {
+    position: static;
   }
 
   .inside-intro__copy {

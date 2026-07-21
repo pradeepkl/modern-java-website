@@ -26,6 +26,11 @@ export function AuthorSection() {
               />
             </div>
             <p className="author-profile__role">{authorProfile.role}</p>
+            <SocialLinks
+              className="author-profile__social"
+              size={22}
+              includeEmail={false}
+            />
           </div>
 
           <div className="author-profile__content">
@@ -50,33 +55,27 @@ export function AuthorSection() {
               <p>{authorProfile.perspective}</p>
             </blockquote>
 
-            <SocialLinks
-              className="author-profile__social"
-              size={22}
-              includeEmail={false}
-            />
+            <ul className="author-focus">
+              {authorFocus.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <li key={item.id} className="author-focus__item">
+                    <span className="author-focus__icon" aria-hidden="true">
+                      <Icon size={22} strokeWidth={1.75} />
+                    </span>
+                    <div>
+                      <h3 className="author-focus__title">{item.title}</h3>
+                      <p className="author-focus__description">
+                        {item.description}
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         </div>
-
-        <ul className="author-focus">
-          {authorFocus.map((item) => {
-            const Icon = item.icon;
-
-            return (
-              <li key={item.id} className="author-focus__item">
-                <span className="author-focus__icon" aria-hidden="true">
-                  <Icon size={22} strokeWidth={1.75} />
-                </span>
-                <div>
-                  <h3 className="author-focus__title">{item.title}</h3>
-                  <p className="author-focus__description">
-                    {item.description}
-                  </p>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
       </div>
     </section>
   );

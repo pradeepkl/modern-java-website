@@ -38,17 +38,16 @@ const valueIcons = {
 function AvailabilityIcon({ type }: { type: 'amazon' | 'book' }) {
   if (type === 'amazon') {
     return (
-      <img
-        src={assets.formats.amazon}
-        alt=""
-        width={16}
-        height={16}
+      <span
+        className="guide-availability__amazon-mark"
         aria-hidden="true"
-      />
+      >
+        a
+      </span>
     );
   }
 
-  return <BookOpen size={14} strokeWidth={2} aria-hidden="true" />;
+  return <BookOpen size={26} strokeWidth={1.75} aria-hidden="true" />;
 }
 
 export function GuideSection() {
@@ -87,7 +86,9 @@ export function GuideSection() {
                     <span className="guide-availability__icon">
                       <AvailabilityIcon type={item.icon} />
                     </span>
-                    <span className="sr-only">{item.label}</span>
+                    <span className="guide-availability__name">
+                      {item.label}
+                    </span>
                   </li>
                 ))}
               </ul>

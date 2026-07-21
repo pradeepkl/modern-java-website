@@ -15,6 +15,8 @@ export interface FormatOption {
   headline: string;
   features: readonly string[];
   price: string;
+  listPrice: string;
+  discountLabel: string;
   availability: string;
   ctaLabel: string;
   ctaUrl?: string;
@@ -37,8 +39,8 @@ export const formatTrustItems: FormatTrustItem[] = [
   },
   {
     id: 'shipping',
-    title: 'Global Shipping',
-    description: 'Paperbacks ship worldwide from trusted partners.',
+    title: 'India Shipping',
+    description: 'Paperbacks ship across India through trusted partners.',
     icon: 'globe',
   },
 ];
@@ -56,6 +58,8 @@ export const formatOptions: FormatOption[] = [
       'Pay once, read forever',
     ],
     price: '₹599',
+    listPrice: '₹749',
+    discountLabel: '20% off',
     availability: 'Available now on Amazon',
     ctaLabel: 'Buy on Amazon',
     ctaUrl: book.amazonUrl,
@@ -71,9 +75,11 @@ export const formatOptions: FormatOption[] = [
       'Premium print and paper',
       'Perfect bound',
       '300+ pages',
-      'Ships worldwide',
+      'Ships across India',
     ],
     price: '₹899',
+    listPrice: '₹1,124',
+    discountLabel: '20% off',
     availability: 'Place your order directly',
     ctaLabel: 'Place order',
     ctaVariant: 'primary',
