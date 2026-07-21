@@ -1,4 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
-  <rect width="32" height="32" rx="6" fill="#0c4dbc"/>
-  <text x="16" y="22" text-anchor="middle" fill="#fff" font-family="system-ui,sans-serif" font-size="14" font-weight="700">J</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-labelledby="title">
+  <title id="title">Modern Java</title>
+  <rect width="32" height="32" rx="7" fill="#0E4FC4"/>
+  <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="16" cy="16" r="10.5" stroke-width="1.8"/>
+    <circle cx="16" cy="16" r="6" stroke-width="1.6"/>
+    <path d="M16 2.5v5M16 24.5v5M2.5 16h5M24.5 16h5" stroke-width="1.8"/>
+  </g>
+  <circle cx="16" cy="16" r="2.3" fill="#fff"/>
 </svg>

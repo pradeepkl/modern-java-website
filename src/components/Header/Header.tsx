@@ -1,5 +1,4 @@
 import { assets } from '../../data/assets';
-import { book } from '../../data/book';
 import { navigation } from '../../data/navigation';
 import type { ActiveSection } from '../../hooks/useActiveSection';
 import { MobileMenu } from '../MobileMenu/MobileMenu';
@@ -55,10 +54,8 @@ export function Header({
         </nav>
 
         <a
-          href={book.amazonUrl}
+          href="#formats"
           className="button button-primary header-cta"
-          target="_blank"
-          rel="noopener noreferrer"
         >
           Buy Now
         </a>

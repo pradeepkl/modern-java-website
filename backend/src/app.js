@@ -8,14 +8,20 @@ const {
   UpdateCommand,
 } = require('@aws-sdk/lib-dynamodb');
 const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
+const { GetObjectCommand, S3Client } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
 const dynamo = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const ses = new SESClient({});
+const s3 = new S3Client({});
 
 const {
   ORDERS_TABLE,
   SAMPLE_REQUESTS_TABLE,
   SAMPLE_CHAPTER_URL,
+  DIGITAL_ASSETS_BUCKET,
+  DIGITAL_PDF_KEY = 'digital/modern-java.pdf',
+  DIGITAL_EPUB_KEY = 'digital/modern-java.epub',
   RAZORPAY_KEY_ID,
   RAZORPAY_KEY_SECRET,
   RAZORPAY_WEBHOOK_SECRET,
@@ -24,7 +30,9 @@ const {
 } = process.env;
 
 const PAPERBACK_PRICE_PAISE = 89900;
+const DIGITAL_BUNDLE_PRICE_PAISE = 69900;
 const MAX_QUANTITY = 20;
+const DOWNLOAD_LINK_TTL_SECONDS = 7 * 24 * 60 * 60;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_PATTERN = /^\d{10}$/;
 const PIN_PATTERN = /^\d{6}$/;
@@ -206,6 +214,62 @@ const createRazorpayOrder = async ({ amount, receipt, notes }) => {
   return payload;
 };
 
+const createDigitalOrder = async (event) => {
+  const { json } = parseBody(event);
+  const email = String(json.email || '').trim().toLowerCase();
+
+  if (!EMAIL_PATTERN.test(email)) {
+    throw new Error('Invalid email address');
+  }
+
+  if (!DIGITAL_ASSETS_BUCKET) {
+    return response(503, {
+      message: 'Digital delivery is not configured yet. Please try again later.',
+    });
+  }
+
+  const appOrderId = `MJ-D-${randomUUID().slice(0, 8).toUpperCase()}`;
+  const razorpayOrder = await createRazorpayOrder({
+    amount: DIGITAL_BUNDLE_PRICE_PAISE,
+    receipt: appOrderId,
+    notes: { appOrderId, productType: 'digital_bundle' },
+  });
+  const now = new Date().toISOString();
+  const marketingConsent = json.marketingConsent === true;
+
+  await dynamo.send(
+    new PutCommand({
+      TableName: ORDERS_TABLE,
+      Item: {
+        appOrderId,
+        razorpayOrderId: razorpayOrder.id,
+        productType: 'digital_bundle',
+        email,
+        amount: DIGITAL_BUNDLE_PRICE_PAISE,
+        currency: 'INR',
+        status: 'payment_pending',
+        revisionUpdates: true,
+        marketingConsent,
+        marketingConsentAt: marketingConsent ? now : null,
+        consentVersion: marketingConsent
+          ? String(json.consentVersion || 'unknown')
+          : null,
+        createdAt: now,
+        updatedAt: now,
+      },
+      ConditionExpression: 'attribute_not_exists(appOrderId)',
+    }),
+  );
+
+  return response(201, {
+    appOrderId,
+    razorpayOrderId: razorpayOrder.id,
+    amount: DIGITAL_BUNDLE_PRICE_PAISE,
+    currency: 'INR',
+    keyId: RAZORPAY_KEY_ID,
+  });
+};
+
 const formatOrderEmail = (order) => [
   `Order ID: ${order.appOrderId}`,
   `Payment ID: ${order.paymentId}`,
@@ -224,7 +288,7 @@ const formatOrderEmail = (order) => [
   `Notes: ${order.notes || 'None'}`,
 ].join('\n');
 
-const sendConfirmationEmails = async (order) => {
+const sendPaperbackConfirmationEmails = async (order) => {
   const text = formatOrderEmail(order);
   const subject = `Modern Java paperback order ${order.appOrderId}`;
 
@@ -254,6 +318,81 @@ const sendConfirmationEmails = async (order) => {
       }),
     ),
   ]);
+};
+
+const createDigitalDownloadLinks = async () => {
+  const createLink = (key) =>
+    getSignedUrl(
+      s3,
+      new GetObjectCommand({
+        Bucket: DIGITAL_ASSETS_BUCKET,
+        Key: key,
+      }),
+      { expiresIn: DOWNLOAD_LINK_TTL_SECONDS },
+    );
+
+  const [pdfUrl, epubUrl] = await Promise.all([
+    createLink(DIGITAL_PDF_KEY),
+    createLink(DIGITAL_EPUB_KEY),
+  ]);
+
+  return { pdfUrl, epubUrl };
+};
+
+const sendDigitalConfirmationEmails = async (order) => {
+  const { pdfUrl, epubUrl } = await createDigitalDownloadLinks();
+  const adminText = [
+    `Order ID: ${order.appOrderId}`,
+    `Payment ID: ${order.paymentId}`,
+    `Amount: ₹${order.amount / 100}`,
+    'Product: PDF + ePub digital bundle',
+    `Email: ${order.email}`,
+    `Marketing consent: ${order.marketingConsent ? 'Yes' : 'No'}`,
+  ].join('\n');
+  const customerText = [
+    'Thank you for purchasing Modern Java: The Mindset Shift.',
+    '',
+    'Your secure download links are below and remain valid for 7 days:',
+    '',
+    `PDF: ${pdfUrl}`,
+    `ePub: ${epubUrl}`,
+    '',
+    'You will receive access to revised editions at this email address.',
+    'If a link expires before you download the files, contact admin@classpath.in.',
+    '',
+    `Order ID: ${order.appOrderId}`,
+  ].join('\n');
+
+  await Promise.all([
+    ses.send(
+      new SendEmailCommand({
+        Source: ADMIN_EMAIL,
+        Destination: { ToAddresses: [ADMIN_EMAIL] },
+        Message: {
+          Subject: { Data: `Modern Java digital order ${order.appOrderId}` },
+          Body: { Text: { Data: adminText } },
+        },
+      }),
+    ),
+    ses.send(
+      new SendEmailCommand({
+        Source: ADMIN_EMAIL,
+        Destination: { ToAddresses: [order.email] },
+        Message: {
+          Subject: { Data: 'Your Modern Java PDF and ePub downloads' },
+          Body: { Text: { Data: customerText } },
+        },
+      }),
+    ),
+  ]);
+};
+
+const sendConfirmationEmails = async (order) => {
+  if (order.productType === 'digital_bundle') {
+    return sendDigitalConfirmationEmails(order);
+  }
+
+  return sendPaperbackConfirmationEmails(order);
 };
 
 const createOrder = async (event) => {
@@ -425,6 +564,9 @@ exports.handler = async (event) => {
     if (method === 'OPTIONS') return response(204, {});
     if (method === 'POST' && path === '/sample-requests') {
       return requestSampleChapter(event);
+    }
+    if (method === 'POST' && path === '/digital-orders') {
+      return createDigitalOrder(event);
     }
     if (method === 'POST' && path === '/orders') return createOrder(event);
     if (method === 'POST' && path === '/orders/verify') {

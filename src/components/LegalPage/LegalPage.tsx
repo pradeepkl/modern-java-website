@@ -134,10 +134,29 @@ function TermsOfUse() {
           refund terms.
         </p>
         <p>
+          Direct digital purchases include the PDF and ePub editions. Secure
+          download links are sent to the email address provided after payment
+          verification and expire for security. Buyers may receive
+          transactional emails when revised editions become available.
+          Promotional messages are sent only when separately requested.
+        </p>
+        <p>
           Paperback orders placed on this website are confirmed only after
           successful payment verification. Payments are processed securely by
           Razorpay. Prices, availability, and delivery estimates may change
           before an order is placed.
+        </p>
+      </section>
+
+      <section>
+        <h2>Digital delivery and refunds</h2>
+        <p>
+          You are responsible for providing a valid email address and
+          downloading the files before the secure links expire. Contact{' '}
+          <a href={`mailto:${book.email}`}>{book.email}</a> if a link expires or
+          delivery fails. Because digital files are delivered immediately,
+          refund requests may be limited after download, except where required
+          by applicable consumer law.
         </p>
       </section>
 
@@ -200,7 +219,7 @@ export function LegalPage({ type }: LegalPageProps) {
     window.scrollTo(0, 0);
 
     return () => {
-      document.title = `${book.title}: ${book.subtitle} | ${book.author}`;
+      document.title = `${book.title} - ${book.subtitle}`;
     };
   }, [title]);
 

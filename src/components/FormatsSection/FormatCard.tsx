@@ -1,10 +1,8 @@
 import { useState } from 'react';
-import { BookOpen, Check, ShoppingCart } from 'lucide-react';
-import {
-  formatVisuals,
-  type FormatOption,
-} from '../../data/formats';
+import { BookOpen, Check, Download, ShoppingCart } from 'lucide-react';
+import { type FormatOption } from '../../data/formats';
 import { BrandButtonLogo } from '../shared/BrandButtonLogo';
+import { DigitalOrderDialog } from './DigitalOrderDialog';
 import { PaperbackOrderDialog } from './PaperbackOrderDialog';
 import './FormatCard.css';
 
@@ -24,42 +22,17 @@ function FormatBadgeIcon({ type }: { type: FormatOption['badgeIcon'] }) {
     );
   }
 
-  return <BookOpen size={26} strokeWidth={1.75} aria-hidden="true" />;
-}
-
-function FormatVisual({ visual }: { visual: FormatOption['visual'] }) {
-  if (visual === 'kindle') {
-    return (
-      <div className="format-card__visual format-card__visual--kindle">
-        <img
-          src={formatVisuals.kindle}
-          alt="Modern Java on tablet, phone, and laptop"
-          width={280}
-          height={180}
-          loading="lazy"
-          decoding="async"
-        />
-      </div>
-    );
+  if (type === 'download') {
+    return <Download size={26} strokeWidth={1.75} aria-hidden="true" />;
   }
 
-  return (
-    <div className="format-card__visual format-card__visual--paperback">
-      <img
-        src={formatVisuals.paperback}
-        alt="Modern Java paperback edition"
-        width={160}
-        height={220}
-        loading="lazy"
-        decoding="async"
-      />
-    </div>
-  );
+  return <BookOpen size={26} strokeWidth={1.75} aria-hidden="true" />;
 }
 
 export function FormatCard({ format }: FormatCardProps) {
   const [orderFormOpen, setOrderFormOpen] = useState(false);
   const isPaperback = format.id === 'paperback';
+  const isDirectDigital = format.id === 'digital';
   const ctaClass =
     format.ctaVariant === 'amazon'
       ? 'button button-amazon'
@@ -68,8 +41,6 @@ export function FormatCard({ format }: FormatCardProps) {
   return (
     <>
       <article className={`format-card format-card--${format.id}`}>
-        <FormatVisual visual={format.visual} />
-
         <div className="format-card__content">
           <div className="format-card__badge">
             <span className="format-card__badge-icon" aria-hidden="true">
@@ -104,13 +75,17 @@ export function FormatCard({ format }: FormatCardProps) {
             <p className="format-card__availability">{format.availability}</p>
           </div>
 
-          {isPaperback ? (
+          {isPaperback || isDirectDigital ? (
             <button
               type="button"
               className={`${ctaClass} format-card__cta`}
               onClick={() => setOrderFormOpen(true)}
             >
-              <ShoppingCart size={18} strokeWidth={2} aria-hidden="true" />
+              {isDirectDigital ? (
+                <Download size={18} strokeWidth={2} aria-hidden="true" />
+              ) : (
+                <ShoppingCart size={18} strokeWidth={2} aria-hidden="true" />
+              )}
               {format.ctaLabel}
             </button>
           ) : (
@@ -129,6 +104,12 @@ export function FormatCard({ format }: FormatCardProps) {
 
       {isPaperback ? (
         <PaperbackOrderDialog
+          open={orderFormOpen}
+          onClose={() => setOrderFormOpen(false)}
+        />
+      ) : null}
+      {isDirectDigital ? (
+        <DigitalOrderDialog
           open={orderFormOpen}
           onClose={() => setOrderFormOpen(false)}
         />

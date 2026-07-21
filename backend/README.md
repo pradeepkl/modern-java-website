@@ -29,6 +29,8 @@ During guided deployment, provide:
 - `AdminEmail` (`admin@classpath.in`)
 - `AllowedOrigin` (the production website origin, without a trailing slash)
 - `SampleChapterUrl` (the public or signed URL of the finished sample PDF)
+- `DigitalPdfKey` and `DigitalEpubKey` if using object keys other than the
+  defaults
 
 After deployment:
 
@@ -38,6 +40,8 @@ After deployment:
 3. Subscribe to the `payment.captured` webhook event.
 4. Use the same webhook secret in Razorpay and the SAM deployment parameter.
 5. Rebuild and deploy the website.
+6. Upload the finished digital editions to the `DigitalAssetsBucketName`
+   output using the configured PDF and ePub object keys.
 
 For local frontend development, copy the root `.env.example` to `.env.local`
 and set the deployed API URL.
@@ -52,5 +56,8 @@ and set the deployed API URL.
   payments.
 - `POST /sample-requests` records optional marketing consent and emails the
   configured sample chapter link.
+- `POST /digital-orders` creates a ₹699 Razorpay order for the PDF + ePub
+  bundle. The normal verification endpoint emails time-limited S3 download
+  links after payment.
 
 Razorpay secrets are backend-only. The browser receives only the public key ID.

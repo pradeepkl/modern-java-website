@@ -85,15 +85,16 @@
 
 .hero-actions.purchase-buttons {
   display: flex;
-  flex-wrap: nowrap;
-  gap: 14px;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-top: 28px;
   grid-template-columns: unset;
 }
 
 .hero-actions .button {
   min-height: 54px;
-  padding: 0 22px;
+  min-width: 0;
+  padding: 0 14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -104,15 +105,16 @@
   line-height: 1;
   text-decoration: none;
   width: auto;
-  flex: 0 0 auto;
+  flex: 1 1 180px;
+  font-size: 0.88rem;
 }
 
 .hero-actions .button-amazon {
-  min-width: 200px;
+  min-width: 0;
 }
 
 .hero-actions .button-primary {
-  min-width: 240px;
+  min-width: 0;
 }
 
 .hero-meta {

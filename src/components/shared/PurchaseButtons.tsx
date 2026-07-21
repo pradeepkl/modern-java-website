@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { ShoppingCart } from 'lucide-react';
+import { Download, ShoppingCart } from 'lucide-react';
 import { book } from '../../data/book';
+import { DigitalOrderDialog } from '../FormatsSection/DigitalOrderDialog';
 import { PaperbackOrderDialog } from '../FormatsSection/PaperbackOrderDialog';
 import { BrandButtonLogo } from './BrandButtonLogo';
 import './shared.css';
@@ -8,17 +9,43 @@ import './shared.css';
 interface PurchaseButtonsProps {
   size?: 'default' | 'large';
   layout?: 'inline' | 'stacked';
+  includeDigital?: boolean;
+  linkToFormats?: boolean;
   className?: string;
 }
 
 export function PurchaseButtons({
   size = 'default',
   layout = 'inline',
+  includeDigital = false,
+  linkToFormats = false,
   className = '',
 }: PurchaseButtonsProps) {
   const [orderFormOpen, setOrderFormOpen] = useState(false);
+  const [digitalOrderFormOpen, setDigitalOrderFormOpen] = useState(false);
   const sizeClass = size === 'large' ? 'button-large' : '';
   const layoutClass = layout === 'stacked' ? 'purchase-buttons--stacked' : '';
+
+  if (linkToFormats) {
+    return (
+      <div className={`purchase-buttons ${layoutClass} ${className}`}>
+        <a href="#formats" className={`button button-amazon ${sizeClass}`}>
+          <BrandButtonLogo brand="amazon" />
+          Kindle
+        </a>
+        {includeDigital ? (
+          <a href="#formats" className={`button button-primary ${sizeClass}`}>
+            <Download size={20} strokeWidth={2} aria-hidden="true" />
+            PDF + ePub
+          </a>
+        ) : null}
+        <a href="#formats" className={`button button-primary ${sizeClass}`}>
+          <ShoppingCart size={20} strokeWidth={2} aria-hidden="true" />
+          Paperback
+        </a>
+      </div>
+    );
+  }
 
   return (
     <div className={`purchase-buttons ${layoutClass} ${className}`}>
@@ -30,8 +57,19 @@ export function PurchaseButtons({
         aria-label="Buy Modern Java: The Mindset Shift on Amazon"
       >
         <BrandButtonLogo brand="amazon" />
-        Buy Kindle — ₹599
+        Buy Kindle — ₹499
       </a>
+      {includeDigital ? (
+        <button
+          type="button"
+          className={`button button-primary ${sizeClass}`}
+          onClick={() => setDigitalOrderFormOpen(true)}
+          aria-label="Buy the Modern Java PDF and ePub bundle"
+        >
+          <Download size={20} strokeWidth={2} aria-hidden="true" />
+          Buy PDF + ePub — ₹699
+        </button>
+      ) : null}
       <button
         type="button"
         className={`button button-primary ${sizeClass}`}
@@ -45,6 +83,12 @@ export function PurchaseButtons({
         open={orderFormOpen}
         onClose={() => setOrderFormOpen(false)}
       />
+      {includeDigital ? (
+        <DigitalOrderDialog
+          open={digitalOrderFormOpen}
+          onClose={() => setDigitalOrderFormOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }

@@ -22,6 +22,12 @@ Parameters:
     Type: String
     Default: ''
     Description: Public or signed URL for the sample chapter PDF
+  DigitalPdfKey:
+    Type: String
+    Default: digital/modern-java.pdf
+  DigitalEpubKey:
+    Type: String
+    Default: digital/modern-java.epub
 
 Globals:
   Function:
@@ -33,6 +39,9 @@ Globals:
         ORDERS_TABLE: !Ref OrdersTable
         SAMPLE_REQUESTS_TABLE: !Ref SampleRequestsTable
         SAMPLE_CHAPTER_URL: !Ref SampleChapterUrl
+        DIGITAL_ASSETS_BUCKET: !Ref DigitalAssetsBucket
+        DIGITAL_PDF_KEY: !Ref DigitalPdfKey
+        DIGITAL_EPUB_KEY: !Ref DigitalEpubKey
         RAZORPAY_KEY_ID: !Ref RazorpayKeyId
         RAZORPAY_KEY_SECRET: !Ref RazorpayKeySecret
         RAZORPAY_WEBHOOK_SECRET: !Ref RazorpayWebhookSecret
@@ -63,6 +72,8 @@ Resources:
             TableName: !Ref OrdersTable
         - DynamoDBCrudPolicy:
             TableName: !Ref SampleRequestsTable
+        - S3ReadPolicy:
+            BucketName: !Ref DigitalAssetsBucket
         - Statement:
             - Effect: Allow
               Action:
@@ -80,6 +91,12 @@ Resources:
           Properties:
             ApiId: !Ref OrderApi
             Path: /sample-requests
+            Method: POST
+        CreateDigitalOrder:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref OrderApi
+            Path: /digital-orders
             Method: POST
         VerifyOrder:
           Type: HttpApi
@@ -129,6 +146,21 @@ Resources:
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
 
+  DigitalAssetsBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
 Outputs:
   OrderApiUrl:
     Description: Set this value as VITE_ORDER_API_URL in the website
@@ -136,3 +168,6 @@ Outputs:
   RazorpayWebhookUrl:
     Description: Configure this endpoint in the Razorpay dashboard
     Value: !Sub https://${OrderApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/webhooks/razorpay
+  DigitalAssetsBucketName:
+    Description: Upload the PDF and ePub files to this private bucket
+    Value: !Ref DigitalAssetsBucket

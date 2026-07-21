@@ -1,4 +1,3 @@
-import { assets } from './assets';
 import { book } from './book';
 
 export interface FormatTrustItem {
@@ -11,7 +10,7 @@ export interface FormatTrustItem {
 export interface FormatOption {
   id: string;
   badge: string;
-  badgeIcon: 'amazon' | 'book';
+  badgeIcon: 'amazon' | 'book' | 'download';
   headline: string;
   features: readonly string[];
   price: string;
@@ -21,7 +20,6 @@ export interface FormatOption {
   ctaLabel: string;
   ctaUrl?: string;
   ctaVariant: 'amazon' | 'primary';
-  visual: 'kindle' | 'paperback';
 }
 
 export const formatTrustItems: FormatTrustItem[] = [
@@ -57,14 +55,31 @@ export const formatOptions: FormatOption[] = [
       'Highlight, search, and take notes',
       'Pay once, read forever',
     ],
-    price: '₹599',
-    listPrice: '₹749',
+    price: '₹499',
+    listPrice: '₹624',
     discountLabel: '20% off',
     availability: 'Available now on Amazon',
     ctaLabel: 'Buy on Amazon',
     ctaUrl: book.amazonUrl,
     ctaVariant: 'amazon',
-    visual: 'kindle',
+  },
+  {
+    id: 'digital',
+    badge: 'Direct Digital Edition',
+    badgeIcon: 'download',
+    headline: 'PDF + ePub bundle',
+    features: [
+      'Both PDF and ePub included',
+      'Secure download links by email',
+      'Access to future revised editions',
+      'Optional promotional offers',
+    ],
+    price: '₹699',
+    listPrice: '₹874',
+    discountLabel: '20% off',
+    availability: 'Delivered directly by email',
+    ctaLabel: 'Buy direct',
+    ctaVariant: 'primary',
   },
   {
     id: 'paperback',
@@ -83,14 +98,8 @@ export const formatOptions: FormatOption[] = [
     availability: 'Place your order directly',
     ctaLabel: 'Place order',
     ctaVariant: 'primary',
-    visual: 'paperback',
   },
 ];
-
-export const formatVisuals = {
-  kindle: assets.formats.devices,
-  paperback: assets.hero.paperback,
-} as const;
 
 export const formatBulkOrder = {
   prompt: 'Prefer to order in bulk for your team or organization?',

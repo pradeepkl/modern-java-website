@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { book } from '../../data/book';
 import { navigation } from '../../data/navigation';
 import type { ActiveSection } from '../../hooks/useActiveSection';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
@@ -60,10 +59,8 @@ export function MobileMenu({ open, onClose, activeSection }: MobileMenuProps) {
           })}
         </ul>
         <a
-          href={book.amazonUrl}
+          href="#formats"
           className="button button-primary button-full mobile-menu__cta"
-          target="_blank"
-          rel="noopener noreferrer"
           onClick={onClose}
         >
           Buy Now

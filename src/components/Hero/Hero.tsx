@@ -38,6 +38,8 @@ export function Hero() {
 
           <PurchaseButtons
             size="large"
+            includeDigital
+            linkToFormats
             className="hero-actions"
           />
 
@@ -57,7 +59,9 @@ export function Hero() {
             loading="eager"
             decoding="async"
           />
-          <p className="hero-product-context">Kindle · Paperback</p>
+          <p className="hero-product-context">
+            Kindle · PDF + ePub · Paperback
+          </p>
         </div>
       </div>
     </section>
