@@ -27,6 +27,7 @@ export function DigitalOrderDialog({
     if (!open) return;
     setErrorMessage('');
     setProcessing(false);
+    setConfirmedOrderId(null);
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
@@ -73,8 +74,8 @@ export function DigitalOrderDialog({
         key: order.keyId,
         amount: order.amount,
         currency: order.currency,
-        name: 'Modern Java',
-        description: 'PDF + ePub digital bundle',
+        name: 'Modern Java — Direct Download',
+        description: 'Direct download: PDF + ePub bundle',
         order_id: order.razorpayOrderId,
         prefill: { email },
         notes: { appOrderId: order.appOrderId },
@@ -176,8 +177,9 @@ export function DigitalOrderDialog({
             <CheckCircle2 size={34} strokeWidth={1.75} aria-hidden="true" />
             <h3>Payment confirmed</h3>
             <p>
-              Your order <strong>{confirmedOrderId}</strong> is complete. Secure
-              PDF and ePub download links have been emailed to you.
+              Your <strong>Modern Java direct download (PDF + ePub)</strong>{' '}
+              order <strong>{confirmedOrderId}</strong> is complete. Secure
+              download links have been emailed to you.
             </p>
             <button type="button" className="button button-primary" onClick={onClose}>
               Done

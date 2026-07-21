@@ -10,7 +10,7 @@ interface LegalPageProps {
   type: LegalPageType;
 }
 
-const lastUpdated = '21 July 2026';
+const lastUpdated = '22 July 2026';
 
 function PrivacyPolicy() {
   return (
@@ -24,6 +24,8 @@ function PrivacyPolicy() {
           quantity, delivery address, postal code, and any optional notes.
           When you request a sample chapter, we collect your email address and
           record whether you separately chose to receive occasional updates.
+          Before visiting Amazon, you may also optionally share your email
+          address to subscribe to book updates and promotional offers.
         </p>
         <p>
           Our hosting and security providers may also process basic technical

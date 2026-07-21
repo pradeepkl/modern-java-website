@@ -92,6 +92,12 @@ Resources:
             ApiId: !Ref OrderApi
             Path: /sample-requests
             Method: POST
+        RecordMarketingConsent:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref OrderApi
+            Path: /marketing-consents
+            Method: POST
         CreateDigitalOrder:
           Type: HttpApi
           Properties:

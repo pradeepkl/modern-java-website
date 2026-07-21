@@ -124,8 +124,8 @@ export function PaperbackOrderDialog({
         key: order.keyId,
         amount: order.amount,
         currency: order.currency,
-        name: 'Modern Java',
-        description: `Paperback × ${orderInput.quantity}`,
+        name: 'Modern Java — Paperback',
+        description: `Paperback edition × ${orderInput.quantity}`,
         order_id: order.razorpayOrderId,
         prefill: {
           name: orderInput.name,
@@ -230,8 +230,9 @@ export function PaperbackOrderDialog({
             <CheckCircle2 size={48} strokeWidth={1.75} aria-hidden="true" />
             <h3>Payment successful</h3>
             <p>
-              Your order <strong>{confirmedOrderId}</strong> is confirmed.
-              Confirmation details have been emailed to you.
+              Your <strong>Modern Java paperback × {quantity}</strong> order{' '}
+              <strong>{confirmedOrderId}</strong> is confirmed. Confirmation
+              details have been emailed to you.
             </p>
             <button
               type="button"

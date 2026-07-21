@@ -69,7 +69,7 @@ export const formatOptions: FormatOption[] = [
     badgeIcon: 'download',
     headline: 'PDF + ePub bundle',
     features: [
-      'Both PDF and ePub included',
+      'DRM-free PDF + ePub included',
       'Secure download links by email',
       'Access to future revised editions',
       'Optional promotional offers',
@@ -90,7 +90,8 @@ export const formatOptions: FormatOption[] = [
       'Premium print and paper',
       'Perfect bound',
       '300+ pages',
-      'Ships across India',
+      'DRM-free PDF + ePub included',
+      'Access to future revised editions',
     ],
     price: '₹899',
     listPrice: '₹1,124',

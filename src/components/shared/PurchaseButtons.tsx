@@ -3,6 +3,7 @@ import { Download, ShoppingCart } from 'lucide-react';
 import { book } from '../../data/book';
 import { DigitalOrderDialog } from '../FormatsSection/DigitalOrderDialog';
 import { PaperbackOrderDialog } from '../FormatsSection/PaperbackOrderDialog';
+import { AmazonConsentLink } from './AmazonConsentLink';
 import { BrandButtonLogo } from './BrandButtonLogo';
 import './shared.css';
 
@@ -49,16 +50,14 @@ export function PurchaseButtons({
 
   return (
     <div className={`purchase-buttons ${layoutClass} ${className}`}>
-      <a
+      <AmazonConsentLink
         href={book.amazonUrl}
         className={`button button-amazon ${sizeClass}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Buy Modern Java: The Mindset Shift on Amazon"
+        ariaLabel="Buy Modern Java: The Mindset Shift on Amazon"
       >
         <BrandButtonLogo brand="amazon" />
         Buy Kindle — ₹499
-      </a>
+      </AmazonConsentLink>
       {includeDigital ? (
         <button
           type="button"

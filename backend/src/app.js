@@ -8,7 +8,11 @@ const {
   UpdateCommand,
 } = require('@aws-sdk/lib-dynamodb');
 const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
-const { GetObjectCommand, S3Client } = require('@aws-sdk/client-s3');
+const {
+  GetObjectCommand,
+  HeadObjectCommand,
+  S3Client,
+} = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
 const dynamo = DynamoDBDocumentClient.from(new DynamoDBClient({}));
@@ -175,9 +179,15 @@ const requestSampleChapter = async (event) => {
         marketingConsentAt: marketingConsent
           ? now
           : existing.Item?.marketingConsentAt || null,
+        marketingConsentUpdatedAt: marketingConsent
+          ? now
+          : existing.Item?.marketingConsentUpdatedAt || null,
         consentVersion: marketingConsent
           ? String(json.consentVersion || 'unknown')
           : existing.Item?.consentVersion || null,
+        marketingConsentSource: marketingConsent
+          ? 'sample-chapter-form'
+          : existing.Item?.marketingConsentSource || null,
         source: 'sample-chapter-form',
       },
     }),
@@ -186,6 +196,44 @@ const requestSampleChapter = async (event) => {
   return response(200, {
     message: 'Check your inbox—the sample chapter is on its way.',
   });
+};
+
+const recordMarketingConsent = async (event) => {
+  const { json } = parseBody(event);
+  const email = String(json.email || '').trim().toLowerCase();
+
+  if (!EMAIL_PATTERN.test(email)) {
+    throw new Error('Invalid email address');
+  }
+  if (json.marketingConsent !== true) {
+    throw new Error('Marketing consent is required');
+  }
+  if (!SAMPLE_REQUESTS_TABLE) {
+    return response(503, {
+      message: 'Email signup is not configured yet. Please try again later.',
+    });
+  }
+
+  const now = new Date().toISOString();
+  await dynamo.send(
+    new UpdateCommand({
+      TableName: SAMPLE_REQUESTS_TABLE,
+      Key: { email },
+      UpdateExpression:
+        'SET marketingConsent = :consented, ' +
+        'marketingConsentAt = if_not_exists(marketingConsentAt, :now), ' +
+        'marketingConsentUpdatedAt = :now, consentVersion = :version, ' +
+        'marketingConsentSource = :source',
+      ExpressionAttributeValues: {
+        ':consented': true,
+        ':now': now,
+        ':version': String(json.consentVersion || 'unknown'),
+        ':source': 'amazon-pre-navigation',
+      },
+    }),
+  );
+
+  return response(200, { message: 'Your email preferences have been saved.' });
 };
 
 const createRazorpayOrder = async ({ amount, receipt, notes }) => {
@@ -226,6 +274,35 @@ const createDigitalOrder = async (event) => {
     return response(503, {
       message: 'Digital delivery is not configured yet. Please try again later.',
     });
+  }
+
+  try {
+    await Promise.all([
+      s3.send(
+        new HeadObjectCommand({
+          Bucket: DIGITAL_ASSETS_BUCKET,
+          Key: DIGITAL_PDF_KEY,
+        }),
+      ),
+      s3.send(
+        new HeadObjectCommand({
+          Bucket: DIGITAL_ASSETS_BUCKET,
+          Key: DIGITAL_EPUB_KEY,
+        }),
+      ),
+    ]);
+  } catch (error) {
+    if (
+      error?.name === 'NotFound' ||
+      error?.name === 'NoSuchKey' ||
+      error?.$metadata?.httpStatusCode === 404
+    ) {
+      return response(503, {
+        message:
+          'The direct digital edition is being prepared. Please try again later.',
+      });
+    }
+    throw error;
   }
 
   const appOrderId = `MJ-D-${randomUUID().slice(0, 8).toUpperCase()}`;
@@ -564,6 +641,9 @@ exports.handler = async (event) => {
     if (method === 'OPTIONS') return response(204, {});
     if (method === 'POST' && path === '/sample-requests') {
       return requestSampleChapter(event);
+    }
+    if (method === 'POST' && path === '/marketing-consents') {
+      return recordMarketingConsent(event);
     }
     if (method === 'POST' && path === '/digital-orders') {
       return createDigitalOrder(event);

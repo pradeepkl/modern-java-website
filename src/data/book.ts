@@ -6,7 +6,7 @@ export const book = {
   tagline:
     'Designing Java with intent for a clearer, safer, and more evolvable codebase.',
 
-  amazonUrl: 'https://www.amazon.in/Modern-Java-Mindset-Pradeep-Kumar-ebook',
+  amazonUrl: 'https://www.amazon.in/dp/B0H6R4334W',
 
   email: 'admin@classpath.in',
   githubUrl: 'https://github.com/pradeepkl',

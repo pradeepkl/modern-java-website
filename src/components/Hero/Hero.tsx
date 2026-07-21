@@ -1,6 +1,6 @@
+import { ArrowRight } from 'lucide-react';
 import { assets } from '../../data/assets';
 import { DecorativeImage } from '../shared/Icon';
-import { PurchaseButtons } from '../shared/PurchaseButtons';
 import './Hero.css';
 
 export function Hero() {
@@ -36,12 +36,13 @@ export function Hero() {
             Less ceremony. Stronger models. More help from the compiler.
           </p>
 
-          <PurchaseButtons
-            size="large"
-            includeDigital
-            linkToFormats
-            className="hero-actions"
-          />
+          <a
+            href="#formats"
+            className="button button-primary button-large hero-cta"
+          >
+            Choose your format
+            <ArrowRight size={20} strokeWidth={2} aria-hidden="true" />
+          </a>
 
           <p className="hero-meta">
             Java 21+ examples · Concepts through Java 25 · Companion source
