@@ -1,0 +1,111 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Modern Java paperback order and Razorpay payment API
+
+Parameters:
+  RazorpayKeyId:
+    Type: String
+    NoEcho: true
+  RazorpayKeySecret:
+    Type: String
+    NoEcho: true
+  RazorpayWebhookSecret:
+    Type: String
+    NoEcho: true
+  AdminEmail:
+    Type: String
+    Default: admin@classpath.in
+  AllowedOrigin:
+    Type: String
+    Default: http://localhost:5173
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Timeout: 15
+    MemorySize: 256
+    Environment:
+      Variables:
+        ORDERS_TABLE: !Ref OrdersTable
+        RAZORPAY_KEY_ID: !Ref RazorpayKeyId
+        RAZORPAY_KEY_SECRET: !Ref RazorpayKeySecret
+        RAZORPAY_WEBHOOK_SECRET: !Ref RazorpayWebhookSecret
+        ADMIN_EMAIL: !Ref AdminEmail
+        ALLOWED_ORIGIN: !Ref AllowedOrigin
+
+Resources:
+  OrderApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins:
+          - !Ref AllowedOrigin
+        AllowHeaders:
+          - content-type
+          - x-razorpay-signature
+        AllowMethods:
+          - POST
+          - OPTIONS
+
+  OrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/app.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref OrdersTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ses:SendEmail
+              Resource: '*'
+      Events:
+        CreateOrder:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref OrderApi
+            Path: /orders
+            Method: POST
+        VerifyOrder:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref OrderApi
+            Path: /orders/verify
+            Method: POST
+        RazorpayWebhook:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref OrderApi
+            Path: /webhooks/razorpay
+            Method: POST
+
+  OrdersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: appOrderId
+          AttributeType: S
+        - AttributeName: razorpayOrderId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: appOrderId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: RazorpayOrderIndex
+          KeySchema:
+            - AttributeName: razorpayOrderId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+Outputs:
+  OrderApiUrl:
+    Description: Set this value as VITE_ORDER_API_URL in the website
+    Value: !Sub https://${OrderApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}
+  RazorpayWebhookUrl:
+    Description: Configure this endpoint in the Razorpay dashboard
+    Value: !Sub https://${OrderApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/webhooks/razorpay

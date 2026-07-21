@@ -1,19 +1,11 @@
 export const navigation = [
   {
     label: 'About',
-    href: '#about-the-book',
-  },
-  {
-    label: "What You'll Learn",
-    href: '#what-you-will-learn',
+    href: '#why-this-book',
   },
   {
     label: 'Inside the Book',
     href: '#inside-the-book',
-  },
-  {
-    label: 'Reviews',
-    href: '#reviews',
   },
   {
     label: 'Formats',

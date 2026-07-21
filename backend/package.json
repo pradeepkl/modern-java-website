@@ -1,0 +1,15 @@
+{
+  "name": "modern-java-order-api",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "node --test",
+    "build": "sam build",
+    "deploy": "sam deploy --guided"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1091.0",
+    "@aws-sdk/client-ses": "^3.1091.0",
+    "@aws-sdk/lib-dynamodb": "^3.1091.0"
+  }
+}

@@ -1,7 +1,7 @@
 import {
   BookOpen,
-  Coffee,
   Code2,
+  Image,
   Layers,
   Puzzle,
   Rocket,
@@ -24,7 +24,7 @@ const featureIcons = {
   code: Code2,
   layers: Layers,
   terminal: Terminal,
-  coffee: Coffee,
+  diagram: Image,
 } as const;
 
 const valueIcons = {
@@ -35,23 +35,11 @@ const valueIcons = {
   users: Users,
 } as const;
 
-function AvailabilityIcon({ type }: { type: 'amazon' | 'book' | 'leanpub' }) {
+function AvailabilityIcon({ type }: { type: 'amazon' | 'book' }) {
   if (type === 'amazon') {
     return (
       <img
         src={assets.formats.amazon}
-        alt=""
-        width={16}
-        height={16}
-        aria-hidden="true"
-      />
-    );
-  }
-
-  if (type === 'leanpub') {
-    return (
-      <img
-        src={assets.formats.leanpub}
         alt=""
         width={16}
         height={16}
@@ -71,6 +59,14 @@ export function GuideSection() {
       aria-labelledby="guide-heading"
     >
       <div className="guide-section__inner page-container">
+        <header className="guide-content">
+          <p className="guide-content__eyebrow">{guideIntro.eyebrow}</p>
+          <h2 id="guide-heading" className="guide-content__title">
+            {guideIntro.title}
+          </h2>
+          <p className="guide-content__copy">{guideIntro.copy}</p>
+        </header>
+
         <div className="guide-main">
           <div className="guide-cover">
             <img
@@ -98,34 +94,39 @@ export function GuideSection() {
             </div>
           </div>
 
-          <div className="guide-content">
-            <p className="guide-content__eyebrow">{guideIntro.eyebrow}</p>
-            <h2 id="guide-heading" className="guide-content__title">
-              {guideIntro.title}
-            </h2>
-            <p className="guide-content__copy">{guideIntro.copy}</p>
+          <div className="guide-features">
+            {guideFeatures.map((feature) => {
+              const FeatureIcon =
+                feature.icon === 'java' ? null : featureIcons[feature.icon];
 
-            <div className="guide-features">
-              {guideFeatures.map((feature) => {
-                const Icon = featureIcons[feature.icon];
-                return (
-                  <article
-                    key={feature.id}
-                    className={`guide-feature${feature.wide ? ' guide-feature--wide' : ''}`}
-                  >
+              return (
+                <article key={feature.id} className="guide-feature">
+                  {feature.icon === 'java' ? (
                     <span className="guide-feature__icon" aria-hidden="true">
-                      <Icon size={22} strokeWidth={1.75} />
+                      <img
+                        src={assets.brand.javaIcon}
+                        alt=""
+                        width={26}
+                        height={26}
+                        className="guide-feature__java-icon"
+                      />
                     </span>
-                    <div>
-                      <h3 className="guide-feature__title">{feature.title}</h3>
-                      <p className="guide-feature__description">
-                        {feature.description}
-                      </p>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
+                  ) : (
+                    <span className="guide-feature__icon" aria-hidden="true">
+                      {FeatureIcon ? (
+                        <FeatureIcon size={22} strokeWidth={1.75} />
+                      ) : null}
+                    </span>
+                  )}
+                  <div>
+                    <h3 className="guide-feature__title">{feature.title}</h3>
+                    <p className="guide-feature__description">
+                      {feature.description}
+                    </p>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </div>
 

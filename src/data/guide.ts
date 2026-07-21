@@ -2,8 +2,7 @@ export interface GuideFeature {
   id: string;
   title: string;
   description: string;
-  icon: 'book' | 'code' | 'layers' | 'terminal' | 'coffee';
-  wide?: boolean;
+  icon: 'book' | 'code' | 'layers' | 'terminal' | 'java' | 'diagram';
 }
 
 export interface GuideValue {
@@ -23,7 +22,6 @@ export const guideIntro = {
 export const guideAvailability = [
   { id: 'kindle', label: 'Kindle', icon: 'amazon' as const },
   { id: 'paperback', label: 'Paperback', icon: 'book' as const },
-  { id: 'leanpub', label: 'Leanpub', icon: 'leanpub' as const },
 ] as const;
 
 export const guideFeatures: GuideFeature[] = [
@@ -51,14 +49,19 @@ export const guideFeatures: GuideFeature[] = [
     description:
       'Clean, focused, and tested code you can use as a starting point.',
     icon: 'terminal',
-    wide: true,
   },
   {
     id: 'modern',
-    title: 'Modern Java 17–25 concepts',
+    title: 'Modern Java 8–25 concepts',
     description: 'Covers the latest language features and best practices.',
-    icon: 'coffee',
-    wide: true,
+    icon: 'java',
+  },
+  {
+    id: 'diagrams',
+    title: '50+ Illustrative Diagrams',
+    description:
+      'Visual explanations that make relationships, flows, and design trade-offs easier to grasp.',
+    icon: 'diagram',
   },
 ];
 

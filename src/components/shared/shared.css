@@ -77,7 +77,7 @@
   font-weight: 600;
   letter-spacing: 0;
   text-transform: none;
-  color: #123f8f;
+  color: var(--color-navy-900);
 }
 
 .section-heading--landing .section-heading__line {

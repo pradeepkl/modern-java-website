@@ -2,20 +2,18 @@ import { assets } from '../../data/assets';
 import './shared.css';
 
 interface BrandButtonLogoProps {
-  brand: 'amazon' | 'leanpub';
+  brand: 'amazon';
   className?: string;
 }
 
-export function BrandButtonLogo({ brand, className = '' }: BrandButtonLogoProps) {
-  const src = brand === 'amazon' ? assets.formats.amazonLogo : assets.formats.leanpubLogo;
-
+export function BrandButtonLogo({ className = '' }: BrandButtonLogoProps) {
   return (
     <img
-      src={src}
+      src={assets.formats.amazonLogo}
       alt=""
-      width={brand === 'amazon' ? 48 : 108}
-      height={brand === 'amazon' ? 48 : 28}
-      className={`brand-button__logo ${brand === 'amazon' ? 'brand-button__logo--amazon' : ''} ${className}`}
+      width={48}
+      height={48}
+      className={`brand-button__logo brand-button__logo--amazon ${className}`}
       aria-hidden="true"
       decoding="async"
     />

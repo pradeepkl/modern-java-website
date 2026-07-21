@@ -39,7 +39,6 @@ export function Hero() {
           <PurchaseButtons
             size="large"
             className="hero-actions"
-            leanpubLabel="Get the Leanpub Edition"
           />
 
           <p className="hero-meta">
@@ -58,7 +57,7 @@ export function Hero() {
             loading="eager"
             decoding="async"
           />
-          <p className="hero-product-context">Paperback · Kindle · Leanpub</p>
+          <p className="hero-product-context">Kindle · Paperback</p>
         </div>
       </div>
     </section>

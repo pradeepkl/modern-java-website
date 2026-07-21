@@ -1,7 +1,7 @@
 .hero {
   position: relative;
   overflow: hidden;
-  background: #ffffff;
+  background: var(--color-white);
 }
 
 .hero-inner {
@@ -42,7 +42,7 @@
 
 .hero-eyebrow {
   margin: 0 0 18px;
-  color: #1d58bd;
+  color: var(--color-blue-600);
   font-size: 0.82rem;
   font-weight: 700;
   line-height: 1.2;
@@ -53,7 +53,7 @@
 .hero-title {
   max-width: 620px;
   margin: 0;
-  color: #111318;
+  color: var(--color-ink);
   font-family: var(--font-display);
   font-size: clamp(3.6rem, 5.5vw, 5.4rem);
   font-weight: 700;
@@ -62,13 +62,13 @@
 }
 
 .hero-title span {
-  color: #174fa8;
+  color: var(--color-blue-700);
 }
 
 .hero-lead {
   max-width: 540px;
   margin: 24px 0 0;
-  color: #4a5362;
+  color: var(--color-muted);
   font-size: clamp(1.1rem, 1.3vw, 1.25rem);
   font-weight: 400;
   line-height: 1.6;
@@ -77,7 +77,7 @@
 .hero-secondary {
   max-width: 540px;
   margin: 16px 0 0;
-  color: #1a1f29;
+  color: var(--color-text);
   font-size: 1.02rem;
   font-weight: 650;
   line-height: 1.5;
@@ -111,13 +111,13 @@
   min-width: 200px;
 }
 
-.hero-actions .button-leanpub {
+.hero-actions .button-primary {
   min-width: 240px;
 }
 
 .hero-meta {
   margin: 14px 0 0;
-  color: #737c8d;
+  color: var(--color-muted-light);
   font-size: 0.83rem;
   line-height: 1.5;
 }
@@ -142,7 +142,7 @@
 
 .hero-product-context {
   margin: 16px 0 0;
-  color: #7a8496;
+  color: var(--color-muted-light);
   font-size: 0.82rem;
   line-height: 1.5;
   text-align: center;

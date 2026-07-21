@@ -55,12 +55,15 @@ Edit `src/data/book.ts`:
 
 ```ts
 amazonUrl: 'https://...',
-leanpubUrl: 'https://...',
 linkedinUrl: 'https://...',
 email: 'you@example.com',
 ```
 
 Also update the `<noscript>` block in `index.html` and `REPLACE_WITH_PRODUCTION_URL` for the canonical URL.
+
+Paperback checkout uses the AWS SAM service in `backend/`. Follow
+`backend/README.md` to deploy it, then set `VITE_ORDER_API_URL` in the website
+environment to the deployed API URL.
 
 ## Replacing Raster Assets
 

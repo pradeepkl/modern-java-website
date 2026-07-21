@@ -1,6 +1,6 @@
 .inside-section {
   padding: 72px 0 80px;
-  background: #f3f6fb;
+  background: var(--color-surface-soft);
 }
 
 .inside-section__inner {
@@ -21,7 +21,7 @@
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #1755c5;
+  color: var(--color-blue-600);
 }
 
 .inside-intro__title {
@@ -31,7 +31,7 @@
   font-weight: 700;
   line-height: 1.15;
   letter-spacing: -0.01em;
-  color: #0b2f72;
+  color: var(--color-navy-900);
 }
 
 .inside-intro__copy {
@@ -39,7 +39,7 @@
   max-width: 34ch;
   font-size: 1rem;
   line-height: 1.6;
-  color: #4d5666;
+  color: var(--color-muted);
 }
 
 .inside-highlights {
@@ -57,7 +57,7 @@
   gap: 12px;
   font-size: 0.95rem;
   font-weight: 600;
-  color: #2a3344;
+  color: var(--color-text);
 }
 
 .inside-highlights__icon {
@@ -67,8 +67,8 @@
   flex-shrink: 0;
   width: 36px;
   height: 36px;
-  color: #1755c5;
-  background: #e8f0ff;
+  color: var(--color-blue-600);
+  background: var(--color-blue-100);
   border-radius: 8px;
 }
 
@@ -81,8 +81,8 @@
 
 .inside-toc,
 .inside-preview {
-  background: #ffffff;
-  border: 1px solid #d8e1f1;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   box-shadow: 0 8px 22px rgba(11, 38, 91, 0.05);
 }
@@ -93,7 +93,7 @@
   justify-content: space-between;
   gap: 16px;
   padding: 22px 22px 16px;
-  border-bottom: 1px solid #e6ecf6;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .inside-toc__heading-group {
@@ -105,7 +105,7 @@
 
 .inside-toc__book-icon {
   display: inline-flex;
-  color: #1755c5;
+  color: var(--color-blue-600);
   margin-top: 2px;
 }
 
@@ -114,13 +114,13 @@
   font-family: var(--font-heading);
   font-size: 1.2rem;
   font-weight: 700;
-  color: #123f8f;
+  color: var(--color-navy-900);
 }
 
 .inside-toc__hint {
   margin: 4px 0 0;
   font-size: 0.88rem;
-  color: #6a7384;
+  color: var(--color-muted);
 }
 
 .inside-toc__expand-all,
@@ -131,10 +131,10 @@
   flex-shrink: 0;
   margin: 0;
   padding: 8px 12px;
-  border: 1px solid #c9d6eb;
+  border: 1px solid var(--color-border-strong);
   border-radius: 8px;
-  background: #ffffff;
-  color: #1755c5;
+  background: var(--color-white);
+  color: var(--color-blue-600);
   font-family: var(--font-body);
   font-size: 0.86rem;
   font-weight: 600;
@@ -146,8 +146,8 @@
 
 .inside-toc__expand-all:hover,
 .inside-preview__collapse:hover {
-  background: #f5f8fe;
-  border-color: #adc0e0;
+  background: var(--color-blue-050);
+  border-color: var(--color-border-strong);
 }
 
 .inside-toc__list {
@@ -157,7 +157,7 @@
 }
 
 .inside-toc__item + .inside-toc__item {
-  border-top: 1px solid #edf1f8;
+  border-top: 1px solid var(--color-border);
 }
 
 .inside-toc__row {
@@ -168,7 +168,7 @@
 
 .inside-toc__row.is-selected,
 .inside-toc__row:hover {
-  background: #f7faff;
+  background: var(--color-blue-050);
 }
 
 .inside-toc__select {
@@ -193,18 +193,18 @@
   font-size: 0.95rem;
   font-weight: 700;
   line-height: 1.45;
-  color: #1755c5;
+  color: var(--color-blue-600);
 }
 
 .inside-toc__name {
   font-size: 0.95rem;
   font-weight: 600;
   line-height: 1.45;
-  color: #1f2937;
+  color: var(--color-text);
 }
 
 .inside-toc__row.is-selected .inside-toc__name {
-  color: #0b2f72;
+  color: var(--color-navy-900);
 }
 
 .inside-toc__chevron {
@@ -217,7 +217,7 @@
   padding: 0;
   border: 0;
   background: transparent;
-  color: #6a7384;
+  color: var(--color-muted);
   cursor: pointer;
   transition:
     color var(--transition-fast),
@@ -225,12 +225,12 @@
 }
 
 .inside-toc__chevron.is-open {
-  color: #1755c5;
+  color: var(--color-blue-600);
   transform: rotate(180deg);
 }
 
 .inside-toc__chevron:hover {
-  color: #1755c5;
+  color: var(--color-blue-600);
 }
 
 .inside-toc__sections {
@@ -244,7 +244,7 @@
   padding: 6px 0 6px 14px;
   font-size: 0.9rem;
   line-height: 1.45;
-  color: #4d5666;
+  color: var(--color-muted);
 }
 
 .inside-toc__sections li::before {
@@ -260,13 +260,13 @@
 
 .inside-toc__section-label {
   font-weight: 700;
-  color: #1755c5;
+  color: var(--color-blue-600);
 }
 
 .inside-toc__appendices {
   padding: 16px 22px 20px;
-  border-top: 1px solid #e6ecf6;
-  background: #fafbfd;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-card-bg);
   border-radius: 0 0 12px 12px;
 }
 
@@ -276,14 +276,14 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #6a7384;
+  color: var(--color-muted);
 }
 
 .inside-toc__appendices-items {
   margin: 0;
   font-size: 0.92rem;
   font-weight: 600;
-  color: #2a3344;
+  color: var(--color-text);
 }
 
 .inside-preview {

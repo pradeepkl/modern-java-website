@@ -1,0 +1,214 @@
+.author-section {
+  padding: 72px 0 80px;
+  background: var(--color-white);
+}
+
+.author-section__inner {
+  width: 100%;
+}
+
+.author-profile {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.72fr) minmax(0, 1.5fr);
+  gap: 40px 56px;
+  align-items: center;
+}
+
+.author-profile__portrait-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.author-profile__portrait-frame {
+  position: relative;
+  width: min(100%, 270px);
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  background: var(--color-blue-100);
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  box-shadow: 0 20px 42px rgba(8, 47, 128, 0.14);
+}
+
+.author-profile__portrait-frame::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 7px;
+  background: var(--color-blue-700);
+}
+
+.author-profile__portrait {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+}
+
+.author-profile__role {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-blue-700);
+}
+
+.author-profile__eyebrow {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-blue-600);
+}
+
+.author-profile__name {
+  margin: 0 0 14px;
+  font-family: var(--font-heading);
+  font-size: clamp(2rem, 3.5vw, 3.1rem);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  color: var(--color-navy-900);
+}
+
+.author-profile__introduction {
+  margin: 0 0 14px;
+  max-width: 58ch;
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--color-text);
+}
+
+.author-profile__biography {
+  margin: 0;
+  max-width: 68ch;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--color-muted);
+}
+
+.author-profile__quote {
+  position: relative;
+  display: flex;
+  gap: 14px;
+  margin: 24px 0 22px;
+  max-width: 68ch;
+  padding: 18px 20px;
+  background: var(--color-blue-050);
+  border-left: 3px solid var(--color-blue-600);
+  border-radius: 0 10px 10px 0;
+}
+
+.author-profile__quote-icon {
+  flex-shrink: 0;
+  color: var(--color-blue-600);
+}
+
+.author-profile__quote p {
+  margin: 0;
+  font-size: 0.96rem;
+  font-weight: 500;
+  line-height: 1.6;
+  color: var(--color-text);
+}
+
+.author-profile__social {
+  color: var(--color-blue-700);
+}
+
+.author-profile__social .social-links__link {
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+}
+
+.author-profile__social .social-links__link:hover {
+  color: var(--color-blue-800);
+  background: var(--color-blue-050);
+}
+
+.author-focus {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin: 44px 0 0;
+  padding: 0;
+  list-style: none;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.author-focus__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 22px 20px;
+}
+
+.author-focus__item + .author-focus__item {
+  border-left: 1px solid var(--color-border);
+}
+
+.author-focus__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--color-blue-600);
+}
+
+.author-focus__title {
+  margin: 0 0 5px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-navy-900);
+}
+
+.author-focus__description {
+  margin: 0;
+  font-size: 0.87rem;
+  line-height: 1.5;
+  color: var(--color-muted);
+}
+
+@media (max-width: 860px) {
+  .author-profile {
+    grid-template-columns: 1fr;
+  }
+
+  .author-profile__portrait-wrap {
+    align-items: flex-start;
+  }
+
+  .author-profile__portrait-frame {
+    width: min(100%, 240px);
+  }
+
+  .author-focus {
+    grid-template-columns: 1fr;
+  }
+
+  .author-focus__item + .author-focus__item {
+    border-top: 1px solid var(--color-border);
+    border-left: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .author-section {
+    padding: 48px 0 64px;
+  }
+
+  .author-profile {
+    gap: 28px;
+  }
+
+  .author-profile__quote {
+    padding: 16px;
+  }
+}

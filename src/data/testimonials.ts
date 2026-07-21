@@ -27,7 +27,7 @@ export const testimonialsIntro = {
     "Modern Java is already helping developers write clearer code and design better systems. Here's what early readers and reviewers have to say.",
   rating: '4.9',
   ratingCaption: 'out of 5',
-  ratingNote: 'Based on 120+ ratings and reviews across Amazon and Leanpub',
+  ratingNote: 'Based on 120+ reader ratings and reviews',
 } as const;
 
 export const testimonials: Testimonial[] = [
@@ -43,7 +43,7 @@ export const testimonials: Testimonial[] = [
     name: 'Arun Gupta',
     role: 'Principal Engineer',
     initials: 'AG',
-    accent: '#1a56c4',
+    accent: '#1556c0',
   },
   {
     id: 'neha',
@@ -57,7 +57,7 @@ export const testimonials: Testimonial[] = [
     name: 'Neha Iyer',
     role: 'Tech Lead',
     initials: 'NI',
-    accent: '#0e7a5f',
+    accent: '#0b3f9f',
   },
   {
     id: 'vivek',
@@ -71,7 +71,7 @@ export const testimonials: Testimonial[] = [
     name: 'Vivek Krishnan',
     role: 'Solutions Architect',
     initials: 'VK',
-    accent: '#6b3fa0',
+    accent: '#2874d8',
   },
   {
     id: 'sandeep',
@@ -85,7 +85,7 @@ export const testimonials: Testimonial[] = [
     name: 'Sandeep H.',
     role: 'Staff Engineer',
     initials: 'SH',
-    accent: '#b45309',
+    accent: '#082f80',
   },
   {
     id: 'rohit',
@@ -97,7 +97,7 @@ export const testimonials: Testimonial[] = [
     name: 'Rohit Saxena',
     role: 'Engineering Manager',
     initials: 'RS',
-    accent: '#0f766e',
+    accent: '#0a3a94',
   },
   {
     id: 'aishwarya',
@@ -109,7 +109,7 @@ export const testimonials: Testimonial[] = [
     name: 'Aishwarya Menon',
     role: 'Software Engineer',
     initials: 'AM',
-    accent: '#be185d',
+    accent: '#073486',
   },
 ];
 
@@ -126,7 +126,7 @@ export const socialStats: SocialStat[] = [
   },
   {
     id: 'rating',
-    label: '4.9/5 Average rating (Amazon & Leanpub)',
+    label: '4.9/5 Average reader rating',
     icon: 'shield',
   },
   {
@@ -154,7 +154,7 @@ export const featuredEndorsement = {
 } as const;
 
 export const reviewsMoreLink = {
-  label: 'See more reviews on Amazon and Leanpub',
+  label: 'See more reviews on Amazon',
   // Prefer Amazon when both are placeholders; update when production URLs land
   href: book.amazonUrl,
 } as const;

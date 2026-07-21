@@ -4,6 +4,7 @@ export const assets = {
     mark: '/assets/brand/modern-java-mark.svg',
     wordmark: '/assets/brand/logo-modern-java.svg',
     favicon: '/assets/brand/favicon.svg',
+    javaIcon: '/assets/icons/brand/icon-java.svg',
   },
 
   hero: {
@@ -37,13 +38,11 @@ export const assets = {
     kindle: '/assets/icons/formats/icon-kindle.svg',
     paperback: '/assets/icons/formats/icon-paperback.svg',
     amazon: '/assets/icons/brand/icon-amazon.svg',
-    leanpub: '/assets/icons/brand/icon-leanpub.svg',
     amazonLogo: '/assets/icons/brand/amazon-logo.svg',
-    leanpubLogo: '/assets/icons/brand/leanpub-logo.svg',
   },
 
   author: {
-    portrait: '/assets/author/pradeep-kumar.png',
+    portrait: '/assets/author/pradeep_author.png',
   },
 
   decorations: {

@@ -1,10 +1,12 @@
-import { Book, BookOpen, Check, ShoppingCart } from 'lucide-react';
+import { useState } from 'react';
+import { Book, Check, ShoppingCart } from 'lucide-react';
 import { assets } from '../../data/assets';
 import {
   formatVisuals,
   type FormatOption,
 } from '../../data/formats';
 import { BrandButtonLogo } from '../shared/BrandButtonLogo';
+import { PaperbackOrderDialog } from './PaperbackOrderDialog';
 import './FormatCard.css';
 
 interface FormatCardProps {
@@ -25,11 +27,7 @@ function FormatBadgeIcon({ type }: { type: FormatOption['badgeIcon'] }) {
     );
   }
 
-  if (type === 'book') {
-    return <Book size={16} strokeWidth={1.75} aria-hidden="true" />;
-  }
-
-  return <BookOpen size={16} strokeWidth={1.75} aria-hidden="true" />;
+  return <Book size={16} strokeWidth={1.75} aria-hidden="true" />;
 }
 
 function FormatVisual({ visual }: { visual: FormatOption['visual'] }) {
@@ -48,54 +46,31 @@ function FormatVisual({ visual }: { visual: FormatOption['visual'] }) {
     );
   }
 
-  if (visual === 'paperback') {
-    return (
-      <div className="format-card__visual format-card__visual--paperback">
-        <img
-          src={formatVisuals.paperback}
-          alt="Modern Java paperback edition"
-          width={160}
-          height={220}
-          loading="lazy"
-          decoding="async"
-        />
-      </div>
-    );
-  }
-
   return (
-    <div className="format-card__visual format-card__visual--leanpub">
-      {formatVisuals.leanpubFiles.map((file, index) => (
-        <div
-          key={file.label}
-          className={`format-card__file format-card__file--${index}`}
-        >
-          <img
-            src={file.src}
-            alt=""
-            width={72}
-            height={72}
-            loading="lazy"
-            decoding="async"
-            aria-hidden="true"
-          />
-          <span>{file.label}</span>
-        </div>
-      ))}
+    <div className="format-card__visual format-card__visual--paperback">
+      <img
+        src={formatVisuals.paperback}
+        alt="Modern Java paperback edition"
+        width={160}
+        height={220}
+        loading="lazy"
+        decoding="async"
+      />
     </div>
   );
 }
 
 export function FormatCard({ format }: FormatCardProps) {
+  const [orderFormOpen, setOrderFormOpen] = useState(false);
+  const isPaperback = format.id === 'paperback';
   const ctaClass =
     format.ctaVariant === 'amazon'
       ? 'button button-amazon'
-      : format.ctaVariant === 'primary'
-        ? 'button button-primary'
-        : 'button button-secondary format-card__cta--outline';
+      : 'button button-primary';
 
   return (
-    <article className={`format-card format-card--${format.id}`}>
+    <>
+      <article className={`format-card format-card--${format.id}`}>
       <div className="format-card__badge">
         <span className="format-card__badge-icon" aria-hidden="true">
           <FormatBadgeIcon type={format.badgeIcon} />
@@ -123,31 +98,34 @@ export function FormatCard({ format }: FormatCardProps) {
         <p className="format-card__availability">{format.availability}</p>
       </div>
 
-      <a
-        href={format.ctaUrl}
-        className={`${ctaClass} format-card__cta`}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        {format.ctaVariant === 'amazon' ? (
-          <BrandButtonLogo brand="amazon" />
-        ) : format.ctaVariant === 'primary' ? (
-          <ShoppingCart size={18} strokeWidth={2} aria-hidden="true" />
+        {isPaperback ? (
+          <button
+            type="button"
+            className={`${ctaClass} format-card__cta`}
+            onClick={() => setOrderFormOpen(true)}
+          >
+            <ShoppingCart size={18} strokeWidth={2} aria-hidden="true" />
+            {format.ctaLabel}
+          </button>
         ) : (
-          <BookOpen size={18} strokeWidth={2} aria-hidden="true" />
+          <a
+            href={format.ctaUrl}
+            className={`${ctaClass} format-card__cta`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <BrandButtonLogo brand="amazon" />
+            {format.ctaLabel}
+          </a>
         )}
-        {format.ctaLabel}
-      </a>
+      </article>
 
-      <a
-        href={format.learnMoreUrl}
-        className="format-card__learn-more"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        {format.learnMoreLabel}
-        <span aria-hidden="true"> →</span>
-      </a>
-    </article>
+      {isPaperback ? (
+        <PaperbackOrderDialog
+          open={orderFormOpen}
+          onClose={() => setOrderFormOpen(false)}
+        />
+      ) : null}
+    </>
   );
 }

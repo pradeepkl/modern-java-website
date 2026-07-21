@@ -1,7 +1,6 @@
 import { assets } from '../../data/assets';
 import { book } from '../../data/book';
 import { navigation } from '../../data/navigation';
-import { SocialLinks } from '../shared/SocialLinks';
 import './Footer.css';
 
 export function Footer() {
@@ -37,11 +36,6 @@ export function Footer() {
           </ul>
         </div>
 
-        <div id="author" className="site-footer__author">
-          <h2 className="site-footer__heading">Author</h2>
-          <p className="site-footer__author-name">{book.author}</p>
-          <SocialLinks className="site-footer__social" size={22} includeEmail={false} />
-        </div>
       </div>
 
       <div className="site-footer__legal page-container">

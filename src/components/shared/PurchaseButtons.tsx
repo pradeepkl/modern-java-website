@@ -1,25 +1,24 @@
-import { assets } from '../../data/assets';
+import { useState } from 'react';
+import { ShoppingCart } from 'lucide-react';
 import { book } from '../../data/book';
+import { PaperbackOrderDialog } from '../FormatsSection/PaperbackOrderDialog';
 import { BrandButtonLogo } from './BrandButtonLogo';
-import { Icon } from './Icon';
 import './shared.css';
 
 interface PurchaseButtonsProps {
   size?: 'default' | 'large';
   layout?: 'inline' | 'stacked';
   className?: string;
-  leanpubLabel?: string;
 }
 
 export function PurchaseButtons({
   size = 'default',
   layout = 'inline',
   className = '',
-  leanpubLabel = 'Buy on Leanpub',
 }: PurchaseButtonsProps) {
+  const [orderFormOpen, setOrderFormOpen] = useState(false);
   const sizeClass = size === 'large' ? 'button-large' : '';
   const layoutClass = layout === 'stacked' ? 'purchase-buttons--stacked' : '';
-  const iconSize = size === 'large' ? 24 : 22;
 
   return (
     <div className={`purchase-buttons ${layoutClass} ${className}`}>
@@ -31,18 +30,21 @@ export function PurchaseButtons({
         aria-label="Buy Modern Java: The Mindset Shift on Amazon"
       >
         <BrandButtonLogo brand="amazon" />
-        Buy on Amazon
+        Buy Kindle — ₹599
       </a>
-      <a
-        href={book.leanpubUrl}
-        className={`button button-leanpub ${sizeClass}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Buy Modern Java: The Mindset Shift on Leanpub"
+      <button
+        type="button"
+        className={`button button-primary ${sizeClass}`}
+        onClick={() => setOrderFormOpen(true)}
+        aria-label="Place an order for the Modern Java paperback"
       >
-        <Icon src={assets.formats.leanpub} size={iconSize} />
-        {leanpubLabel}
-      </a>
+        <ShoppingCart size={20} strokeWidth={2} aria-hidden="true" />
+        Place paperback order — ₹899
+      </button>
+      <PaperbackOrderDialog
+        open={orderFormOpen}
+        onClose={() => setOrderFormOpen(false)}
+      />
     </div>
   );
 }

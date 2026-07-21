@@ -6,10 +6,9 @@ Replace the following placeholders before deploying to production.
 
 | Item | Current Value | File |
 |------|--------------|------|
-| Amazon purchase URL | `REPLACE_WITH_AMAZON_URL` | `src/data/book.ts` |
-| Leanpub purchase URL | `REPLACE_WITH_LEANPUB_URL` | `src/data/book.ts` |
-| LinkedIn URL | `REPLACE_WITH_LINKEDIN_URL` | `src/data/book.ts` |
-| Email address | `REPLACE_WITH_CONFIRMED_EMAIL` | `src/data/book.ts` |
+| Amazon purchase URL | `https://www.amazon.in/Modern-Java-Mindset-Pradeep-Kumar-ebook` | `src/data/book.ts` |
+| LinkedIn URL | `https://www.linkedin.com/in/lpradeepk` | `src/data/book.ts` |
+| Email address | `admin@classpath.in` | `src/data/book.ts` |
 | Canonical / production URL | `REPLACE_WITH_PRODUCTION_URL` | `index.html` |
 
 ## Image Assets

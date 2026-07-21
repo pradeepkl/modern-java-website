@@ -6,12 +6,11 @@ export const book = {
   tagline:
     'Designing Java with intent for a clearer, safer, and more evolvable codebase.',
 
-  amazonUrl: 'REPLACE_WITH_AMAZON_URL',
-  leanpubUrl: 'REPLACE_WITH_LEANPUB_URL',
+  amazonUrl: 'https://www.amazon.in/Modern-Java-Mindset-Pradeep-Kumar-ebook',
 
-  email: 'REPLACE_WITH_CONFIRMED_EMAIL',
-  githubUrl: 'https://github.com/pradeepkl/modern-java-book',
-  linkedinUrl: 'REPLACE_WITH_LINKEDIN_URL',
+  email: 'admin@classpath.in',
+  githubUrl: 'https://github.com/pradeepkl',
+  linkedinUrl: 'https://www.linkedin.com/in/lpradeepk',
 
   copyrightYear: 2026,
 } as const;

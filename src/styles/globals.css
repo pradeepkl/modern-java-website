@@ -80,23 +80,6 @@ a:hover {
   color: var(--color-amazon-ink);
 }
 
-.button-leanpub {
-  background: var(--color-blue-700);
-  color: var(--color-white);
-  border-color: var(--color-blue-700);
-  white-space: nowrap;
-}
-
-.button-leanpub:hover {
-  background: var(--color-blue-800);
-  border-color: var(--color-blue-800);
-  color: var(--color-white);
-}
-
-.button-leanpub .icon-mask {
-  color: var(--color-white);
-}
-
 .button-small {
   min-height: 44px;
   padding: 0.5rem 1rem;

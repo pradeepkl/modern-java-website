@@ -1,27 +1,29 @@
 :root {
-  --color-navy-950: #04183f;
-  --color-navy-900: #061d52;
-  --color-navy-850: #07265f;
+  /* Book-cover palette: charcoal, ink blue, technical cobalt, paper white */
+  --color-navy-950: #17191d;
+  --color-navy-900: #082f80;
+  --color-navy-850: #0a3a94;
 
-  --color-blue-800: #0b3b91;
-  --color-blue-700: #0e4fc4;
-  --color-blue-600: #145bc7;
-  --color-blue-500: #236ed6;
+  --color-blue-800: #073486;
+  --color-blue-700: #0b3f9f;
+  --color-blue-600: #1556c0;
+  --color-blue-500: #2874d8;
 
-  --color-blue-200: #b8cbef;
-  --color-blue-100: #e8f0ff;
-  --color-blue-050: #f5f8fe;
+  --color-blue-200: #b9cbee;
+  --color-blue-100: #e6efff;
+  --color-blue-050: #f3f7ff;
 
-  --color-ink: #101216;
-  --color-text: #232832;
-  --color-muted: #606a79;
+  --color-ink: #17191d;
+  --color-text: #252a33;
+  --color-muted: #5e6878;
+  --color-muted-light: #747e8f;
 
-  --color-border: #d5dfef;
-  --color-border-strong: #adc0e0;
+  --color-border: #d7e0ef;
+  --color-border-strong: #aebfdd;
 
   --color-white: #ffffff;
   --color-surface: #ffffff;
-  --color-surface-soft: #f7f9fd;
+  --color-surface-soft: #f4f7fc;
 
   --page-max-width: 1240px;
   --content-max-width: 1200px;
@@ -29,10 +31,10 @@
   --editorial-max-width: 760px;
   --reading-max-width: 720px;
 
-  --color-section-heading: #0b347d;
-  --color-card-bg: #fafbfd;
-  --color-card-text: #333b49;
-  --color-card-border: #d8e1f1;
+  --color-section-heading: #0b3f9f;
+  --color-card-bg: #f8faff;
+  --color-card-text: #2d3440;
+  --color-card-border: #d7e0ef;
 
   --space-1: 4px;
   --space-2: 8px;
@@ -68,11 +70,6 @@
   --color-amazon-yellow-hover: #f7ca00;
   --color-amazon-yellow-border: #fcd200;
   --color-amazon-ink: #0f1111;
-
-  --color-leanpub-yellow: #f9d849;
-  --color-leanpub-yellow-hover: #f5c400;
-  --color-leanpub-yellow-border: #e8b923;
-  --color-leanpub-ink: #1f2937;
 
   --font-display: 'Space Grotesk', 'Inter', sans-serif;
   --font-heading: 'Space Grotesk', 'Inter', sans-serif;

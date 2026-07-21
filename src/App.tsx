@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Header } from './components/Header/Header';
 import { Hero } from './components/Hero/Hero';
-import { LearningSection } from './components/LearningSection/LearningSection';
+import { PurposeSection } from './components/PurposeSection/PurposeSection';
 import { GuideSection } from './components/GuideSection/GuideSection';
 import { InsideBookSection } from './components/InsideBookSection/InsideBookSection';
-import { WhyThisBookSection } from './components/WhyThisBookSection/WhyThisBookSection';
-import { TestimonialsSection } from './components/TestimonialsSection/TestimonialsSection';
+import { AuthorSection } from './components/AuthorSection/AuthorSection';
 import { FormatsSection } from './components/FormatsSection/FormatsSection';
 import { Footer } from './components/Footer/Footer';
 import { useActiveSection } from './hooks/useActiveSection';
@@ -44,11 +43,10 @@ function App() {
       />
       <main>
         <Hero />
-        <LearningSection />
+        <PurposeSection />
         <GuideSection />
         <InsideBookSection />
-        <WhyThisBookSection />
-        <TestimonialsSection />
+        <AuthorSection />
         <FormatsSection />
       </main>
       <Footer />

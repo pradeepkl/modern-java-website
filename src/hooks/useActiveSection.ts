@@ -2,13 +2,11 @@ import { useEffect, useState } from 'react';
 
 const SECTION_IDS = [
   'top',
-  'what-you-will-learn',
+  'why-this-book',
   'about-the-book',
   'inside-the-book',
-  'why-this-book',
-  'reviews',
-  'formats',
   'author',
+  'formats',
 ] as const;
 
 export type ActiveSection = (typeof SECTION_IDS)[number] | '';
