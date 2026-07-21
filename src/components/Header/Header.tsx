@@ -53,13 +53,6 @@ export function Header({
           </ul>
         </nav>
 
-        <a
-          href="#formats"
-          className="button button-primary header-cta"
-        >
-          Buy Now
-        </a>
-
         <button
           type="button"
           className="header-menu-button"
