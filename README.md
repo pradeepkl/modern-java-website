@@ -45,6 +45,9 @@ public/
     decorations/    # Section ornaments, footer circuit
     social/         # Open Graph preview
     icons/          # Format, brand, and social utility icons
+assets/
+  books/            # Sample chapter PDF source (uploaded to private S3)
+backend/            # SAM API for orders, sample chapter, and digital delivery
 ```
 
 All asset paths are centralized in `src/data/assets.ts`. Book content and purchase URLs live in `src/data/book.ts`.
@@ -64,6 +67,17 @@ Also update the `<noscript>` block in `index.html` and `REPLACE_WITH_PRODUCTION_
 Paperback checkout uses the AWS SAM service in `backend/`. Follow
 `backend/README.md` to deploy it, then set `VITE_ORDER_API_URL` in the website
 environment to the deployed API URL.
+
+The free sample chapter PDF lives at `assets/books/modern-java-preview.pdf`.
+After the backend stack is deployed, upload it to the private digital-assets
+bucket with:
+
+```bash
+cd backend
+npm run upload:assets
+```
+
+Sample requests then receive a time-limited S3 download link by email.
 
 ## Replacing Raster Assets
 

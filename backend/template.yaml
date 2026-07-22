@@ -14,14 +14,31 @@ Parameters:
     NoEcho: true
   AdminEmail:
     Type: String
-    Default: admin@classpath.in
+    Default: pradeep@classpath.in
+    Description: Primary inbox for order notifications (admin@ aliases here via SES)
+  MailFromEmail:
+    Type: String
+    Default: no-reply@classpath.in
+    Description: Send-only From address for transactional mail
+  ReplyToEmail:
+    Type: String
+    Default: pradeep@classpath.in
+    Description: Monitored address for customer replies
+  SesRegion:
+    Type: String
+    Default: us-east-1
+    Description: SES region where classpath.in is verified
   AllowedOrigin:
     Type: String
     Default: http://localhost:5173
-  SampleChapterUrl:
+  WebsiteUrl:
     Type: String
-    Default: ''
-    Description: Public or signed URL for the sample chapter PDF
+    Default: https://modern-java.classpath.in
+    Description: Public book website URL included in sample-chapter emails
+  SamplePdfKey:
+    Type: String
+    Default: sample/modern-java-preview.pdf
+    Description: S3 object key for the free sample chapter PDF in DigitalAssetsBucket
   DigitalPdfKey:
     Type: String
     Default: digital/modern-java.pdf
@@ -38,15 +55,19 @@ Globals:
       Variables:
         ORDERS_TABLE: !Ref OrdersTable
         SAMPLE_REQUESTS_TABLE: !Ref SampleRequestsTable
-        SAMPLE_CHAPTER_URL: !Ref SampleChapterUrl
         DIGITAL_ASSETS_BUCKET: !Ref DigitalAssetsBucket
+        SAMPLE_PDF_KEY: !Ref SamplePdfKey
         DIGITAL_PDF_KEY: !Ref DigitalPdfKey
         DIGITAL_EPUB_KEY: !Ref DigitalEpubKey
         RAZORPAY_KEY_ID: !Ref RazorpayKeyId
         RAZORPAY_KEY_SECRET: !Ref RazorpayKeySecret
         RAZORPAY_WEBHOOK_SECRET: !Ref RazorpayWebhookSecret
         ADMIN_EMAIL: !Ref AdminEmail
+        MAIL_FROM_EMAIL: !Ref MailFromEmail
+        REPLY_TO_EMAIL: !Ref ReplyToEmail
+        SES_REGION: !Ref SesRegion
         ALLOWED_ORIGIN: !Ref AllowedOrigin
+        WEBSITE_URL: !Ref WebsiteUrl
 
 Resources:
   OrderApi:
@@ -175,5 +196,14 @@ Outputs:
     Description: Configure this endpoint in the Razorpay dashboard
     Value: !Sub https://${OrderApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/webhooks/razorpay
   DigitalAssetsBucketName:
-    Description: Upload the PDF and ePub files to this private bucket
+    Description: Upload sample and digital edition files to this private bucket
     Value: !Ref DigitalAssetsBucket
+  SamplePdfObjectKey:
+    Description: Object key for the free sample chapter PDF
+    Value: !Ref SamplePdfKey
+  DigitalPdfObjectKey:
+    Description: Object key for the paid digital PDF
+    Value: !Ref DigitalPdfKey
+  DigitalEpubObjectKey:
+    Description: Object key for the paid digital ePub
+    Value: !Ref DigitalEpubKey

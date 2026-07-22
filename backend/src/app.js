@@ -16,27 +16,57 @@ const {
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
 const dynamo = DynamoDBDocumentClient.from(new DynamoDBClient({}));
-const ses = new SESClient({});
+// Domain identity is verified in us-east-1 (also where inbound MX points).
+const ses = new SESClient({ region: process.env.SES_REGION || 'us-east-1' });
 const s3 = new S3Client({});
 
 const {
   ORDERS_TABLE,
   SAMPLE_REQUESTS_TABLE,
-  SAMPLE_CHAPTER_URL,
   DIGITAL_ASSETS_BUCKET,
+  SAMPLE_PDF_KEY = 'sample/modern-java-preview.pdf',
   DIGITAL_PDF_KEY = 'digital/modern-java.pdf',
   DIGITAL_EPUB_KEY = 'digital/modern-java.epub',
   RAZORPAY_KEY_ID,
   RAZORPAY_KEY_SECRET,
   RAZORPAY_WEBHOOK_SECRET,
-  ADMIN_EMAIL,
+  ADMIN_EMAIL = 'pradeep@classpath.in',
+  MAIL_FROM_EMAIL = 'no-reply@classpath.in',
+  REPLY_TO_EMAIL = 'pradeep@classpath.in',
   ALLOWED_ORIGIN = '*',
+  WEBSITE_URL = 'https://modern-java.classpath.in',
 } = process.env;
+
+const SITE_URL = String(WEBSITE_URL).replace(/\/$/, '');
+
+const escapeHtml = (value) =>
+  String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+
+const sendEmail = ({ to, subject, text, html }) =>
+  ses.send(
+    new SendEmailCommand({
+      Source: MAIL_FROM_EMAIL,
+      ReplyToAddresses: [REPLY_TO_EMAIL],
+      Destination: { ToAddresses: [to] },
+      Message: {
+        Subject: { Data: subject },
+        Body: {
+          Text: { Data: text },
+          ...(html ? { Html: { Data: html } } : {}),
+        },
+      },
+    }),
+  );
 
 const PAPERBACK_PRICE_PAISE = 89900;
 const DIGITAL_BUNDLE_PRICE_PAISE = 69900;
 const MAX_QUANTITY = 20;
 const DOWNLOAD_LINK_TTL_SECONDS = 7 * 24 * 60 * 60;
+const SAMPLE_DOWNLOAD_LINK_TTL_SECONDS = 2 * 24 * 60 * 60;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_PATTERN = /^\d{10}$/;
 const PIN_PATTERN = /^\d{6}$/;
@@ -108,6 +138,38 @@ const validateOrder = (input) => {
   };
 };
 
+const createSignedDownloadUrl = (key, expiresIn = DOWNLOAD_LINK_TTL_SECONDS) =>
+  getSignedUrl(
+    s3,
+    new GetObjectCommand({
+      Bucket: DIGITAL_ASSETS_BUCKET,
+      Key: key,
+    }),
+    { expiresIn },
+  );
+
+const assertObjectExists = async (key) => {
+  try {
+    await s3.send(
+      new HeadObjectCommand({
+        Bucket: DIGITAL_ASSETS_BUCKET,
+        Key: key,
+      }),
+    );
+  } catch (error) {
+    if (
+      error?.name === 'NotFound' ||
+      error?.name === 'NoSuchKey' ||
+      error?.$metadata?.httpStatusCode === 404
+    ) {
+      const missing = new Error(`Missing digital asset: ${key}`);
+      missing.code = 'ASSET_MISSING';
+      throw missing;
+    }
+    throw error;
+  }
+};
+
 const requestSampleChapter = async (event) => {
   const { json } = parseBody(event);
   const email = String(json.email || '').trim().toLowerCase();
@@ -116,7 +178,7 @@ const requestSampleChapter = async (event) => {
     throw new Error('Invalid email address');
   }
 
-  if (!SAMPLE_REQUESTS_TABLE || !SAMPLE_CHAPTER_URL) {
+  if (!SAMPLE_REQUESTS_TABLE || !DIGITAL_ASSETS_BUCKET) {
     return response(503, {
       message: 'Sample delivery is not configured yet. Please try again later.',
     });
@@ -138,33 +200,104 @@ const requestSampleChapter = async (event) => {
     });
   }
 
+  try {
+    await assertObjectExists(SAMPLE_PDF_KEY);
+  } catch (error) {
+    if (error.code === 'ASSET_MISSING') {
+      return response(503, {
+        message:
+          'The sample chapter is being prepared. Please try again later.',
+      });
+    }
+    throw error;
+  }
+
+  const sampleChapterUrl = await createSignedDownloadUrl(
+    SAMPLE_PDF_KEY,
+    SAMPLE_DOWNLOAD_LINK_TTL_SECONDS,
+  );
   const marketingConsent = json.marketingConsent === true;
   const now = new Date().toISOString();
+  const marketingLine = marketingConsent
+    ? 'You also asked to receive occasional Modern Java articles and book updates.'
+    : 'You have not been subscribed to marketing updates.';
+  const sampleText = [
+    'Thank you for your interest in Modern Java: The Mindset Shift.',
+    '',
+    'Download your sample chapter (button preferred in HTML email):',
+    sampleChapterUrl,
+    '',
+    'This secure link remains valid for 2 days.',
+    'The sample includes the preface and the first two chapters, with selected diagrams.',
+    '',
+    `Visit the book website: ${SITE_URL}`,
+    '',
+    marketingLine,
+  ].join('\n');
+  const sampleHtml = `
+<!DOCTYPE html>
+<html lang="en">
+  <body style="margin:0;padding:0;background:#f4f6f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#1a2332;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:12px;padding:32px 28px;">
+            <tr>
+              <td>
+                <p style="margin:0 0 16px;font-size:16px;line-height:1.55;">
+                  Thank you for your interest in <strong>Modern Java: The Mindset Shift</strong>.
+                </p>
+                <p style="margin:0 0 24px;font-size:15px;line-height:1.55;color:#445066;">
+                  The sample includes the preface and the first two chapters, with selected diagrams.
+                  This secure download remains valid for <strong>2 days</strong>.
+                </p>
+                <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
+                  <tr>
+                    <td align="center" bgcolor="#1a56db" style="border-radius:8px;">
+                      <a href="${escapeHtml(sampleChapterUrl)}"
+                         style="display:inline-block;padding:14px 28px;font-size:16px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
+                        Download sample chapter
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:0 0 8px;font-size:15px;line-height:1.55;">
+                  <a href="${escapeHtml(SITE_URL)}" style="color:#1a56db;font-weight:600;text-decoration:none;">
+                    Visit the Modern Java website →
+                  </a>
+                </p>
+                <p style="margin:24px 0 0;font-size:13px;line-height:1.5;color:#667085;">
+                  ${escapeHtml(marketingLine)}
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`.trim();
 
-  await ses.send(
-    new SendEmailCommand({
-      Source: ADMIN_EMAIL,
-      Destination: { ToAddresses: [email] },
-      Message: {
-        Subject: { Data: 'Your free Modern Java sample chapter' },
-        Body: {
-          Text: {
-            Data: [
-              'Thank you for your interest in Modern Java: The Mindset Shift.',
-              '',
-              `Download your sample chapter: ${SAMPLE_CHAPTER_URL}`,
-              '',
-              'The sample includes the preface, complete table of contents, Chapter 1, and selected diagrams.',
-              '',
-              marketingConsent
-                ? 'You also asked to receive occasional Modern Java articles and book updates.'
-                : 'You have not been subscribed to marketing updates.',
-            ].join('\n'),
-          },
-        },
-      },
-    }),
-  );
+  try {
+    await sendEmail({
+      to: email,
+      subject: 'Your free Modern Java sample chapter',
+      text: sampleText,
+      html: sampleHtml,
+    });
+  } catch (error) {
+    if (
+      error?.name === 'MessageRejected' ||
+      /not verified|sandbox/i.test(error?.message || '')
+    ) {
+      console.error('Sample chapter email rejected by SES', error);
+      return response(503, {
+        message:
+          'Email delivery is temporarily unavailable. Please try again later, or contact pradeep@classpath.in.',
+      });
+    }
+    throw error;
+  }
 
   await dynamo.send(
     new PutCommand({
@@ -278,25 +411,11 @@ const createDigitalOrder = async (event) => {
 
   try {
     await Promise.all([
-      s3.send(
-        new HeadObjectCommand({
-          Bucket: DIGITAL_ASSETS_BUCKET,
-          Key: DIGITAL_PDF_KEY,
-        }),
-      ),
-      s3.send(
-        new HeadObjectCommand({
-          Bucket: DIGITAL_ASSETS_BUCKET,
-          Key: DIGITAL_EPUB_KEY,
-        }),
-      ),
+      assertObjectExists(DIGITAL_PDF_KEY),
+      assertObjectExists(DIGITAL_EPUB_KEY),
     ]);
   } catch (error) {
-    if (
-      error?.name === 'NotFound' ||
-      error?.name === 'NoSuchKey' ||
-      error?.$metadata?.httpStatusCode === 404
-    ) {
+    if (error.code === 'ASSET_MISSING') {
       return response(503, {
         message:
           'The direct digital edition is being prepared. Please try again later.',
@@ -370,47 +489,19 @@ const sendPaperbackConfirmationEmails = async (order) => {
   const subject = `Modern Java paperback order ${order.appOrderId}`;
 
   await Promise.all([
-    ses.send(
-      new SendEmailCommand({
-        Source: ADMIN_EMAIL,
-        Destination: { ToAddresses: [ADMIN_EMAIL] },
-        Message: {
-          Subject: { Data: subject },
-          Body: { Text: { Data: text } },
-        },
-      }),
-    ),
-    ses.send(
-      new SendEmailCommand({
-        Source: ADMIN_EMAIL,
-        Destination: { ToAddresses: [order.email] },
-        Message: {
-          Subject: { Data: 'Your Modern Java paperback order is confirmed' },
-          Body: {
-            Text: {
-              Data: `Thank you for your order. Payment was successful.\n\n${text}`,
-            },
-          },
-        },
-      }),
-    ),
+    sendEmail({ to: ADMIN_EMAIL, subject, text }),
+    sendEmail({
+      to: order.email,
+      subject: 'Your Modern Java paperback order is confirmed',
+      text: `Thank you for your order. Payment was successful.\n\n${text}`,
+    }),
   ]);
 };
 
 const createDigitalDownloadLinks = async () => {
-  const createLink = (key) =>
-    getSignedUrl(
-      s3,
-      new GetObjectCommand({
-        Bucket: DIGITAL_ASSETS_BUCKET,
-        Key: key,
-      }),
-      { expiresIn: DOWNLOAD_LINK_TTL_SECONDS },
-    );
-
   const [pdfUrl, epubUrl] = await Promise.all([
-    createLink(DIGITAL_PDF_KEY),
-    createLink(DIGITAL_EPUB_KEY),
+    createSignedDownloadUrl(DIGITAL_PDF_KEY),
+    createSignedDownloadUrl(DIGITAL_EPUB_KEY),
   ]);
 
   return { pdfUrl, epubUrl };
@@ -441,26 +532,16 @@ const sendDigitalConfirmationEmails = async (order) => {
   ].join('\n');
 
   await Promise.all([
-    ses.send(
-      new SendEmailCommand({
-        Source: ADMIN_EMAIL,
-        Destination: { ToAddresses: [ADMIN_EMAIL] },
-        Message: {
-          Subject: { Data: `Modern Java digital order ${order.appOrderId}` },
-          Body: { Text: { Data: adminText } },
-        },
-      }),
-    ),
-    ses.send(
-      new SendEmailCommand({
-        Source: ADMIN_EMAIL,
-        Destination: { ToAddresses: [order.email] },
-        Message: {
-          Subject: { Data: 'Your Modern Java PDF and ePub downloads' },
-          Body: { Text: { Data: customerText } },
-        },
-      }),
-    ),
+    sendEmail({
+      to: ADMIN_EMAIL,
+      subject: `Modern Java digital order ${order.appOrderId}`,
+      text: adminText,
+    }),
+    sendEmail({
+      to: order.email,
+      subject: 'Your Modern Java PDF and ePub downloads',
+      text: customerText,
+    }),
   ]);
 };
 
@@ -640,31 +721,33 @@ exports.handler = async (event) => {
 
     if (method === 'OPTIONS') return response(204, {});
     if (method === 'POST' && path === '/sample-requests') {
-      return requestSampleChapter(event);
+      return await requestSampleChapter(event);
     }
     if (method === 'POST' && path === '/marketing-consents') {
-      return recordMarketingConsent(event);
+      return await recordMarketingConsent(event);
     }
     if (method === 'POST' && path === '/digital-orders') {
-      return createDigitalOrder(event);
+      return await createDigitalOrder(event);
     }
-    if (method === 'POST' && path === '/orders') return createOrder(event);
+    if (method === 'POST' && path === '/orders') {
+      return await createOrder(event);
+    }
     if (method === 'POST' && path === '/orders/verify') {
-      return verifyOrder(event);
+      return await verifyOrder(event);
     }
     if (method === 'POST' && path === '/webhooks/razorpay') {
-      return processWebhook(event);
+      return await processWebhook(event);
     }
     return response(404, { message: 'Not found' });
   } catch (error) {
     console.error(error);
     const isValidationError =
       error instanceof SyntaxError ||
-      /required|invalid|quantity/i.test(error.message);
+      /required|invalid|quantity/i.test(error.message || '');
     return response(isValidationError ? 400 : 500, {
       message: isValidationError
         ? error.message
-        : 'Unable to process the order right now',
+        : 'Unable to process the request right now',
     });
   }
 };

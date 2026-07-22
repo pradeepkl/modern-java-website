@@ -1,0 +1,13 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "sam-app"
+resolve_s3 = true
+s3_prefix = "sam-app"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "AdminEmail=\"pradeep@classpath.in\" AllowedOrigin=\"https://modern-java.classpath.in\" MailFromEmail=\"no-reply@classpath.in\" ReplyToEmail=\"pradeep@classpath.in\" SesRegion=\"us-east-1\" WebsiteUrl=\"https://modern-java.classpath.in\""
+image_repositories = []
+
+[default.global.parameters]
+region = "ap-south-1"

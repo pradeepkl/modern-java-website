@@ -5,7 +5,8 @@
   "scripts": {
     "test": "node --test",
     "build": "sam build",
-    "deploy": "sam deploy --guided"
+    "deploy": "sam deploy --guided",
+    "upload:assets": "./scripts/upload-digital-assets.sh"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1091.0",

@@ -1,0 +1,7 @@
+.aws-sam
+node_modules
+*.md
+samconfig.toml
+scripts
+assets
+**/*.pdf

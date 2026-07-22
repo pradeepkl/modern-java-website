@@ -31,6 +31,14 @@ All asset paths are centralized in `src/data/assets.ts`.
 - Final high-resolution device montage
 - Final Open Graph PNG (1200×630)
 - Google Analytics or other tracking (not included by default)
+- Paid digital PDF/ePub upload to S3 (`digital/modern-java.pdf`, `digital/modern-java.epub`)
+
+## Sample chapter
+
+| Asset | Path | Status |
+|-------|------|--------|
+| Preview PDF (repo source) | `assets/books/modern-java-preview.pdf` | ✅ Added |
+| S3 object key | `sample/modern-java-preview.pdf` | ✅ Upload via `backend/npm run upload:assets` |
 
 ## Noscript Fallback
 

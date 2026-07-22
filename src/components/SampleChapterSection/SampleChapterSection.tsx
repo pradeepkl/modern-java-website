@@ -86,11 +86,11 @@ export function SampleChapterSection() {
             <ul className="sample-card__includes" aria-label="Sample contents">
               <li>
                 <Check size={17} strokeWidth={2.5} aria-hidden="true" />
-                Preface and complete table of contents
+                Preface and the first two chapters
               </li>
               <li>
                 <Check size={17} strokeWidth={2.5} aria-hidden="true" />
-                Full Chapter 1 with selected diagrams
+                Selected diagrams from the sample
               </li>
             </ul>
           </div>
