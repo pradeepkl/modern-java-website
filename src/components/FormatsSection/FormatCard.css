@@ -172,6 +172,19 @@
   white-space: nowrap;
 }
 
+.format-card__version {
+  display: inline-flex;
+  margin: 0 0 6px;
+  padding: 4px 10px;
+  color: #0f6b5c;
+  background: #d8f3ee;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
 .format-card__availability {
   margin: 0;
   font-size: 0.88rem;

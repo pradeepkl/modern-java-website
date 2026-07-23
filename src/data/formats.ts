@@ -19,6 +19,7 @@ export interface FormatOption {
   listPrice: string;
   discountLabel: string;
   availability: string;
+  versionLabel?: string;
   ctaLabel: string;
   ctaUrl?: string;
   ctaVariant: 'amazon' | 'primary';
@@ -61,6 +62,7 @@ export const formatOptions: FormatOption[] = [
     listPrice: '₹874',
     discountLabel: '20% off',
     availability: 'Delivered directly by email',
+    versionLabel: 'Current version - 1',
     ctaLabel: 'Buy direct',
     ctaVariant: 'primary',
   },
@@ -84,6 +86,7 @@ export const formatOptions: FormatOption[] = [
     listPrice: '₹1,124',
     discountLabel: '20% off',
     availability: 'Place your order directly',
+    versionLabel: 'Current version - 1',
     ctaLabel: 'Place order',
     ctaVariant: 'primary',
   },

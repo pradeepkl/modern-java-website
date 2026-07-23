@@ -128,6 +128,9 @@ export function FormatCard({ format }: FormatCardProps) {
                 {format.discountLabel}
               </span>
             </div>
+            {format.versionLabel ? (
+              <span className="format-card__version">{format.versionLabel}</span>
+            ) : null}
             <p className="format-card__availability">{format.availability}</p>
           </div>
 
