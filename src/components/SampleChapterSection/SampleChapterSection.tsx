@@ -1,6 +1,12 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useRef, useState } from 'react';
 import { BookOpen, Check, Mail } from 'lucide-react';
+import { track } from '../../lib/analytics';
+import { isTurnstileConfigured } from '../../lib/turnstile';
 import { SectionEyebrow } from '../shared/SectionEyebrow';
+import {
+  TurnstileWidget,
+  type TurnstileWidgetHandle,
+} from '../shared/TurnstileWidget';
 import './SampleChapterSection.css';
 
 const SAMPLE_API_URL = import.meta.env.VITE_ORDER_API_URL?.replace(/\/$/, '');
@@ -9,6 +15,10 @@ export function SampleChapterSection() {
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const formStarted = useRef(false);
+  const emailTouchedEmpty = useRef(false);
+  const turnstileRef = useRef<TurnstileWidgetHandle>(null);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -18,11 +28,27 @@ export function SampleChapterSection() {
 
     const form = event.currentTarget;
     const data = new FormData(form);
+    const marketingConsent = data.get('marketingConsent') === 'on';
+
+    track('sample_form_submit', { marketing_consent: marketingConsent });
+    track('marketing_consent_toggle', {
+      checked: marketingConsent,
+      source: 'sample',
+    });
 
     if (!SAMPLE_API_URL) {
       setStatus('error');
       setMessage('Sample delivery is not configured yet. Please try again later.');
       setSubmitting(false);
+      track('sample_form_error', { reason: 'not_configured' });
+      return;
+    }
+
+    if (isTurnstileConfigured() && !captchaToken) {
+      setStatus('error');
+      setMessage('Please complete the captcha check before continuing.');
+      setSubmitting(false);
+      track('sample_form_error', { reason: 'captcha_missing' });
       return;
     }
 
@@ -32,8 +58,9 @@ export function SampleChapterSection() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           email: String(data.get('email')),
-          marketingConsent: data.get('marketingConsent') === 'on',
+          marketingConsent,
           consentVersion: '2026-07-21',
+          captchaToken: captchaToken || undefined,
         }),
       });
       const payload = await result.json();
@@ -43,10 +70,15 @@ export function SampleChapterSection() {
       }
 
       form.reset();
+      setCaptchaToken(null);
+      turnstileRef.current?.reset();
       setStatus('success');
       setMessage('Check your inbox—the sample chapter is on its way.');
+      track('sample_form_success', { marketing_consent: marketingConsent });
     } catch (error) {
       setStatus('error');
+      setCaptchaToken(null);
+      turnstileRef.current?.reset();
       const isNetworkError =
         error instanceof TypeError ||
         (error instanceof Error &&
@@ -58,6 +90,9 @@ export function SampleChapterSection() {
           ? error.message
           : 'Unable to send the sample chapter',
       );
+      track('sample_form_error', {
+        reason: isNetworkError ? 'network' : 'api',
+      });
     } finally {
       setSubmitting(false);
     }
@@ -111,6 +146,24 @@ export function SampleChapterSection() {
                     placeholder="you@example.com"
                     autoComplete="email"
                     required
+                    onFocus={() => {
+                      if (!formStarted.current) {
+                        formStarted.current = true;
+                        track('sample_form_start');
+                      }
+                    }}
+                    onBlur={(event) => {
+                      if (
+                        !event.currentTarget.value.trim() &&
+                        !emailTouchedEmpty.current
+                      ) {
+                        emailTouchedEmpty.current = true;
+                        track('form_field_abandon', {
+                          form: 'sample',
+                          field: 'email',
+                        });
+                      }
+                    }}
                   />
                 </span>
                 <button
@@ -121,6 +174,12 @@ export function SampleChapterSection() {
                   {submitting ? 'Sending…' : 'Send me the sample'}
                 </button>
               </div>
+
+              <TurnstileWidget
+                ref={turnstileRef}
+                theme="dark"
+                onTokenChange={setCaptchaToken}
+              />
 
               <label className="sample-form__consent">
                 <input type="checkbox" name="marketingConsent" defaultChecked />

@@ -10,7 +10,7 @@ interface LegalPageProps {
   type: LegalPageType;
 }
 
-const lastUpdated = '22 July 2026';
+const lastUpdated = '24 July 2026';
 
 function PrivacyPolicy() {
   return (
@@ -35,6 +35,26 @@ function PrivacyPolicy() {
       </section>
 
       <section>
+        <h2>Analytics and cookies</h2>
+        <p>
+          If you choose <strong>Accept analytics</strong> on the cookie banner,
+          we load Google Analytics 4 and, when configured, Microsoft Clarity.
+          These tools may set cookies or similar identifiers and collect page
+          URL, device and browser type, approximate location, scroll and click
+          behaviour, and conversion events such as sample requests and
+          completed checkouts. We do not send your email address, name, phone
+          number, delivery address, or payment card details to these analytics
+          providers.
+        </p>
+        <p>
+          Analytics consent is separate from marketing email consent. You can
+          choose <strong>Essential only</strong> to use the site without
+          analytics cookies. Clearing site data for this domain resets the
+          banner so you can change your choice.
+        </p>
+      </section>
+
+      <section>
         <h2>How we use your information</h2>
         <ul>
           <li>To create, process, deliver, and support your order.</li>
@@ -42,6 +62,10 @@ function PrivacyPolicy() {
           <li>To respond to questions and customer-service requests.</li>
           <li>
             To send book and Java updates only when you explicitly opt in.
+          </li>
+          <li>
+            With your analytics consent, to understand site usage and improve
+            the purchase experience.
           </li>
           <li>To prevent fraud, protect the website, and comply with law.</li>
         </ul>
@@ -59,6 +83,8 @@ function PrivacyPolicy() {
           operate the store, including Amazon Web Services for hosting, order
           records, and transactional email. Kindle purchases are completed on
           Amazon and are governed by Amazon&apos;s privacy policy and terms.
+          Optional analytics are provided by Google and Microsoft under their
+          respective privacy policies when you accept analytics cookies.
         </p>
       </section>
 

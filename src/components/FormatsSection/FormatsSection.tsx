@@ -1,4 +1,5 @@
 import { formatBulkOrder, formatOptions } from '../../data/formats';
+import { track, trackOutboundClick } from '../../lib/analytics';
 import { SectionEyebrow } from '../shared/SectionEyebrow';
 import { FormatCard } from './FormatCard';
 import './FormatsSection.css';
@@ -34,7 +35,17 @@ export function FormatsSection() {
 
         <p className="formats-bulk">
           {formatBulkOrder.prompt}{' '}
-          <a href={formatBulkOrder.ctaUrl}>{formatBulkOrder.ctaLabel} →</a>
+          <a
+            href={formatBulkOrder.ctaUrl}
+            onClick={() => {
+              track('format_cta_click', { format: 'bulk' });
+              if (formatBulkOrder.ctaUrl) {
+                trackOutboundClick(formatBulkOrder.ctaUrl, 'bulk_order');
+              }
+            }}
+          >
+            {formatBulkOrder.ctaLabel} →
+          </a>
         </p>
       </div>
     </section>

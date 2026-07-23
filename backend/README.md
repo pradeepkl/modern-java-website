@@ -78,6 +78,20 @@ Sample-only upload:
 For local frontend development, copy the root `.env.example` to `.env.local`
 and set the deployed API URL.
 
+### Cloudflare Turnstile (bot protection)
+
+Sample chapter and DRM-free digital checkout forms use Turnstile.
+
+1. Create a widget at [Cloudflare Turnstile](https://dash.cloudflare.com/?to=/:account/turnstile)
+   with your production (and localhost) hostnames.
+2. Put the **site key** in the website env as `VITE_TURNSTILE_SITE_KEY`.
+3. Put the **secret key** in `sam-secrets.env` as `TurnstileSecretKey` and
+   redeploy the API (`npm run deploy`).
+
+When either key is unset, captcha is skipped so local development still works.
+Once the secret is deployed, the API rejects sample and digital requests that
+lack a valid token.
+
 To test DRM-free delivery on localhost without Razorpay:
 
 1. Set `DigitalCheckoutBypassSecret` in `sam-secrets.env` and run `npm run deploy`.

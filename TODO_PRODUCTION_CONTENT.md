@@ -30,7 +30,7 @@ All asset paths are centralized in `src/data/assets.ts`.
 - Final high-resolution author portrait
 - Final high-resolution device montage
 - Final Open Graph PNG (1200×630)
-- Google Analytics or other tracking (not included by default)
+- Set `VITE_GA_MEASUREMENT_ID` and optional `VITE_CLARITY_ID` (see `docs/ANALYTICS.md`)
 - Paid digital PDF/ePub upload to S3 (`digital/modern-java.pdf`, `digital/modern-java.epub`)
 
 ## Sample chapter

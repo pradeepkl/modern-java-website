@@ -50,6 +50,11 @@ Parameters:
     NoEcho: true
     Default: ''
     Description: Optional secret enabling localhost digital checkout without Razorpay
+  TurnstileSecretKey:
+    Type: String
+    NoEcho: true
+    Default: ''
+    Description: Cloudflare Turnstile secret key for sample and digital checkout forms
   ZohoClientId:
     Type: String
     NoEcho: true
@@ -96,6 +101,7 @@ Globals:
         DIGITAL_PDF_KEY: !Ref DigitalPdfKey
         DIGITAL_EPUB_KEY: !Ref DigitalEpubKey
         DIGITAL_CHECKOUT_BYPASS_SECRET: !Ref DigitalCheckoutBypassSecret
+        TURNSTILE_SECRET_KEY: !Ref TurnstileSecretKey
         RAZORPAY_KEY_ID: !Ref RazorpayKeyId
         RAZORPAY_KEY_SECRET: !Ref RazorpayKeySecret
         RAZORPAY_WEBHOOK_SECRET: !Ref RazorpayWebhookSecret

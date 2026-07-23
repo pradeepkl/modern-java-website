@@ -32,8 +32,11 @@ npm run preview
 src/
   components/       # Page sections (Header, Hero, etc.) and shared UI
   data/             # Centralized book metadata, navigation, and assets manifest
-  hooks/            # Active section tracking, body scroll lock
+  hooks/            # Active section tracking, engagement analytics, body scroll lock
+  lib/              # Analytics (GA4/Clarity), Razorpay helpers
   styles/           # Design tokens, reset, typography, layout, globals
+docs/
+  ANALYTICS.md      # GA4 key events, Clarity, privacy notes
 public/
   assets/
     brand/          # Logo, mark, favicon
@@ -130,7 +133,12 @@ Defaults (overridable via env):
 | `AMPLIFY_BRANCH` | `main` |
 | `AWS_REGION` | `ap-south-1` |
 | `VITE_ORDER_API_URL` | Order API URL used by checkout |
+| `VITE_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key (sample + digital checkout) |
+| `VITE_GA_MEASUREMENT_ID` | GA4 measurement ID (optional; consent-gated) |
+| `VITE_CLARITY_ID` | Microsoft Clarity project ID (optional; consent-gated) |
 | `DEPLOY_SITE_URL` | `https://modern-java.classpath.in` |
+
+Analytics setup, conversion events, and GA4 key-event configuration are documented in [`docs/ANALYTICS.md`](./docs/ANALYTICS.md).
 
 The deploy script lives at `scripts/deploy-amplify.sh`. Run
 `./scripts/deploy-amplify.sh --help` for the full option list.

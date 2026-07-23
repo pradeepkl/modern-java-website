@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BookOpen, Check, Download, ShoppingCart } from 'lucide-react';
 import {
   type FormatFeature,
   type FormatOption,
 } from '../../data/formats';
+import { track } from '../../lib/analytics';
 import { AmazonConsentLink } from '../shared/AmazonConsentLink';
 import { BrandButtonLogo } from '../shared/BrandButtonLogo';
 import { DigitalOrderDialog } from './DigitalOrderDialog';
@@ -64,6 +65,8 @@ function FeatureItem({
 
 export function FormatCard({ format }: FormatCardProps) {
   const [orderFormOpen, setOrderFormOpen] = useState(false);
+  const cardRef = useRef<HTMLElement>(null);
+  const viewed = useRef(false);
   const isPaperback = format.id === 'paperback';
   const isDirectDigital = format.id === 'digital';
   const ctaClass =
@@ -80,9 +83,39 @@ export function FormatCard({ format }: FormatCardProps) {
   const showFeatureDivider =
     upgradeFeatures.length > 0 && coreFeatures.length > 0;
 
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting || entry.intersectionRatio < 0.5) continue;
+          if (viewed.current) continue;
+          viewed.current = true;
+          track('format_card_view', { format: format.id });
+          observer.disconnect();
+        }
+      },
+      { threshold: [0.5] },
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [format.id]);
+
+  const openCheckout = () => {
+    track('format_cta_click', { format: format.id });
+    track('checkout_open', { format: format.id });
+    setOrderFormOpen(true);
+  };
+
   return (
     <>
-      <article className={`format-card format-card--${format.id}`}>
+      <article
+        ref={cardRef}
+        className={`format-card format-card--${format.id}`}
+      >
         <div className="format-card__content">
           <div className="format-card__badge">
             <span className="format-card__badge-icon" aria-hidden="true">
@@ -138,7 +171,7 @@ export function FormatCard({ format }: FormatCardProps) {
             <button
               type="button"
               className={`${ctaClass} format-card__cta`}
-              onClick={() => setOrderFormOpen(true)}
+              onClick={openCheckout}
             >
               {isDirectDigital ? (
                 <Download size={18} strokeWidth={2} aria-hidden="true" />
@@ -151,6 +184,9 @@ export function FormatCard({ format }: FormatCardProps) {
             <AmazonConsentLink
               href={format.ctaUrl}
               className={`${ctaClass} format-card__cta`}
+              onIntent={() =>
+                track('format_cta_click', { format: format.id })
+              }
             >
               <BrandButtonLogo brand="amazon" />
               {format.ctaLabel}

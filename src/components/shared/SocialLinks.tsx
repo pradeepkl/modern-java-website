@@ -1,6 +1,7 @@
 import { Github, Linkedin } from 'lucide-react';
 import { assets } from '../../data/assets';
 import { book } from '../../data/book';
+import { trackOutboundClick } from '../../lib/analytics';
 import { Icon } from './Icon';
 import './shared.css';
 
@@ -23,6 +24,7 @@ export function SocialLinks({
         target="_blank"
         rel="noopener noreferrer"
         aria-label="LinkedIn"
+        onClick={() => trackOutboundClick(book.linkedinUrl, 'linkedin')}
       >
         <Linkedin size={size} strokeWidth={1.75} aria-hidden="true" />
       </a>
@@ -32,6 +34,7 @@ export function SocialLinks({
         target="_blank"
         rel="noopener noreferrer"
         aria-label="GitHub"
+        onClick={() => trackOutboundClick(book.githubUrl, 'github')}
       >
         <Github size={size} strokeWidth={1.75} aria-hidden="true" />
       </a>
@@ -40,6 +43,9 @@ export function SocialLinks({
           href={`mailto:${book.email}`}
           className="social-links__link"
           aria-label="Email"
+          onClick={() =>
+            trackOutboundClick(`mailto:${book.email}`, 'email')
+          }
         >
           <Icon src={assets.social.email} size={size} />
         </a>

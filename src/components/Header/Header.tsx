@@ -1,5 +1,6 @@
 import { assets } from '../../data/assets';
 import { navigation } from '../../data/navigation';
+import { trackCtaClick } from '../../lib/analytics';
 import type { ActiveSection } from '../../hooks/useActiveSection';
 import { MobileMenu } from '../MobileMenu/MobileMenu';
 import './Header.css';
@@ -44,6 +45,11 @@ export function Header({
                     href={link.href}
                     className={`header-nav__link ${isActive ? 'header-nav__link--active' : ''}`}
                     aria-current={isActive ? 'true' : undefined}
+                    onClick={() => {
+                      if (link.href === '#formats') {
+                        trackCtaClick('nav_formats', 'header');
+                      }
+                    }}
                   >
                     {link.label}
                   </a>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { AnalyticsConsentBanner } from './components/AnalyticsConsent/AnalyticsConsentBanner';
 import { Header } from './components/Header/Header';
 import { Hero } from './components/Hero/Hero';
 import { PurposeSection } from './components/PurposeSection/PurposeSection';
@@ -11,12 +12,15 @@ import { FormatsSection } from './components/FormatsSection/FormatsSection';
 import { Footer } from './components/Footer/Footer';
 import { LegalPage } from './components/LegalPage/LegalPage';
 import { useActiveSection } from './hooks/useActiveSection';
+import { useEngagementTracking } from './hooks/useEngagementTracking';
 
 function App() {
   const path = window.location.pathname.replace(/\/+$/, '') || '/';
+  const isLanding = path === '/';
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const activeSection = useActiveSection();
+  useEngagementTracking(isLanding);
 
   useEffect(() => {
     const onScroll = () => {
@@ -37,15 +41,26 @@ function App() {
   }, []);
 
   if (path === '/privacy-policy') {
-    return <LegalPage type="privacy" />;
+    return (
+      <>
+        <AnalyticsConsentBanner />
+        <LegalPage type="privacy" />
+      </>
+    );
   }
 
   if (path === '/terms-of-use') {
-    return <LegalPage type="terms" />;
+    return (
+      <>
+        <AnalyticsConsentBanner />
+        <LegalPage type="terms" />
+      </>
+    );
   }
 
   return (
     <div className="site-shell">
+      <AnalyticsConsentBanner />
       <Header
         menuOpen={menuOpen}
         onMenuToggle={handleMenuToggle}

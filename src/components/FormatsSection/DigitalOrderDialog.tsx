@@ -1,8 +1,14 @@
-import { useEffect, useId, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { CheckCircle2, CreditCard, Download, X } from 'lucide-react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
+import { track, trackPurchase } from '../../lib/analytics';
 import { loadRazorpayCheckout } from '../../lib/razorpay';
+import { isTurnstileConfigured } from '../../lib/turnstile';
+import {
+  TurnstileWidget,
+  type TurnstileWidgetHandle,
+} from '../shared/TurnstileWidget';
 import './DigitalOrderDialog.css';
 
 interface DigitalOrderDialogProps {
@@ -15,6 +21,7 @@ interface DigitalDownloads {
   epubUrl: string | null;
 }
 
+const DIGITAL_PRICE = 399;
 const ORDER_API_URL = import.meta.env.VITE_ORDER_API_URL?.replace(/\/$/, '');
 const DIGITAL_CHECKOUT_BYPASS =
   import.meta.env.DEV &&
@@ -30,9 +37,19 @@ export function DigitalOrderDialog({
   const [confirmedOrderId, setConfirmedOrderId] = useState<string | null>(null);
   const [downloads, setDownloads] = useState<DigitalDownloads | null>(null);
   const [usedBypass, setUsedBypass] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const completedRef = useRef(false);
+  const turnstileRef = useRef<TurnstileWidgetHandle>(null);
   const headingId = useId();
   const descriptionId = useId();
   useBodyScrollLock(open);
+
+  const requestClose = useCallback(() => {
+    if (!completedRef.current) {
+      track('checkout_abandon', { format: 'digital' });
+    }
+    onClose();
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) return;
@@ -41,14 +58,16 @@ export function DigitalOrderDialog({
     setConfirmedOrderId(null);
     setDownloads(null);
     setUsedBypass(false);
+    setCaptchaToken(null);
+    completedRef.current = false;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') requestClose();
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, onClose]);
+  }, [open, requestClose]);
 
   if (!open) return null;
 
@@ -69,11 +88,29 @@ export function DigitalOrderDialog({
       postalCode,
       marketingConsent,
       consentVersion: '2026-07-21',
+      captchaToken: captchaToken || undefined,
     };
+
+    track('checkout_submit', {
+      format: 'digital',
+      marketing_consent: marketingConsent,
+    });
+    track('marketing_consent_toggle', {
+      checked: marketingConsent,
+      source: 'digital_checkout',
+    });
 
     if (!ORDER_API_URL) {
       setErrorMessage('Digital checkout is not configured yet.');
       setProcessing(false);
+      track('checkout_fail', { format: 'digital', reason: 'not_configured' });
+      return;
+    }
+
+    if (isTurnstileConfigured() && !captchaToken) {
+      setErrorMessage('Please complete the captcha check before continuing.');
+      setProcessing(false);
+      track('checkout_fail', { format: 'digital', reason: 'captcha_missing' });
       return;
     }
 
@@ -103,6 +140,13 @@ export function DigitalOrderDialog({
         setUsedBypass(true);
         setDownloads(bypassOrder.downloads ?? null);
         setConfirmedOrderId(bypassOrder.appOrderId);
+        completedRef.current = true;
+        trackPurchase({
+          format: 'digital',
+          value: DIGITAL_PRICE,
+          transactionId: bypassOrder.appOrderId,
+          paymentMethod: 'bypass',
+        });
         setProcessing(false);
         return;
       }
@@ -119,6 +163,11 @@ export function DigitalOrderDialog({
         throw new Error(order.message || 'Unable to create the digital order');
       }
 
+      track('checkout_payment_start', {
+        format: 'digital',
+        payment_method: 'razorpay',
+      });
+
       const razorpay = new window.Razorpay({
         key: order.keyId,
         amount: order.amount,
@@ -130,7 +179,13 @@ export function DigitalOrderDialog({
         notes: { appOrderId: order.appOrderId },
         theme: { color: '#0b3f9f' },
         modal: {
-          ondismiss: () => setProcessing(false),
+          ondismiss: () => {
+            track('checkout_fail', {
+              format: 'digital',
+              reason: 'payment_dismissed',
+            });
+            setProcessing(false);
+          },
         },
         handler: async (payment) => {
           try {
@@ -156,12 +211,23 @@ export function DigitalOrderDialog({
             }
 
             setConfirmedOrderId(verification.appOrderId);
+            completedRef.current = true;
+            trackPurchase({
+              format: 'digital',
+              value: DIGITAL_PRICE,
+              transactionId: verification.appOrderId,
+              paymentMethod: 'razorpay',
+            });
           } catch (error) {
             setErrorMessage(
               error instanceof Error
                 ? error.message
                 : 'Payment verification failed',
             );
+            track('checkout_fail', {
+              format: 'digital',
+              reason: 'verification_failed',
+            });
           } finally {
             setProcessing(false);
           }
@@ -173,6 +239,10 @@ export function DigitalOrderDialog({
           failure.error?.description ||
             'Payment failed. No order has been confirmed.',
         );
+        track('checkout_fail', {
+          format: 'digital',
+          reason: 'payment_failed',
+        });
         setProcessing(false);
       });
 
@@ -183,6 +253,9 @@ export function DigitalOrderDialog({
           ? error.message
           : 'Unable to start digital checkout',
       );
+      setCaptchaToken(null);
+      turnstileRef.current?.reset();
+      track('checkout_fail', { format: 'digital', reason: 'start_failed' });
       setProcessing(false);
     }
   };
@@ -191,7 +264,7 @@ export function DigitalOrderDialog({
     <div
       className="order-dialog__backdrop"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (event.target === event.currentTarget) requestClose();
       }}
     >
       <div
@@ -216,7 +289,7 @@ export function DigitalOrderDialog({
           <button
             type="button"
             className="order-dialog__close"
-            onClick={onClose}
+            onClick={requestClose}
             aria-label="Close digital order form"
           >
             <X size={22} strokeWidth={2} />
@@ -284,6 +357,14 @@ export function DigitalOrderDialog({
                 autoComplete="name"
                 required
                 autoFocus
+                onBlur={(event) => {
+                  if (!event.currentTarget.value.trim()) {
+                    track('form_field_abandon', {
+                      form: 'digital_checkout',
+                      field: 'name',
+                    });
+                  }
+                }}
               />
             </label>
 
@@ -295,6 +376,14 @@ export function DigitalOrderDialog({
                 placeholder="you@example.com"
                 autoComplete="email"
                 required
+                onBlur={(event) => {
+                  if (!event.currentTarget.value.trim()) {
+                    track('form_field_abandon', {
+                      form: 'digital_checkout',
+                      field: 'email',
+                    });
+                  }
+                }}
               />
             </label>
 
@@ -323,6 +412,12 @@ export function DigitalOrderDialog({
                 />
               </label>
             </div>
+
+            <TurnstileWidget
+              ref={turnstileRef}
+              theme="light"
+              onTokenChange={setCaptchaToken}
+            />
 
             <label className="digital-order__consent">
               <input type="checkbox" name="marketingConsent" defaultChecked />

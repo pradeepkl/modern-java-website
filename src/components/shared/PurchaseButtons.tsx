@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Download, ShoppingCart } from 'lucide-react';
 import { book } from '../../data/book';
+import { track, trackCtaClick } from '../../lib/analytics';
 import { DigitalOrderDialog } from '../FormatsSection/DigitalOrderDialog';
 import { PaperbackOrderDialog } from '../FormatsSection/PaperbackOrderDialog';
 import { AmazonConsentLink } from './AmazonConsentLink';
@@ -30,17 +31,31 @@ export function PurchaseButtons({
   if (linkToFormats) {
     return (
       <div className={`purchase-buttons ${layoutClass} ${className}`}>
-        <a href="#formats" className={`button button-amazon ${sizeClass}`}>
+        <a
+          href="#formats"
+          className={`button button-amazon ${sizeClass}`}
+          onClick={() => trackCtaClick('formats_kindle', 'purchase_buttons')}
+        >
           <BrandButtonLogo brand="amazon" />
           Kindle
         </a>
         {includeDigital ? (
-          <a href="#formats" className={`button button-primary ${sizeClass}`}>
+          <a
+            href="#formats"
+            className={`button button-primary ${sizeClass}`}
+            onClick={() => trackCtaClick('formats_digital', 'purchase_buttons')}
+          >
             <Download size={20} strokeWidth={2} aria-hidden="true" />
             PDF + ePub
           </a>
         ) : null}
-        <a href="#formats" className={`button button-primary ${sizeClass}`}>
+        <a
+          href="#formats"
+          className={`button button-primary ${sizeClass}`}
+          onClick={() =>
+            trackCtaClick('formats_paperback', 'purchase_buttons')
+          }
+        >
           <ShoppingCart size={20} strokeWidth={2} aria-hidden="true" />
           Paperback
         </a>
@@ -54,6 +69,7 @@ export function PurchaseButtons({
         href={book.amazonUrl}
         className={`button button-amazon ${sizeClass}`}
         ariaLabel="Buy Modern Java: The Mindset Shift on Amazon"
+        onIntent={() => track('format_cta_click', { format: 'kindle' })}
       >
         <BrandButtonLogo brand="amazon" />
         Buy Kindle — ₹499
@@ -62,7 +78,11 @@ export function PurchaseButtons({
         <button
           type="button"
           className={`button button-primary ${sizeClass}`}
-          onClick={() => setDigitalOrderFormOpen(true)}
+          onClick={() => {
+            track('format_cta_click', { format: 'digital' });
+            track('checkout_open', { format: 'digital' });
+            setDigitalOrderFormOpen(true);
+          }}
           aria-label="Buy the Modern Java PDF and ePub bundle"
         >
           <Download size={20} strokeWidth={2} aria-hidden="true" />
@@ -72,7 +92,11 @@ export function PurchaseButtons({
       <button
         type="button"
         className={`button button-primary ${sizeClass}`}
-        onClick={() => setOrderFormOpen(true)}
+        onClick={() => {
+          track('format_cta_click', { format: 'paperback' });
+          track('checkout_open', { format: 'paperback' });
+          setOrderFormOpen(true);
+        }}
         aria-label="Place an order for the Modern Java paperback"
       >
         <ShoppingCart size={20} strokeWidth={2} aria-hidden="true" />

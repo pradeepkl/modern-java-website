@@ -1,5 +1,6 @@
 import { ArrowRight } from 'lucide-react';
 import { assets } from '../../data/assets';
+import { trackCtaClick } from '../../lib/analytics';
 import { DecorativeImage } from '../shared/Icon';
 import { SectionEyebrow } from '../shared/SectionEyebrow';
 import './Hero.css';
@@ -42,6 +43,7 @@ export function Hero() {
           <a
             href="#formats"
             className="button button-primary button-large hero-cta"
+            onClick={() => trackCtaClick('choose_format', 'hero')}
           >
             Choose your format
             <ArrowRight size={20} strokeWidth={2} aria-hidden="true" />

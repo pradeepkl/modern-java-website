@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { navigation } from '../../data/navigation';
+import { trackCtaClick } from '../../lib/analytics';
 import type { ActiveSection } from '../../hooks/useActiveSection';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import './MobileMenu.css';
@@ -50,7 +51,12 @@ export function MobileMenu({ open, onClose, activeSection }: MobileMenuProps) {
                   href={link.href}
                   className={`mobile-menu__link ${isActive ? 'mobile-menu__link--active' : ''}`}
                   aria-current={isActive ? 'true' : undefined}
-                  onClick={onClose}
+                  onClick={() => {
+                    if (link.href === '#formats') {
+                      trackCtaClick('nav_formats', 'mobile_menu');
+                    }
+                    onClose();
+                  }}
                 >
                   {link.label}
                 </a>
@@ -61,7 +67,10 @@ export function MobileMenu({ open, onClose, activeSection }: MobileMenuProps) {
         <a
           href="#formats"
           className="button button-primary button-full mobile-menu__cta"
-          onClick={onClose}
+          onClick={() => {
+            trackCtaClick('buy_now', 'mobile_menu');
+            onClose();
+          }}
         >
           Buy Now
         </a>

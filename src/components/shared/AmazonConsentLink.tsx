@@ -1,6 +1,7 @@
 import {
   useEffect,
   useId,
+  useRef,
   useState,
   type FormEvent,
   type ReactNode,
@@ -8,12 +9,14 @@ import {
 import { createPortal } from 'react-dom';
 import { Mail, X } from 'lucide-react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
+import { track } from '../../lib/analytics';
 import './AmazonConsentLink.css';
 
 interface AmazonConsentLinkProps {
   href: string;
   className?: string;
   ariaLabel?: string;
+  onIntent?: () => void;
   children: ReactNode;
 }
 
@@ -23,11 +26,13 @@ export function AmazonConsentLink({
   href,
   className,
   ariaLabel,
+  onIntent,
   children,
 }: AmazonConsentLinkProps) {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const exited = useRef(false);
   const headingId = useId();
   const descriptionId = useId();
   useBodyScrollLock(open);
@@ -36,6 +41,7 @@ export function AmazonConsentLink({
     if (!open) return;
     setSubmitting(false);
     setErrorMessage('');
+    track('amazon_consent_shown');
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setOpen(false);
@@ -45,7 +51,11 @@ export function AmazonConsentLink({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [open]);
 
-  const continueToAmazon = () => {
+  const continueToAmazon = (path: 'consent' | 'skip') => {
+    if (!exited.current) {
+      exited.current = true;
+      track('amazon_exit', { path });
+    }
     window.location.assign(href);
   };
 
@@ -54,6 +64,8 @@ export function AmazonConsentLink({
     setSubmitting(true);
     setErrorMessage('');
     const data = new FormData(event.currentTarget);
+
+    track('amazon_consent_submit');
 
     if (!ORDER_API_URL) {
       setErrorMessage(
@@ -79,7 +91,7 @@ export function AmazonConsentLink({
         throw new Error(payload.message || 'Unable to save your email');
       }
 
-      continueToAmazon();
+      continueToAmazon('consent');
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -98,6 +110,7 @@ export function AmazonConsentLink({
         aria-label={ariaLabel}
         onClick={(event) => {
           event.preventDefault();
+          onIntent?.();
           setOpen(true);
         }}
       >
@@ -152,6 +165,14 @@ export function AmazonConsentLink({
                     autoComplete="email"
                     required
                     autoFocus
+                    onBlur={(event) => {
+                      if (!event.currentTarget.value.trim()) {
+                        track('form_field_abandon', {
+                          form: 'amazon_consent',
+                          field: 'email',
+                        });
+                      }
+                    }}
                   />
                   <p className="amazon-consent__permission">
                     By sharing your email, you agree to receive promotional
@@ -174,7 +195,7 @@ export function AmazonConsentLink({
                   <button
                     type="button"
                     className="amazon-consent__skip"
-                    onClick={continueToAmazon}
+                    onClick={() => continueToAmazon('skip')}
                     disabled={submitting}
                   >
                     Continue without sharing

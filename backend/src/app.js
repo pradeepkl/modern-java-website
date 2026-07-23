@@ -37,6 +37,7 @@ const {
   ALLOWED_ORIGIN = '*',
   WEBSITE_URL = 'https://modern-java.classpath.in',
   DIGITAL_CHECKOUT_BYPASS_SECRET = '',
+  TURNSTILE_SECRET_KEY = '',
 } = process.env;
 
 const SITE_URL = String(WEBSITE_URL).replace(/\/$/, '');
@@ -254,6 +255,59 @@ const safeEqual = (actual, expected) => {
   );
 };
 
+const getClientIp = (event) => {
+  const forwarded =
+    event.headers?.['x-forwarded-for'] || event.headers?.['X-Forwarded-For'];
+  if (forwarded) return String(forwarded).split(',')[0].trim();
+  return (
+    event.requestContext?.http?.sourceIp ||
+    event.requestContext?.identity?.sourceIp ||
+    ''
+  );
+};
+
+/**
+ * Verify Cloudflare Turnstile when TURNSTILE_SECRET_KEY is configured.
+ * Skips verification in environments where the secret is unset (local/dev).
+ */
+const verifyTurnstileCaptcha = async (event, token) => {
+  const secret = String(TURNSTILE_SECRET_KEY || '').trim();
+  if (!secret) return;
+
+  const captchaToken = String(token || '').trim();
+  if (!captchaToken) {
+    throw new Error('Invalid captcha token');
+  }
+
+  const body = new URLSearchParams({
+    secret,
+    response: captchaToken,
+  });
+  const clientIp = getClientIp(event);
+  if (clientIp) body.set('remoteip', clientIp);
+
+  let payload;
+  try {
+    const result = await fetch(
+      'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body,
+      },
+    );
+    payload = await result.json();
+  } catch (error) {
+    console.error('Turnstile verification request failed', error);
+    throw new Error('Invalid captcha token');
+  }
+
+  if (!payload?.success) {
+    console.warn('Turnstile verification rejected', payload?.['error-codes']);
+    throw new Error('Invalid captcha token');
+  }
+};
+
 const validateOrder = (input) => {
   const quantity = Number(input.quantity);
   const required = [
@@ -344,6 +398,8 @@ const requestSampleChapter = async (event) => {
   if (!EMAIL_PATTERN.test(email)) {
     throw new Error('Invalid email address');
   }
+
+  await verifyTurnstileCaptcha(event, json.captchaToken);
 
   if (!SAMPLE_REQUESTS_TABLE || !DIGITAL_ASSETS_BUCKET) {
     return response(503, {
@@ -579,6 +635,8 @@ const validateDigitalCustomer = (input) => {
 const createDigitalOrder = async (event) => {
   const { json } = parseBody(event);
   const { name, email, city, postalCode } = validateDigitalCustomer(json);
+
+  await verifyTurnstileCaptcha(event, json.captchaToken);
 
   if (!DIGITAL_ASSETS_BUCKET) {
     return response(503, {
@@ -1193,7 +1251,7 @@ exports.handler = async (event) => {
     console.error(error);
     const isValidationError =
       error instanceof SyntaxError ||
-      /required|invalid|quantity/i.test(error.message || '');
+      /required|invalid|quantity|captcha/i.test(error.message || '');
     return response(isValidationError ? 400 : 500, {
       message: isValidationError
         ? error.message

@@ -1,7 +1,15 @@
-import { useEffect, useId, useState, type FormEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type FormEvent,
+} from 'react';
 import { createPortal } from 'react-dom';
 import { CheckCircle2, CreditCard, Minus, Plus, X } from 'lucide-react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
+import { track, trackPurchase } from '../../lib/analytics';
 import { loadRazorpayCheckout } from '../../lib/razorpay';
 import './PaperbackOrderDialog.css';
 
@@ -56,6 +64,7 @@ export function PaperbackOrderDialog({
   const [processing, setProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [confirmedOrderId, setConfirmedOrderId] = useState<string | null>(null);
+  const completedRef = useRef(false);
   const headingId = useId();
   const descriptionId = useId();
   useBodyScrollLock(open);
@@ -65,18 +74,26 @@ export function PaperbackOrderDialog({
     maximumFractionDigits: 0,
   }).format(quantity * PAPERBACK_PRICE);
 
+  const requestClose = useCallback(() => {
+    if (!completedRef.current) {
+      track('checkout_abandon', { format: 'paperback' });
+    }
+    onClose();
+  }, [onClose]);
+
   useEffect(() => {
     if (!open) return;
     setErrorMessage('');
     setConfirmedOrderId(null);
+    completedRef.current = false;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') requestClose();
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, onClose]);
+  }, [open, requestClose]);
 
   if (!open) return null;
 
@@ -86,11 +103,20 @@ export function PaperbackOrderDialog({
     setErrorMessage('');
     const data = new FormData(event.currentTarget);
 
+    track('checkout_submit', {
+      format: 'paperback',
+      quantity,
+    });
+
     if (!ORDER_API_URL) {
       setErrorMessage(
         'Payment is not configured yet. Set VITE_ORDER_API_URL after deploying the order API.',
       );
       setProcessing(false);
+      track('checkout_fail', {
+        format: 'paperback',
+        reason: 'not_configured',
+      });
       return;
     }
 
@@ -120,6 +146,12 @@ export function PaperbackOrderDialog({
         throw new Error(order.message || 'Unable to create the order');
       }
 
+      track('checkout_payment_start', {
+        format: 'paperback',
+        payment_method: 'razorpay',
+        quantity: orderInput.quantity,
+      });
+
       const razorpay = new window.Razorpay({
         key: order.keyId,
         amount: order.amount,
@@ -135,7 +167,13 @@ export function PaperbackOrderDialog({
         notes: { appOrderId: order.appOrderId },
         theme: { color: '#0b3f9f' },
         modal: {
-          ondismiss: () => setProcessing(false),
+          ondismiss: () => {
+            track('checkout_fail', {
+              format: 'paperback',
+              reason: 'payment_dismissed',
+            });
+            setProcessing(false);
+          },
         },
         handler: async (payment) => {
           try {
@@ -159,12 +197,24 @@ export function PaperbackOrderDialog({
               );
             }
             setConfirmedOrderId(verification.appOrderId);
+            completedRef.current = true;
+            trackPurchase({
+              format: 'paperback',
+              value: PAPERBACK_PRICE * orderInput.quantity,
+              transactionId: verification.appOrderId,
+              paymentMethod: 'razorpay',
+              quantity: orderInput.quantity,
+            });
           } catch (error) {
             setErrorMessage(
               error instanceof Error
                 ? error.message
                 : 'Payment verification failed',
             );
+            track('checkout_fail', {
+              format: 'paperback',
+              reason: 'verification_failed',
+            });
           } finally {
             setProcessing(false);
           }
@@ -176,6 +226,10 @@ export function PaperbackOrderDialog({
           failure.error?.description ||
             'Payment failed. No order has been confirmed.',
         );
+        track('checkout_fail', {
+          format: 'paperback',
+          reason: 'payment_failed',
+        });
         setProcessing(false);
       });
 
@@ -186,6 +240,7 @@ export function PaperbackOrderDialog({
           ? error.message
           : 'Unable to start payment right now',
       );
+      track('checkout_fail', { format: 'paperback', reason: 'start_failed' });
       setProcessing(false);
     }
   };
@@ -194,7 +249,7 @@ export function PaperbackOrderDialog({
     <div
       className="order-dialog__backdrop"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (event.target === event.currentTarget) requestClose();
       }}
     >
       <div
@@ -218,7 +273,7 @@ export function PaperbackOrderDialog({
           <button
             type="button"
             className="order-dialog__close"
-            onClick={onClose}
+            onClick={requestClose}
             aria-label="Close order form"
           >
             <X size={22} strokeWidth={2} />
@@ -253,6 +308,14 @@ export function PaperbackOrderDialog({
                 defaultValue={TEST_ORDER_DEFAULTS?.name}
                 required
                 autoFocus
+                onBlur={(event) => {
+                  if (!event.currentTarget.value.trim()) {
+                    track('form_field_abandon', {
+                      form: 'paperback_checkout',
+                      field: 'name',
+                    });
+                  }
+                }}
               />
             </label>
 
@@ -265,6 +328,14 @@ export function PaperbackOrderDialog({
                 defaultValue={TEST_ORDER_DEFAULTS?.email}
                 title="Enter a valid email address"
                 required
+                onBlur={(event) => {
+                  if (!event.currentTarget.value.trim()) {
+                    track('form_field_abandon', {
+                      form: 'paperback_checkout',
+                      field: 'email',
+                    });
+                  }
+                }}
               />
             </label>
 
@@ -430,7 +501,7 @@ export function PaperbackOrderDialog({
             <button
               type="button"
               className="button button-secondary"
-              onClick={onClose}
+              onClick={requestClose}
             >
               Cancel
             </button>

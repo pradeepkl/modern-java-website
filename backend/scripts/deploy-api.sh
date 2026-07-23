@@ -25,10 +25,11 @@ set +a
 : "${ZohoTaxExemptionId:=}"
 : "${ZohoInvoiceTemplateId:=}"
 : "${DigitalCheckoutBypassSecret:=}"
+: "${TurnstileSecretKey:=}"
 
 PARAMETER_OVERRIDES=$(
   cat <<EOF
-AdminEmail="pradeep@classpath.in" AllowedOrigin="https://modern-java.classpath.in,http://localhost:5173" MailFromEmail="no-reply@classpath.in" ReplyToEmail="pradeep@classpath.in" SesRegion="us-east-1" WebsiteUrl="https://modern-java.classpath.in" SamplePdfKey="sample/modern-java-preview.pdf" DigitalPdfKey="digital/modern-java-drm-free_v1.0.pdf" DigitalEpubKey="digital/modern-java-drm-free_v1.0.epub" DigitalCheckoutBypassSecret="${DigitalCheckoutBypassSecret}" ZohoClientId="${ZohoClientId}" ZohoClientSecret="${ZohoClientSecret}" ZohoRefreshToken="${ZohoRefreshToken}" ZohoOrganizationId="${ZohoOrganizationId}" ZohoTaxId="${ZohoTaxId}" ZohoTaxExemptionId="${ZohoTaxExemptionId}" ZohoInvoiceTemplateId="${ZohoInvoiceTemplateId}"
+AdminEmail="pradeep@classpath.in" AllowedOrigin="https://modern-java.classpath.in,http://localhost:5173" MailFromEmail="no-reply@classpath.in" ReplyToEmail="pradeep@classpath.in" SesRegion="us-east-1" WebsiteUrl="https://modern-java.classpath.in" SamplePdfKey="sample/modern-java-preview.pdf" DigitalPdfKey="digital/modern-java-drm-free_v1.0.pdf" DigitalEpubKey="digital/modern-java-drm-free_v1.0.epub" DigitalCheckoutBypassSecret="${DigitalCheckoutBypassSecret}" TurnstileSecretKey="${TurnstileSecretKey}" ZohoClientId="${ZohoClientId}" ZohoClientSecret="${ZohoClientSecret}" ZohoRefreshToken="${ZohoRefreshToken}" ZohoOrganizationId="${ZohoOrganizationId}" ZohoTaxId="${ZohoTaxId}" ZohoTaxExemptionId="${ZohoTaxExemptionId}" ZohoInvoiceTemplateId="${ZohoInvoiceTemplateId}"
 EOF
 )
 

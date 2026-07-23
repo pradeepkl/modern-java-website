@@ -9,6 +9,7 @@ REGION="${AWS_REGION:-${AWS_DEFAULT_REGION:-ap-south-1}}"
 APP_ID="${AMPLIFY_APP_ID:-dd9kgrhw8x8dv}"
 BRANCH="${AMPLIFY_BRANCH:-main}"
 ORDER_API_URL="${VITE_ORDER_API_URL:-https://vgtwwchwuh.execute-api.ap-south-1.amazonaws.com}"
+TURNSTILE_SITE_KEY="${VITE_TURNSTILE_SITE_KEY:-}"
 SITE_URL="${DEPLOY_SITE_URL:-https://modern-java.classpath.in}"
 ZIP_PATH="${ROOT_DIR}/.amplify-deploy.zip"
 POLL_SECONDS="${DEPLOY_POLL_SECONDS:-5}"
@@ -22,12 +23,13 @@ Usage: npm run deploy
 Builds the production site and uploads it to AWS Amplify (manual zip deploy).
 
 Environment:
-  AMPLIFY_APP_ID       Amplify app id (default: dd9kgrhw8x8dv)
-  AMPLIFY_BRANCH       Amplify branch (default: main)
-  AWS_REGION           AWS region (default: ap-south-1)
-  VITE_ORDER_API_URL   Order API base URL baked into the build
-  DEPLOY_SITE_URL      Printed after success (default: https://modern-java.classpath.in)
-  SKIP_BUILD=1         Reuse an existing dist/ without rebuilding
+  AMPLIFY_APP_ID            Amplify app id (default: dd9kgrhw8x8dv)
+  AMPLIFY_BRANCH            Amplify branch (default: main)
+  AWS_REGION                AWS region (default: ap-south-1)
+  VITE_ORDER_API_URL        Order API base URL baked into the build
+  VITE_TURNSTILE_SITE_KEY   Cloudflare Turnstile site key (sample + digital forms)
+  DEPLOY_SITE_URL           Printed after success (default: https://modern-java.classpath.in)
+  SKIP_BUILD=1              Reuse an existing dist/ without rebuilding
 EOF
 }
 
@@ -58,7 +60,9 @@ echo "==> Deploy target: Amplify app ${APP_ID} / branch ${BRANCH} (${REGION})"
 
 if [[ "${SKIP_BUILD:-0}" != "1" ]]; then
   echo "==> Building production bundle"
-  VITE_ORDER_API_URL="$ORDER_API_URL" npm run build
+  VITE_ORDER_API_URL="$ORDER_API_URL" \
+    VITE_TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY" \
+    npm run build
 else
   echo "==> Skipping build (SKIP_BUILD=1)"
 fi

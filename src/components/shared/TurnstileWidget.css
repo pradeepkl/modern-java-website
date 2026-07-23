@@ -1,0 +1,12 @@
+.turnstile-widget {
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 65px;
+  margin-top: 14px;
+  overflow: hidden;
+}
+
+.turnstile-widget iframe {
+  max-width: 100%;
+}
