@@ -59,8 +59,8 @@ export function Hero() {
           <img
             src={assets.hero.paperback}
             alt="Modern Java: The Mindset Shift — 3D book cover"
-            width={2000}
-            height={2000}
+            width={1200}
+            height={1200}
             fetchPriority="high"
             loading="eager"
             decoding="async"

@@ -10,6 +10,11 @@ import { createPortal } from 'react-dom';
 import { Mail, X } from 'lucide-react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { track } from '../../lib/analytics';
+import { isTurnstileConfigured } from '../../lib/turnstile';
+import {
+  TurnstileWidget,
+  type TurnstileWidgetHandle,
+} from './TurnstileWidget';
 import './AmazonConsentLink.css';
 
 interface AmazonConsentLinkProps {
@@ -32,7 +37,9 @@ export function AmazonConsentLink({
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const exited = useRef(false);
+  const turnstileRef = useRef<TurnstileWidgetHandle>(null);
   const headingId = useId();
   const descriptionId = useId();
   useBodyScrollLock(open);
@@ -41,6 +48,7 @@ export function AmazonConsentLink({
     if (!open) return;
     setSubmitting(false);
     setErrorMessage('');
+    setCaptchaToken(null);
     track('amazon_consent_shown');
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -75,6 +83,12 @@ export function AmazonConsentLink({
       return;
     }
 
+    if (isTurnstileConfigured() && !captchaToken) {
+      setErrorMessage('Please complete the captcha check before continuing.');
+      setSubmitting(false);
+      return;
+    }
+
     try {
       const result = await fetch(`${ORDER_API_URL}/marketing-consents`, {
         method: 'POST',
@@ -83,6 +97,7 @@ export function AmazonConsentLink({
           email: String(data.get('email')),
           marketingConsent: true,
           consentVersion: '2026-07-22',
+          captchaToken: captchaToken || undefined,
         }),
       });
       const payload = await result.json();
@@ -98,6 +113,8 @@ export function AmazonConsentLink({
           ? error.message
           : 'Unable to save your email. You can still continue to Amazon.',
       );
+      setCaptchaToken(null);
+      turnstileRef.current?.reset();
       setSubmitting(false);
     }
   };
@@ -176,8 +193,16 @@ export function AmazonConsentLink({
                   />
                   <p className="amazon-consent__permission">
                     By sharing your email, you agree to receive promotional
-                    updates. Unsubscribe anytime.
+                    updates. You can{' '}
+                    <a href="/unsubscribe">unsubscribe</a> anytime.
                   </p>
+
+                  <TurnstileWidget
+                    ref={turnstileRef}
+                    theme="light"
+                    className="amazon-consent__captcha"
+                    onTokenChange={setCaptchaToken}
+                  />
 
                   {errorMessage ? (
                     <p className="amazon-consent__error" role="alert">

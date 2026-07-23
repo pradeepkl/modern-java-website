@@ -11,6 +11,7 @@ import { TrustSection } from './components/TrustSection/TrustSection';
 import { FormatsSection } from './components/FormatsSection/FormatsSection';
 import { Footer } from './components/Footer/Footer';
 import { LegalPage } from './components/LegalPage/LegalPage';
+import { UnsubscribePage } from './components/UnsubscribePage/UnsubscribePage';
 import { useActiveSection } from './hooks/useActiveSection';
 import { useEngagementTracking } from './hooks/useEngagementTracking';
 
@@ -54,6 +55,15 @@ function App() {
       <>
         <AnalyticsConsentBanner />
         <LegalPage type="terms" />
+      </>
+    );
+  }
+
+  if (path === '/unsubscribe') {
+    return (
+      <>
+        <AnalyticsConsentBanner />
+        <UnsubscribePage />
       </>
     );
   }

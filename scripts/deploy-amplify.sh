@@ -5,11 +5,21 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
+# Load local Vite env (gitignored) so deploys pick up Turnstile and other keys.
+if [[ -f "$ROOT_DIR/.env.local" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$ROOT_DIR/.env.local"
+  set +a
+fi
+
 REGION="${AWS_REGION:-${AWS_DEFAULT_REGION:-ap-south-1}}"
 APP_ID="${AMPLIFY_APP_ID:-dd9kgrhw8x8dv}"
 BRANCH="${AMPLIFY_BRANCH:-main}"
 ORDER_API_URL="${VITE_ORDER_API_URL:-https://vgtwwchwuh.execute-api.ap-south-1.amazonaws.com}"
 TURNSTILE_SITE_KEY="${VITE_TURNSTILE_SITE_KEY:-}"
+GA_MEASUREMENT_ID="${VITE_GA_MEASUREMENT_ID:-}"
+CLARITY_ID="${VITE_CLARITY_ID:-}"
 SITE_URL="${DEPLOY_SITE_URL:-https://modern-java.classpath.in}"
 ZIP_PATH="${ROOT_DIR}/.amplify-deploy.zip"
 POLL_SECONDS="${DEPLOY_POLL_SECONDS:-5}"
@@ -22,12 +32,14 @@ Usage: npm run deploy
 
 Builds the production site and uploads it to AWS Amplify (manual zip deploy).
 
-Environment:
+Environment (also loaded from .env.local when present):
   AMPLIFY_APP_ID            Amplify app id (default: dd9kgrhw8x8dv)
   AMPLIFY_BRANCH            Amplify branch (default: main)
   AWS_REGION                AWS region (default: ap-south-1)
   VITE_ORDER_API_URL        Order API base URL baked into the build
-  VITE_TURNSTILE_SITE_KEY   Cloudflare Turnstile site key (sample + digital forms)
+  VITE_TURNSTILE_SITE_KEY   Cloudflare Turnstile site key (checkout + lead forms)
+  VITE_GA_MEASUREMENT_ID    GA4 measurement ID (consent-gated analytics)
+  VITE_CLARITY_ID           Microsoft Clarity project ID (optional)
   DEPLOY_SITE_URL           Printed after success (default: https://modern-java.classpath.in)
   SKIP_BUILD=1              Reuse an existing dist/ without rebuilding
 EOF
@@ -60,9 +72,30 @@ echo "==> Deploy target: Amplify app ${APP_ID} / branch ${BRANCH} (${REGION})"
 
 if [[ "${SKIP_BUILD:-0}" != "1" ]]; then
   echo "==> Building production bundle"
-  VITE_ORDER_API_URL="$ORDER_API_URL" \
-    VITE_TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY" \
-    npm run build
+  build_env=(
+    "VITE_ORDER_API_URL=${ORDER_API_URL}"
+  )
+  # Only set optional keys when present — empty values would override .env.local.
+  if [[ -n "$TURNSTILE_SITE_KEY" ]]; then
+    build_env+=("VITE_TURNSTILE_SITE_KEY=${TURNSTILE_SITE_KEY}")
+  fi
+  if [[ -n "$GA_MEASUREMENT_ID" ]]; then
+    build_env+=("VITE_GA_MEASUREMENT_ID=${GA_MEASUREMENT_ID}")
+  fi
+  if [[ -n "$CLARITY_ID" ]]; then
+    build_env+=("VITE_CLARITY_ID=${CLARITY_ID}")
+  fi
+
+  if [[ -n "$GA_MEASUREMENT_ID" ]]; then
+    echo "    analytics: GA4=${GA_MEASUREMENT_ID}"
+  else
+    echo "    analytics: GA4 not set (cookie banner will show; no tracking scripts)"
+  fi
+  if [[ -n "$CLARITY_ID" ]]; then
+    echo "    analytics: Clarity=${CLARITY_ID}"
+  fi
+
+  env "${build_env[@]}" npm run build
 else
   echo "==> Skipping build (SKIP_BUILD=1)"
 fi

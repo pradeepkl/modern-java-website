@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://modern-java.classpath.in/sitemap.xml

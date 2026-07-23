@@ -1,15 +1,24 @@
 # Production Content Checklist
 
-Replace the following placeholders before deploying to production.
+Track remaining production polish before / after marketing launch.
 
 ## URLs and Contact
 
-| Item | Current Value | File |
-|------|--------------|------|
-| Amazon purchase URL | `https://www.amazon.in/Modern-Java-Mindset-Pradeep-Kumar-ebook` | `src/data/book.ts` |
-| LinkedIn URL | `https://www.linkedin.com/in/lpradeepk` | `src/data/book.ts` |
-| Email address | `admin@classpath.in` | `src/data/book.ts` |
-| Canonical / production URL | `REPLACE_WITH_PRODUCTION_URL` | `index.html` |
+| Item | Current Value | File | Status |
+|------|--------------|------|--------|
+| Amazon purchase URL | `https://www.amazon.in/dp/B0H6R4334W` | `src/data/book.ts` | ✅ |
+| LinkedIn URL | `https://www.linkedin.com/in/lpradeepk` | `src/data/book.ts` | ✅ |
+| Email address | `admin@classpath.in` | `src/data/book.ts` | ✅ |
+| Canonical / production URL | `https://modern-java.classpath.in/` | `index.html` | ✅ |
+
+## SEO
+
+| Item | Path | Status |
+|------|------|--------|
+| `robots.txt` | `public/robots.txt` | ✅ |
+| `sitemap.xml` | `public/sitemap.xml` | ✅ |
+| Open Graph image (1200×630) | `public/assets/social/og-preview.jpg` | ✅ |
+| Absolute OG / Twitter / JSON-LD URLs | `index.html` | ✅ |
 
 ## Image Assets
 
@@ -18,20 +27,27 @@ All asset paths are centralized in `src/data/assets.ts`.
 | Asset | Path | Status |
 |-------|------|--------|
 | Horizontal logo | `public/assets/brand/modern-java-logo-horizontal.svg` | ✅ SVG |
-| Book cover (3D) | `public/assets/hero/modern-java-3D.png` | ✅ Added |
-| Author portrait | `public/assets/author/pradeep-kumar.png` | ⚠️ Mockup extract — replace with production PNG |
-| Device montage | `public/assets/formats/available.png` | ✅ Added |
-| Open Graph image | `public/assets/social/og-preview.svg` | ⚠️ SVG — add PNG fallback for social platforms |
+| Book cover (3D) | `public/assets/hero/modern-java-3D.webp` | ✅ Added |
+| Author portrait | `public/assets/author/pradeep_author.webp` | ⚠️ Replace with final production portrait |
+| Device montage | `public/assets/formats/formats.webp` | ✅ Added |
+| Open Graph image | `public/assets/social/og-preview.jpg` | ✅ |
+
+## Analytics (required before paid ads)
+
+Set in `.env.local`, then `npm run deploy` (script loads and bakes these at build time):
+
+| Variable | Purpose | Status |
+|----------|---------|--------|
+| `VITE_GA_MEASUREMENT_ID` | GA4 measurement ID | ⚠️ Still empty — create property and set |
+| `VITE_CLARITY_ID` | Microsoft Clarity (optional) | Optional |
+
+See `docs/ANALYTICS.md`. Mark `sample_form_success`, `purchase`, and `amazon_exit` as GA4 key events after IDs ship.
 
 ## Optional
 
 - ISBN (do not add to site until confirmed)
-- Final high-resolution paperback PNG
 - Final high-resolution author portrait
-- Final high-resolution device montage
-- Final Open Graph PNG (1200×630)
-- Set `VITE_GA_MEASUREMENT_ID` and optional `VITE_CLARITY_ID` (see `docs/ANALYTICS.md`)
-- Paid digital PDF/ePub upload to S3 (`digital/modern-java.pdf`, `digital/modern-java.epub`)
+- Paid digital PDF/ePub upload to S3 (`backend/npm run upload:assets`)
 
 ## Sample chapter
 
@@ -42,4 +58,4 @@ All asset paths are centralized in `src/data/assets.ts`.
 
 ## Noscript Fallback
 
-Update purchase URLs and email in `index.html` `<noscript>` block when production values are confirmed.
+Purchase URLs and contact email in `index.html` `<noscript>` are aligned with production.

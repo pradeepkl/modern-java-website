@@ -74,8 +74,8 @@ export function GuideSection() {
             <img
               src={assets.formats.guideMockup}
               alt="Modern Java: The Mindset Shift — book cover"
-              width={1024}
-              height={683}
+              width={1600}
+              height={1067}
               className="guide-cover__image"
               loading="lazy"
               decoding="async"

@@ -151,6 +151,13 @@
   accent-color: var(--color-blue-600);
 }
 
+.digital-order__consent a {
+  color: var(--color-blue-600);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .digital-order__notice {
   margin: 8px 0 0 25px;
   color: var(--color-muted-light);

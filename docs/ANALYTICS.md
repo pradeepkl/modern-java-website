@@ -4,12 +4,16 @@ The site loads Google Analytics 4 and Microsoft Clarity **only after** the visit
 
 ## Environment variables
 
-Set these in `.env.local` (local) and Amplify / deploy env (production):
+Set these in `.env.local` (local) and they are loaded automatically by
+`npm run deploy` / `scripts/deploy-amplify.sh` for production builds:
 
 | Variable | Example | Purpose |
 |----------|---------|---------|
 | `VITE_GA_MEASUREMENT_ID` | `G-XXXXXXXXXX` | GA4 measurement ID |
 | `VITE_CLARITY_ID` | `abcdefghij` | Microsoft Clarity project ID (optional) |
+
+You can also export them in the shell before deploy; non-empty values are baked
+into the Vite bundle. Empty values are skipped so they do not wipe `.env.local`.
 
 If both are empty, the consent banner still appears but no third-party scripts load.
 

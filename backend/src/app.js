@@ -442,7 +442,7 @@ const requestSampleChapter = async (event) => {
   const marketingConsent = json.marketingConsent === true;
   const now = new Date().toISOString();
   const marketingLine = marketingConsent
-    ? 'You also asked to receive occasional Modern Java articles and book updates.'
+    ? `You also asked to receive occasional Modern Java articles and book updates. Unsubscribe anytime: ${SITE_URL}/unsubscribe`
     : 'You have not been subscribed to marketing updates.';
   const sampleText = [
     'Thank you for your interest in Modern Java: The Mindset Shift.',
@@ -554,6 +554,57 @@ const requestSampleChapter = async (event) => {
   });
 };
 
+/**
+ * Upsert marketing preference on the shared sample-requests / leads table.
+ */
+const upsertMarketingPreference = async ({
+  email,
+  consented,
+  source,
+  consentVersion,
+}) => {
+  if (!SAMPLE_REQUESTS_TABLE) return;
+
+  const now = new Date().toISOString();
+  const values = {
+    ':consented': consented === true,
+    ':now': now,
+    ':version': String(consentVersion || 'unknown'),
+    ':source': String(source || 'unknown'),
+  };
+
+  if (consented) {
+    await dynamo.send(
+      new UpdateCommand({
+        TableName: SAMPLE_REQUESTS_TABLE,
+        Key: { email },
+        UpdateExpression:
+          'SET marketingConsent = :consented, ' +
+          'marketingConsentAt = if_not_exists(marketingConsentAt, :now), ' +
+          'marketingConsentUpdatedAt = :now, consentVersion = :version, ' +
+          'marketingConsentSource = :source ' +
+          'REMOVE marketingUnsubscribedAt',
+        ExpressionAttributeValues: values,
+      }),
+    );
+    return;
+  }
+
+  await dynamo.send(
+    new UpdateCommand({
+      TableName: SAMPLE_REQUESTS_TABLE,
+      Key: { email },
+      UpdateExpression:
+        'SET marketingConsent = :consented, ' +
+        'marketingConsentUpdatedAt = :now, ' +
+        'marketingUnsubscribedAt = :now, ' +
+        'consentVersion = :version, ' +
+        'marketingConsentSource = :source',
+      ExpressionAttributeValues: values,
+    }),
+  );
+};
+
 const recordMarketingConsent = async (event) => {
   const { json } = parseBody(event);
   const email = String(json.email || '').trim().toLowerCase();
@@ -564,32 +615,50 @@ const recordMarketingConsent = async (event) => {
   if (json.marketingConsent !== true) {
     throw new Error('Marketing consent is required');
   }
+
+  await verifyTurnstileCaptcha(event, json.captchaToken);
+
   if (!SAMPLE_REQUESTS_TABLE) {
     return response(503, {
       message: 'Email signup is not configured yet. Please try again later.',
     });
   }
 
-  const now = new Date().toISOString();
-  await dynamo.send(
-    new UpdateCommand({
-      TableName: SAMPLE_REQUESTS_TABLE,
-      Key: { email },
-      UpdateExpression:
-        'SET marketingConsent = :consented, ' +
-        'marketingConsentAt = if_not_exists(marketingConsentAt, :now), ' +
-        'marketingConsentUpdatedAt = :now, consentVersion = :version, ' +
-        'marketingConsentSource = :source',
-      ExpressionAttributeValues: {
-        ':consented': true,
-        ':now': now,
-        ':version': String(json.consentVersion || 'unknown'),
-        ':source': 'amazon-pre-navigation',
-      },
-    }),
-  );
+  await upsertMarketingPreference({
+    email,
+    consented: true,
+    source: 'amazon-pre-navigation',
+    consentVersion: json.consentVersion,
+  });
 
   return response(200, { message: 'Your email preferences have been saved.' });
+};
+
+const unsubscribeMarketing = async (event) => {
+  const { json } = parseBody(event);
+  const email = String(json.email || '').trim().toLowerCase();
+
+  if (!EMAIL_PATTERN.test(email)) {
+    throw new Error('Invalid email address');
+  }
+  if (!SAMPLE_REQUESTS_TABLE) {
+    return response(503, {
+      message: 'Email preferences are not configured yet. Please try again later.',
+    });
+  }
+
+  await upsertMarketingPreference({
+    email,
+    consented: false,
+    source: 'unsubscribe-page',
+    consentVersion: json.consentVersion || '2026-07-24',
+  });
+
+  // Always succeed with the same message so callers cannot probe membership.
+  return response(200, {
+    message:
+      'You have been unsubscribed from optional marketing emails. Purchase and sample delivery messages are unaffected.',
+  });
 };
 
 const createRazorpayOrder = async ({ amount, receipt, notes }) => {
@@ -674,6 +743,19 @@ const createDigitalOrder = async (event) => {
   const now = new Date().toISOString();
   const marketingConsent = json.marketingConsent === true;
   const customerFields = { name, email, city, postalCode };
+
+  if (marketingConsent) {
+    try {
+      await upsertMarketingPreference({
+        email,
+        consented: true,
+        source: 'digital-checkout',
+        consentVersion: json.consentVersion,
+      });
+    } catch (error) {
+      console.error('Digital order marketing consent sync failed', error);
+    }
+  }
 
   if (skipPayment) {
     const paymentId = `bypass_${randomUUID().slice(0, 12)}`;
@@ -1062,6 +1144,7 @@ const sendConfirmationEmails = async (order) => {
 
 const createOrder = async (event) => {
   const { json } = parseBody(event);
+  await verifyTurnstileCaptcha(event, json.captchaToken);
   const orderInput = validateOrder(json);
   const appOrderId = `MJ-${randomUUID().slice(0, 8).toUpperCase()}`;
   const amount = orderInput.quantity * PAPERBACK_PRICE_PAISE;
@@ -1230,6 +1313,9 @@ exports.handler = async (event) => {
     if (method === 'OPTIONS') return response(204, {});
     if (method === 'POST' && path === '/sample-requests') {
       return await requestSampleChapter(event);
+    }
+    if (method === 'POST' && path === '/marketing-consents/unsubscribe') {
+      return await unsubscribeMarketing(event);
     }
     if (method === 'POST' && path === '/marketing-consents') {
       return await recordMarketingConsent(event);

@@ -5,6 +5,7 @@ import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { track, trackPurchase } from '../../lib/analytics';
 import { loadRazorpayCheckout } from '../../lib/razorpay';
 import { isTurnstileConfigured } from '../../lib/turnstile';
+import { CityInput } from '../shared/CityInput';
 import {
   TurnstileWidget,
   type TurnstileWidgetHandle,
@@ -390,13 +391,7 @@ export function DigitalOrderDialog({
             <div className="digital-order__field-row">
               <label className="digital-order__field">
                 <span>City</span>
-                <input
-                  type="text"
-                  name="city"
-                  placeholder="City"
-                  autoComplete="address-level2"
-                  required
-                />
+                <CityInput required />
               </label>
               <label className="digital-order__field">
                 <span>ZIP / PIN code</span>
@@ -420,10 +415,10 @@ export function DigitalOrderDialog({
             />
 
             <label className="digital-order__consent">
-              <input type="checkbox" name="marketingConsent" defaultChecked />
+              <input type="checkbox" name="marketingConsent" />
               <span>
                 Send me occasional book updates, Java articles, and promotional
-                offers. Unsubscribe anytime.
+                offers. <a href="/unsubscribe">Unsubscribe</a> anytime.
               </span>
             </label>
 

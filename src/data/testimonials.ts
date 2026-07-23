@@ -155,6 +155,5 @@ export const featuredEndorsement = {
 
 export const reviewsMoreLink = {
   label: 'See more reviews on Amazon',
-  // Prefer Amazon when both are placeholders; update when production URLs land
   href: book.amazonUrl,
 } as const;

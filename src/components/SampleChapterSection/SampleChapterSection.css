@@ -174,6 +174,17 @@
   accent-color: var(--color-blue-600);
 }
 
+.sample-form__consent a {
+  color: #c5dbff;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.sample-form__consent a:hover {
+  color: var(--color-white);
+}
+
 .sample-form__privacy {
   margin: 10px 0 0;
   color: rgba(255, 255, 255, 0.62);

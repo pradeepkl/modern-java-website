@@ -307,6 +307,10 @@
   border-radius: 7px;
 }
 
+.order-form__captcha {
+  margin-top: 16px;
+}
+
 .order-form__actions {
   display: flex;
   justify-content: flex-end;

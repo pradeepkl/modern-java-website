@@ -1,0 +1,63 @@
+.unsubscribe-page__content {
+  max-width: 520px;
+}
+
+.unsubscribe-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.unsubscribe-form label {
+  color: var(--color-navy-900);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.unsubscribe-form input[type='email'] {
+  min-height: 48px;
+  padding: 0 14px;
+  color: var(--color-text);
+  background: var(--color-white);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  font-size: 1.05rem;
+}
+
+.unsubscribe-form input[type='email']:focus {
+  border-color: var(--color-blue-600);
+  box-shadow: 0 0 0 3px rgba(21, 86, 192, 0.12);
+  outline: 0;
+}
+
+.unsubscribe-form .button {
+  margin-top: 6px;
+  min-height: 48px;
+}
+
+.unsubscribe-form .button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.unsubscribe-form__status {
+  min-height: 20px;
+  margin-top: 4px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.unsubscribe-form__status--success {
+  color: #0f7a45;
+}
+
+.unsubscribe-form__status--error {
+  color: #b42318;
+}
+
+.unsubscribe-page__help {
+  margin: 28px 0 0;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}

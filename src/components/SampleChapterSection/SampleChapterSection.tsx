@@ -182,10 +182,11 @@ export function SampleChapterSection() {
               />
 
               <label className="sample-form__consent">
-                <input type="checkbox" name="marketingConsent" defaultChecked />
+                <input type="checkbox" name="marketingConsent" />
                 <span>
                   Send me occasional Modern Java articles, book updates, and
-                  future releases. Unsubscribe anytime.
+                  future releases.{' '}
+                  <a href="/unsubscribe">Unsubscribe</a> anytime.
                 </span>
               </label>
 

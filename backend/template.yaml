@@ -173,6 +173,12 @@ Resources:
             ApiId: !Ref OrderApi
             Path: /marketing-consents
             Method: POST
+        UnsubscribeMarketing:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref OrderApi
+            Path: /marketing-consents/unsubscribe
+            Method: POST
         CreateDigitalOrder:
           Type: HttpApi
           Properties:

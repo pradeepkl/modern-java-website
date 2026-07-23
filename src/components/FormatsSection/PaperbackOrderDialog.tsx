@@ -11,6 +11,12 @@ import { CheckCircle2, CreditCard, Minus, Plus, X } from 'lucide-react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { track, trackPurchase } from '../../lib/analytics';
 import { loadRazorpayCheckout } from '../../lib/razorpay';
+import { isTurnstileConfigured } from '../../lib/turnstile';
+import { CityInput } from '../shared/CityInput';
+import {
+  TurnstileWidget,
+  type TurnstileWidgetHandle,
+} from '../shared/TurnstileWidget';
 import './PaperbackOrderDialog.css';
 
 interface PaperbackOrderDialogProps {
@@ -64,7 +70,9 @@ export function PaperbackOrderDialog({
   const [processing, setProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [confirmedOrderId, setConfirmedOrderId] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const completedRef = useRef(false);
+  const turnstileRef = useRef<TurnstileWidgetHandle>(null);
   const headingId = useId();
   const descriptionId = useId();
   useBodyScrollLock(open);
@@ -85,6 +93,7 @@ export function PaperbackOrderDialog({
     if (!open) return;
     setErrorMessage('');
     setConfirmedOrderId(null);
+    setCaptchaToken(null);
     completedRef.current = false;
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -120,6 +129,16 @@ export function PaperbackOrderDialog({
       return;
     }
 
+    if (isTurnstileConfigured() && !captchaToken) {
+      setErrorMessage('Please complete the captcha check before continuing.');
+      setProcessing(false);
+      track('checkout_fail', {
+        format: 'paperback',
+        reason: 'captcha_missing',
+      });
+      return;
+    }
+
     const orderInput = {
       name: String(data.get('name')),
       email: String(data.get('email')),
@@ -131,6 +150,7 @@ export function PaperbackOrderDialog({
       postalCode: String(data.get('postalCode')),
       country: 'India',
       notes: String(data.get('notes') || ''),
+      captchaToken: captchaToken || undefined,
     };
 
     try {
@@ -240,6 +260,8 @@ export function PaperbackOrderDialog({
           ? error.message
           : 'Unable to start payment right now',
       );
+      setCaptchaToken(null);
+      turnstileRef.current?.reset();
       track('checkout_fail', { format: 'paperback', reason: 'start_failed' });
       setProcessing(false);
     }
@@ -432,9 +454,7 @@ export function PaperbackOrderDialog({
 
             <label className="order-form__field">
               <RequiredLabel>City</RequiredLabel>
-              <input
-                name="city"
-                autoComplete="address-level2"
+              <CityInput
                 defaultValue={TEST_ORDER_DEFAULTS?.city}
                 required
               />
@@ -490,6 +510,13 @@ export function PaperbackOrderDialog({
               />
             </label>
           </div>
+
+          <TurnstileWidget
+            ref={turnstileRef}
+            theme="light"
+            className="order-form__captcha"
+            onTokenChange={setCaptchaToken}
+          />
 
           {errorMessage ? (
             <p className="order-form__error" role="alert">

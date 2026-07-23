@@ -43,6 +43,10 @@ export function Footer() {
           <a href="/terms-of-use" className="site-footer__legal-link">
             Terms of Use
           </a>
+          <span aria-hidden="true">·</span>
+          <a href="/unsubscribe" className="site-footer__legal-link">
+            Unsubscribe
+          </a>
         </div>
         <p className="site-footer__copyright">
           © {book.copyrightYear} {book.author}. All rights reserved.

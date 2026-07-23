@@ -58,15 +58,21 @@ All asset paths are centralized in `src/data/assets.ts`. Book content and purcha
 
 ## Replacing Book Links
 
-Edit `src/data/book.ts`:
+Canonical purchase and contact values live in `src/data/book.ts`:
 
 ```ts
-amazonUrl: 'https://...',
-linkedinUrl: 'https://...',
-email: 'you@example.com',
+amazonUrl: 'https://www.amazon.in/dp/B0H6R4334W',
+linkedinUrl: 'https://www.linkedin.com/in/lpradeepk',
+email: 'admin@classpath.in',
 ```
 
-Also update the `<noscript>` block in `index.html` and `REPLACE_WITH_PRODUCTION_URL` for the canonical URL.
+Keep these in sync whenever the Amazon listing changes:
+
+- `src/data/book.ts` → `amazonUrl` (used by CTAs, formats, testimonials)
+- `index.html` → JSON-LD Kindle offer `url` and the `<noscript>` Amazon link
+
+Canonical, Open Graph, and Twitter meta tags should use the live site URL
+(`https://modern-java.classpath.in/`).
 
 Paperback checkout uses the AWS SAM service in `backend/`. Follow
 `backend/README.md` to deploy it, then set `VITE_ORDER_API_URL` in the website
@@ -89,9 +95,9 @@ Drop replacement files into the normalized paths (same filenames):
 
 | Asset | Path |
 |-------|------|
-| Book cover (3D) | `public/assets/hero/modern-java-3D.png` |
-| Author portrait | `public/assets/author/pradeep-kumar.png` |
-| Device montage | `public/assets/formats/available.png` |
+| Book cover (3D) | `public/assets/hero/modern-java-3D.webp` |
+| Author portrait | `public/assets/author/pradeep_author.webp` |
+| Device montage | `public/assets/formats/formats.webp` |
 
 No code changes are needed if filenames stay the same. For new filenames, update `src/data/assets.ts`.
 
@@ -134,7 +140,7 @@ Defaults (overridable via env):
 | `AWS_REGION` | `ap-south-1` |
 | `VITE_ORDER_API_URL` | Order API URL used by checkout |
 | `VITE_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key (sample + digital checkout) |
-| `VITE_GA_MEASUREMENT_ID` | GA4 measurement ID (optional; consent-gated) |
+| `VITE_GA_MEASUREMENT_ID` | GA4 measurement ID (optional; consent-gated; loaded from `.env.local` on deploy) |
 | `VITE_CLARITY_ID` | Microsoft Clarity project ID (optional; consent-gated) |
 | `DEPLOY_SITE_URL` | `https://modern-java.classpath.in` |
 

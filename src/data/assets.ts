@@ -11,7 +11,7 @@ export const assets = {
     radial: '/assets/hero/hero-radial.svg',
     circuitLeft: '/assets/hero/hero-circuit-left.svg',
     circuitRight: '/assets/hero/hero-circuit-right.svg',
-    paperback: '/assets/hero/modern-java-3D.png',
+    paperback: '/assets/hero/modern-java-3D.webp',
   },
 
   topicIcons: {
@@ -30,8 +30,8 @@ export const assets = {
   },
 
   formats: {
-    devices: '/assets/formats/formats.png',
-    guideMockup: '/assets/formats/3Dmockup-tp.jpg',
+    devices: '/assets/formats/formats.webp',
+    guideMockup: '/assets/formats/3Dmockup-tp.webp',
     pdf: '/assets/icons/formats/pdf.png',
     epub: '/assets/icons/formats/epub.png',
     mobi: '/assets/icons/formats/mobi.png',
@@ -42,7 +42,7 @@ export const assets = {
   },
 
   author: {
-    portrait: '/assets/author/pradeep_author.png',
+    portrait: '/assets/author/pradeep_author.webp',
   },
 
   decorations: {
@@ -53,7 +53,7 @@ export const assets = {
   },
 
   social: {
-    ogPreview: '/assets/social/og-preview.svg',
+    ogPreview: '/assets/social/og-preview.jpg',
     github: '/assets/icons/social/icon-github.svg',
     linkedin: '/assets/icons/social/icon-linkedin.svg',
     email: '/assets/icons/social/icon-email.svg',

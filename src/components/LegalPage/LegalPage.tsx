@@ -21,7 +21,17 @@ function PrivacyPolicy() {
           You can browse this website without creating an account. When you
           place a paperback order, we collect the information needed to process
           and deliver it, including your name, email address, phone number,
-          quantity, delivery address, postal code, and any optional notes.
+          quantity, delivery address, city, state, postal code, and any optional
+          notes.
+        </p>
+        <p>
+          When you buy the direct digital edition (PDF and ePub), we collect
+          your name, email address, city, and postal / PIN code so we can create
+          the order, verify payment, email secure download links, and support
+          the purchase. We also record whether you separately chose to receive
+          occasional book updates.
+        </p>
+        <p>
           When you request a sample chapter, we collect your email address and
           record whether you separately chose to receive occasional updates.
           Before visiting Amazon, you may also optionally share your email
@@ -35,6 +45,25 @@ function PrivacyPolicy() {
       </section>
 
       <section>
+        <h2>Bot protection (Cloudflare Turnstile)</h2>
+        <p>
+          Sample-chapter requests, Amazon email signup, and paperback and direct
+          digital checkout use Cloudflare Turnstile to reduce automated abuse.
+          When you submit those forms, a short-lived verification token is
+          generated in your browser and checked by our servers with Cloudflare.
+          Cloudflare may process technical data such as your IP address, browser
+          characteristics, and interaction signals needed to decide whether the
+          request appears human. We do not use Turnstile to collect the contents
+          of your form fields for advertising.
+        </p>
+        <p>
+          Turnstile is provided by Cloudflare and is subject to Cloudflare&apos;s
+          privacy policy. If verification fails, we may reject the submission
+          without creating an order or sending a sample.
+        </p>
+      </section>
+
+      <section>
         <h2>Analytics and cookies</h2>
         <p>
           If you choose <strong>Accept analytics</strong> on the cookie banner,
@@ -43,8 +72,8 @@ function PrivacyPolicy() {
           URL, device and browser type, approximate location, scroll and click
           behaviour, and conversion events such as sample requests and
           completed checkouts. We do not send your email address, name, phone
-          number, delivery address, or payment card details to these analytics
-          providers.
+          number, delivery address, postal code, or payment card details to
+          these analytics providers.
         </p>
         <p>
           Analytics consent is separate from marketing email consent. You can
@@ -57,8 +86,15 @@ function PrivacyPolicy() {
       <section>
         <h2>How we use your information</h2>
         <ul>
-          <li>To create, process, deliver, and support your order.</li>
-          <li>To verify payment and send order confirmations.</li>
+          <li>
+            To create, process, deliver, and support paperback and digital
+            orders.
+          </li>
+          <li>
+            To email secure sample-chapter and digital download links to the
+            address you provide.
+          </li>
+          <li>To verify payment and send order confirmations and invoices.</li>
           <li>To respond to questions and customer-service requests.</li>
           <li>
             To send book and Java updates only when you explicitly opt in.
@@ -67,24 +103,30 @@ function PrivacyPolicy() {
             With your analytics consent, to understand site usage and improve
             the purchase experience.
           </li>
-          <li>To prevent fraud, protect the website, and comply with law.</li>
+          <li>
+            To prevent fraud and bot abuse (including Turnstile checks), protect
+            the website, and comply with law.
+          </li>
         </ul>
       </section>
 
       <section>
         <h2>Payments and service providers</h2>
         <p>
-          Paperback payments are processed by Razorpay. We do not receive or
-          store your full card, UPI, or bank-account credentials. Razorpay
-          processes payment information under its own privacy policy and terms.
+          Paperback and direct digital payments are processed by Razorpay. We do
+          not receive or store your full card, UPI, or bank-account credentials.
+          Razorpay processes payment information under its own privacy policy
+          and terms.
         </p>
         <p>
-          Order information may be processed by service providers that help us
-          operate the store, including Amazon Web Services for hosting, order
-          records, and transactional email. Kindle purchases are completed on
-          Amazon and are governed by Amazon&apos;s privacy policy and terms.
-          Optional analytics are provided by Google and Microsoft under their
-          respective privacy policies when you accept analytics cookies.
+          Order and sample information may be processed by service providers
+          that help us operate the store, including Amazon Web Services for
+          hosting, order records, file delivery, and transactional email, and
+          Cloudflare for Turnstile bot protection. Kindle purchases are
+          completed on Amazon and are governed by Amazon&apos;s privacy policy
+          and terms. Optional analytics are provided by Google and Microsoft
+          under their respective privacy policies when you accept analytics
+          cookies.
         </p>
       </section>
 
@@ -92,14 +134,15 @@ function PrivacyPolicy() {
         <h2>Sharing and retention</h2>
         <p>
           We do not sell your personal information. We share it only with
-          payment, hosting, email, delivery, and professional service providers
-          where necessary to operate the website and fulfil orders, or when
-          required by law.
+          payment, hosting, email, security, delivery, and professional service
+          providers where necessary to operate the website and fulfil orders, or
+          when required by law.
         </p>
         <p>
-          We retain order and payment records only for as long as reasonably
-          necessary for fulfilment, support, accounting, fraud prevention, and
-          legal obligations.
+          We retain order, sample-request, and payment records only for as long
+          as reasonably necessary for fulfilment, support, accounting, fraud
+          prevention, and legal obligations. Secure download links expire after
+          a limited time for security.
         </p>
       </section>
 
@@ -109,6 +152,9 @@ function PrivacyPolicy() {
           You may ask to access, correct, or delete personal information we
           hold about you, subject to records we must retain by law. Email us at{' '}
           <a href={`mailto:${book.email}`}>{book.email}</a> with your request.
+          You can stop optional marketing emails at any time on the{' '}
+          <a href="/unsubscribe">unsubscribe page</a>, or by writing to the
+          contact address above.
         </p>
       </section>
 
@@ -209,9 +255,9 @@ function TermsOfUse() {
         <h2>Third-party services and links</h2>
         <p>
           This website links to and relies on third-party services, including
-          Amazon and Razorpay. We are not responsible for their content,
-          availability, security, or practices. Your use of those services is
-          governed by their respective terms.
+          Amazon, Razorpay, and Cloudflare Turnstile. We are not responsible for
+          their content, availability, security, or practices. Your use of those
+          services is governed by their respective terms.
         </p>
       </section>
 

@@ -142,6 +142,17 @@
   color: var(--color-muted);
 }
 
+.amazon-consent__permission a {
+  color: var(--color-blue-600);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.amazon-consent__captcha {
+  margin: 4px 0 10px;
+}
+
 .amazon-consent__error {
   margin: 0 0 4px;
   padding: 10px 12px;
