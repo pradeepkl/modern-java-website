@@ -105,13 +105,6 @@
   color: var(--color-blue-700);
 }
 
-.format-card__feature-marker {
-  margin-left: 2px;
-  font-size: 0.8em;
-  font-weight: 800;
-  color: #c62828;
-}
-
 .format-card__pricing {
   margin: auto 0 16px;
   text-align: center;

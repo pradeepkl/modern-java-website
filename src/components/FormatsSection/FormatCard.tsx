@@ -58,17 +58,7 @@ export function FormatCard({ format }: FormatCardProps) {
                 <span className="format-card__check" aria-hidden="true">
                   <Check size={14} strokeWidth={2.5} />
                 </span>
-                <span>
-                  {feature}
-                  {[
-                    'DRM-free PDF + ePub included',
-                    'Access to future revised editions',
-                  ].includes(feature) ? (
-                    <sup className="format-card__feature-marker" aria-hidden="true">
-                      {format.id === 'digital' ? '*' : '**'}
-                    </sup>
-                  ) : null}
-                </span>
+                <span>{feature}</span>
               </li>
             ))}
           </ul>
