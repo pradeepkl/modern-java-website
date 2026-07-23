@@ -62,7 +62,7 @@ const sendEmail = ({ to, subject, text, html }) =>
     }),
   );
 
-const PAPERBACK_PRICE_PAISE = 89900;
+const PAPERBACK_PRICE_PAISE = 49900;
 const DIGITAL_BUNDLE_PRICE_PAISE = 69900;
 const MAX_QUANTITY = 20;
 const DOWNLOAD_LINK_TTL_SECONDS = 7 * 24 * 60 * 60;

@@ -76,7 +76,7 @@ export function PurchaseButtons({
         aria-label="Place an order for the Modern Java paperback"
       >
         <ShoppingCart size={20} strokeWidth={2} aria-hidden="true" />
-        Place paperback order — ₹899
+        Place paperback order — ₹499
       </button>
       <PaperbackOrderDialog
         open={orderFormOpen}
