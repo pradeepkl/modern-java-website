@@ -180,6 +180,25 @@ const sendEmail = async ({ to, subject, text, html, attachments = [] }) => {
   );
 };
 
+/**
+ * Fire-and-forget business alert to the admin inbox.
+ * Never throws — customer flows must not fail because of notification errors.
+ */
+const notifyAdmin = async ({ subject, lines }) => {
+  try {
+    const text = (Array.isArray(lines) ? lines : [lines])
+      .filter((line) => line !== undefined && line !== null && line !== '')
+      .join('\n');
+    await sendEmail({
+      to: ADMIN_EMAIL,
+      subject: `[Modern Java] ${subject}`,
+      text: `${text}\n\nSent: ${new Date().toISOString()}`,
+    });
+  } catch (error) {
+    console.error('Admin notification failed', { subject, error });
+  }
+};
+
 const invoiceEmailCopy = (invoice) => {
   if (!invoice?.invoiceNumber) {
     return { text: '', html: '' };
@@ -549,6 +568,21 @@ const requestSampleChapter = async (event) => {
     }),
   );
 
+  const requestCount = Number(existing.Item?.requestCount || 0) + 1;
+  const storedMarketingConsent =
+    existing.Item?.marketingConsent === true || marketingConsent;
+  await notifyAdmin({
+    subject: `Sample chapter requested — ${email}`,
+    lines: [
+      'Event: sample_chapter_requested',
+      `Email: ${email}`,
+      `Marketing opt-in (this request): ${marketingConsent ? 'Yes' : 'No'}`,
+      `Marketing opt-in (stored): ${storedMarketingConsent ? 'Yes' : 'No'}`,
+      `Request count: ${requestCount}`,
+      `Time: ${now}`,
+    ],
+  });
+
   return response(200, {
     message: 'Check your inbox—the sample chapter is on its way.',
   });
@@ -631,6 +665,16 @@ const recordMarketingConsent = async (event) => {
     consentVersion: json.consentVersion,
   });
 
+  await notifyAdmin({
+    subject: `Marketing opt-in — ${email}`,
+    lines: [
+      'Event: marketing_opt_in',
+      `Email: ${email}`,
+      'Source: amazon-pre-navigation',
+      `Consent version: ${String(json.consentVersion || 'unknown')}`,
+    ],
+  });
+
   return response(200, { message: 'Your email preferences have been saved.' });
 };
 
@@ -652,6 +696,15 @@ const unsubscribeMarketing = async (event) => {
     consented: false,
     source: 'unsubscribe-page',
     consentVersion: json.consentVersion || '2026-07-24',
+  });
+
+  await notifyAdmin({
+    subject: `Marketing unsubscribe — ${email}`,
+    lines: [
+      'Event: marketing_unsubscribe',
+      `Email: ${email}`,
+      'Source: unsubscribe-page',
+    ],
   });
 
   // Always succeed with the same message so callers cannot probe membership.
@@ -751,6 +804,15 @@ const createDigitalOrder = async (event) => {
         consented: true,
         source: 'digital-checkout',
         consentVersion: json.consentVersion,
+      });
+      await notifyAdmin({
+        subject: `Marketing opt-in — ${email}`,
+        lines: [
+          'Event: marketing_opt_in',
+          `Email: ${email}`,
+          'Source: digital-checkout',
+          `Consent version: ${String(json.consentVersion || 'unknown')}`,
+        ],
       });
     } catch (error) {
       console.error('Digital order marketing consent sync failed', error);
@@ -1122,6 +1184,30 @@ const createInvoiceForOrder = async (order) => {
     );
   } catch (error) {
     console.error('Failed to store Zoho invoice fields on order', error);
+    await notifyAdmin({
+      subject: `Zoho invoice save failed — ${order.appOrderId}`,
+      lines: [
+        'Event: zoho_invoice_store_failed',
+        `Order ID: ${order.appOrderId}`,
+        `Customer: ${order.email}`,
+        `Invoice: ${invoice.invoiceNumber || invoice.invoiceId}`,
+        `Error: ${error.message || error}`,
+      ],
+    });
+  }
+
+  if (invoice.warning) {
+    await notifyAdmin({
+      subject: `Zoho invoice warning — ${order.appOrderId}`,
+      lines: [
+        'Event: zoho_invoice_warning',
+        `Order ID: ${order.appOrderId}`,
+        `Customer: ${order.email}`,
+        `Product: ${order.productType || 'paperback'}`,
+        `Invoice: ${invoice.invoiceNumber || invoice.invoiceId}`,
+        `Warning: ${invoice.warning}`,
+      ],
+    });
   }
 
   return invoice;
@@ -1133,6 +1219,25 @@ const sendConfirmationEmails = async (order) => {
     invoice = await createInvoiceForOrder(order);
   } catch (error) {
     console.error('Zoho invoice creation/send failed', error);
+    const zohoDetail =
+      error?.zoho && typeof error.zoho === 'object'
+        ? JSON.stringify(error.zoho)
+        : null;
+    await notifyAdmin({
+      subject: `Zoho invoice failed — ${order.appOrderId}`,
+      lines: [
+        'Event: zoho_invoice_failed',
+        `Order ID: ${order.appOrderId}`,
+        `Customer: ${order.email}`,
+        `Name: ${order.name || '—'}`,
+        `Product: ${order.productType || 'paperback'}`,
+        `Amount: ₹${Number(order.amount || 0) / 100}`,
+        `Payment ID: ${order.paymentId || '—'}`,
+        `Error: ${error.message || error}`,
+        zohoDetail ? `Zoho detail: ${zohoDetail}` : null,
+        'Action: check Zoho OAuth refresh token / API credentials if token-related.',
+      ],
+    });
   }
 
   if (order.productType === 'digital_bundle') {

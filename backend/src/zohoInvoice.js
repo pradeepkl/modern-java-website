@@ -54,7 +54,17 @@ const getAccessToken = async () => {
 
   if (!result.ok || !payload.access_token) {
     console.error('Zoho token refresh failed', payload);
-    throw new Error('Unable to refresh Zoho Invoice access token');
+    const detail =
+      payload.error_description ||
+      payload.error ||
+      payload.message ||
+      `HTTP ${result.status}`;
+    const error = new Error(
+      `Unable to refresh Zoho Invoice access token (${detail})`,
+    );
+    error.zoho = payload;
+    error.status = result.status;
+    throw error;
   }
 
   cachedToken = payload.access_token;
@@ -399,6 +409,7 @@ const createAndSendInvoice = async ({
   const invoiceId = invoice.invoice_id;
   const amount = Number(invoice.total || items[0]?.rate || 0);
 
+  let paymentWarning = null;
   try {
     await recordInvoicePayment({
       contactId,
@@ -409,9 +420,11 @@ const createAndSendInvoice = async ({
     });
   } catch (error) {
     console.error('Zoho payment recording failed; continuing', error);
+    paymentWarning = error.message || String(error);
   }
 
   let pdfBuffer = null;
+  let pdfWarning = null;
   try {
     pdfBuffer = await downloadInvoicePdf(invoiceId);
     console.info('Zoho invoice PDF downloaded', {
@@ -420,14 +433,21 @@ const createAndSendInvoice = async ({
       pdfBytes: pdfBuffer?.length || 0,
     });
   } catch (error) {
-    console.error('Zoho invoice PDF download failed; sending confirmation without attachment', error);
+    console.error(
+      'Zoho invoice PDF download failed; sending confirmation without attachment',
+      error,
+    );
+    pdfWarning = error.message || String(error);
   }
+
+  const warnings = [paymentWarning, pdfWarning].filter(Boolean);
 
   return {
     invoiceId,
     invoiceNumber: invoice.invoice_number,
     invoiceUrl: invoice.invoice_url || null,
     pdfBuffer,
+    warning: warnings.length ? warnings.join(' | ') : null,
   };
 };
 
