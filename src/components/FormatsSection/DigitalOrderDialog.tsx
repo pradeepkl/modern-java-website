@@ -189,12 +189,16 @@ export function DigitalOrderDialog({
           <form className="digital-order-form" onSubmit={handleSubmit}>
             <ul className="digital-order__benefits">
               <li>
-                <Download size={18} aria-hidden="true" />
-                Secure links for PDF and ePub
-              </li>
-              <li>
-                <CheckCircle2 size={18} aria-hidden="true" />
-                Future revised editions included
+                <span className="digital-order__benefit-lines">
+                  <span className="digital-order__benefit-line">
+                    <Download size={18} aria-hidden="true" />
+                    Secure links for PDF and ePub
+                  </span>
+                  <span className="digital-order__benefit-line">
+                    <CheckCircle2 size={18} aria-hidden="true" />
+                    Future revised editions included
+                  </span>
+                </span>
               </li>
             </ul>
 

@@ -1,25 +1,66 @@
-.digital-order-dialog {
-  width: min(100%, 580px);
+/*
+ * Beat shared .order-dialog (720px). Width = header content (title + close)
+ * plus ~10% horizontal padding. Benefits stack in one column.
+ */
+.order-dialog.digital-order-dialog {
+  width: max-content;
+  max-width: calc(100vw - 48px);
 }
 
-.digital-order-form {
-  padding: 26px 28px 28px;
+.digital-order-dialog .order-dialog__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  /* ~20% of header content width as total side padding */
+  padding: 18px 2.6ch 16px;
+}
+
+.digital-order-dialog .order-dialog__header > div {
+  min-width: 0;
+}
+
+.digital-order-dialog .order-dialog__title {
+  margin: 0 0 6px;
+  font-size: 1.15rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.digital-order-dialog .order-dialog__description {
+  /* Stay under the title; do not widen the popup */
+  width: 0;
+  min-width: 100%;
+  max-width: none;
+  font-size: 0.84rem;
+}
+
+.digital-order-dialog .order-dialog__close {
+  width: 36px;
+  height: 36px;
+  margin-top: 2px;
+}
+
+/* Form fills header-defined width without expanding it */
+.digital-order-form,
+.digital-order-dialog .digital-order__success {
+  box-sizing: border-box;
+  width: 0;
+  min-width: 100%;
+  padding: 18px 2.6ch 20px;
 }
 
 .digital-order__benefits {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin: 0 0 22px;
+  grid-template-columns: 1fr;
+  gap: 0;
+  margin: 0 0 18px;
   padding: 0;
   list-style: none;
 }
 
 .digital-order__benefits li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 11px 12px;
+  padding: 10px 12px;
   color: var(--color-blue-700);
   background: var(--color-blue-050);
   border-radius: 8px;
@@ -27,7 +68,19 @@
   font-weight: 700;
 }
 
-.digital-order__benefits svg {
+.digital-order__benefit-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.digital-order__benefit-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.digital-order__benefit-line svg {
   flex-shrink: 0;
 }
 
@@ -41,8 +94,10 @@
 }
 
 .digital-order__field input {
-  min-height: 50px;
-  padding: 0 14px;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 12px;
   color: var(--color-text);
   background: var(--color-white);
   border: 1px solid var(--color-border-strong);
@@ -61,7 +116,7 @@
   grid-template-columns: auto minmax(0, 1fr);
   gap: 9px;
   align-items: start;
-  margin-top: 18px;
+  margin-top: 16px;
   color: var(--color-muted);
   font-size: 0.84rem;
   line-height: 1.45;
@@ -76,7 +131,7 @@
 }
 
 .digital-order__notice {
-  margin: 9px 0 0 25px;
+  margin: 8px 0 0 25px;
   color: var(--color-muted-light);
   font-size: 0.76rem;
   line-height: 1.45;
@@ -84,8 +139,8 @@
 
 .digital-order__submit {
   width: 100%;
-  min-height: 50px;
-  margin-top: 22px;
+  min-height: 48px;
+  margin-top: 18px;
 }
 
 .digital-order__submit:disabled {
@@ -94,16 +149,17 @@
 }
 
 .digital-order__success {
-  padding: 38px 28px;
   text-align: center;
 }
 
-@media (max-width: 560px) {
-  .digital-order-form {
-    padding-inline: 18px;
+@media (max-width: 380px) {
+  .digital-order-dialog .order-dialog__title {
+    white-space: normal;
   }
 
-  .digital-order__benefits {
-    grid-template-columns: 1fr;
+  .digital-order-dialog .order-dialog__header,
+  .digital-order-form,
+  .digital-order-dialog .digital-order__success {
+    padding-inline: 14px;
   }
 }
