@@ -13,6 +13,7 @@ export interface FormatOption {
   badge: string;
   badgeIcon: 'amazon' | 'book' | 'download';
   headline: string;
+  subtitle: string;
   features: readonly FormatFeature[];
   price: string;
   listPrice: string;
@@ -29,6 +30,7 @@ export const formatOptions: FormatOption[] = [
     badge: 'Kindle Edition',
     badgeIcon: 'amazon',
     headline: 'Read instantly anywhere',
+    subtitle: 'Read anywhere, highlight as you go',
     features: [
       { text: 'Instant download' },
       { text: 'Works on all devices' },
@@ -48,6 +50,7 @@ export const formatOptions: FormatOption[] = [
     badge: 'Direct Digital Edition',
     badgeIcon: 'download',
     headline: 'DRM-free PDF + ePub bundle',
+    subtitle: 'Own the files. Keep every revision',
     features: [
       { text: 'DRM-free PDF + ePub included', tone: 'upgrade' },
       { text: 'Access to future revised editions', tone: 'upgrade' },
@@ -66,6 +69,7 @@ export const formatOptions: FormatOption[] = [
     badge: 'Paperback',
     badgeIcon: 'book',
     headline: 'High-quality print edition',
+    subtitle: 'Color diagrams beside your keyboard',
     features: [
       { text: 'Includes DRM-free PDF + ePub', tone: 'upgrade' },
       {

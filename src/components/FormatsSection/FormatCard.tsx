@@ -92,6 +92,7 @@ export function FormatCard({ format }: FormatCardProps) {
           </div>
 
           <h3 className="format-card__headline">{format.headline}</h3>
+          <p className="format-card__subtitle">{format.subtitle}</p>
 
           <ul className="format-card__features">
             {upgradeFeatures.map((feature) => (

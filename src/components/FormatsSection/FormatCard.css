@@ -66,12 +66,19 @@
 }
 
 .format-card__headline {
-  margin: 0 0 16px;
+  margin: 0 0 8px;
   font-family: var(--font-heading);
   font-size: 1.35rem;
   font-weight: 700;
   line-height: 1.25;
   color: var(--color-navy-900);
+}
+
+.format-card__subtitle {
+  margin: 0 0 16px;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--color-muted);
 }
 
 .format-card__features {
