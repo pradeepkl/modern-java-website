@@ -49,16 +49,11 @@ npm run upload:assets
 ```
 
 That uploads `../assets/books/modern-java-preview.pdf` to
-`sample/modern-java-preview.pdf` and
+`sample/modern-java-preview.pdf`,
 `../assets/books/modern-java-drm-free_v1.0.pdf` to
-`digital/modern-java-drm-free_v1.0.pdf` in `DigitalAssetsBucketName`.
-
-To also upload an ePub when it is ready:
-
-```bash
-DIGITAL_EPUB=/path/to/modern-java.epub \
-npm run upload:assets
-```
+`digital/modern-java-drm-free_v1.0.pdf`, and
+`../assets/books/modern-java-drm-free_v1.0.epub` to
+`digital/modern-java-drm-free_v1.0.epub` in `DigitalAssetsBucketName`.
 
 Sample-only upload:
 
@@ -82,7 +77,7 @@ and set the deployed API URL.
 - `POST /sample-requests` records optional marketing consent and emails a
   time-limited S3 download link for the sample chapter PDF.
 - `POST /digital-orders` creates a ₹399 Razorpay order for the DRM-free PDF
-  (ePub link is included when that asset is present in S3). The normal
-  verification endpoint emails time-limited S3 download links after payment.
+  + ePub bundle. The normal verification endpoint emails time-limited S3
+  download links after payment.
 
 Razorpay secrets are backend-only. The browser receives only the public key ID.

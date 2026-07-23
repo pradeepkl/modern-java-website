@@ -10,8 +10,8 @@ SAMPLE_PDF="${SAMPLE_PDF:-$ROOT_DIR/assets/books/modern-java-preview.pdf}"
 SAMPLE_KEY="${SAMPLE_KEY:-sample/modern-java-preview.pdf}"
 DIGITAL_PDF="${DIGITAL_PDF:-$ROOT_DIR/assets/books/modern-java-drm-free_v1.0.pdf}"
 DIGITAL_PDF_KEY="${DIGITAL_PDF_KEY:-digital/modern-java-drm-free_v1.0.pdf}"
-DIGITAL_EPUB="${DIGITAL_EPUB:-}"
-DIGITAL_EPUB_KEY="${DIGITAL_EPUB_KEY:-digital/modern-java.epub}"
+DIGITAL_EPUB="${DIGITAL_EPUB:-$ROOT_DIR/assets/books/modern-java-drm-free_v1.0.epub}"
+DIGITAL_EPUB_KEY="${DIGITAL_EPUB_KEY:-digital/modern-java-drm-free_v1.0.epub}"
 SAMPLE_ONLY=0
 
 usage() {
@@ -21,9 +21,7 @@ Usage: upload-digital-assets.sh [--sample-only]
 Uploads:
   - Free sample chapter: assets/books/modern-java-preview.pdf
   - Paid DRM-free PDF:   assets/books/modern-java-drm-free_v1.0.pdf
-
-Optional paid ePub:
-  DIGITAL_EPUB=/path/to/book.epub ./scripts/upload-digital-assets.sh
+  - Paid DRM-free ePub:  assets/books/modern-java-drm-free_v1.0.epub
 
 Environment:
   STACK_NAME          CloudFormation/SAM stack name (default: sam-app)
@@ -32,8 +30,8 @@ Environment:
   SAMPLE_KEY          Destination object key (default: sample/modern-java-preview.pdf)
   DIGITAL_PDF         Local DRM-free PDF path
   DIGITAL_PDF_KEY     Destination object key (default: digital/modern-java-drm-free_v1.0.pdf)
-  DIGITAL_EPUB        Local ePub path (optional)
-  DIGITAL_EPUB_KEY    Destination object key (default: digital/modern-java.epub)
+  DIGITAL_EPUB        Local DRM-free ePub path
+  DIGITAL_EPUB_KEY    Destination object key (default: digital/modern-java-drm-free_v1.0.epub)
 EOF
 }
 
@@ -80,14 +78,12 @@ if [[ "$SAMPLE_ONLY" -eq 0 ]]; then
     --region "$REGION" \
     --content-type application/pdf \
     --metadata-directive REPLACE
-fi
 
-if [[ -n "$DIGITAL_EPUB" ]]; then
   if [[ ! -f "$DIGITAL_EPUB" ]]; then
     echo "Digital ePub not found: $DIGITAL_EPUB" >&2
     exit 1
   fi
-  echo "Uploading digital ePub -> s3://$BUCKET/$DIGITAL_EPUB_KEY"
+  echo "Uploading DRM-free ePub -> s3://$BUCKET/$DIGITAL_EPUB_KEY"
   aws s3 cp "$DIGITAL_EPUB" "s3://$BUCKET/$DIGITAL_EPUB_KEY" \
     --region "$REGION" \
     --content-type application/epub+zip \
@@ -98,6 +94,7 @@ echo "Done."
 echo "Sample object: s3://$BUCKET/$SAMPLE_KEY"
 if [[ "$SAMPLE_ONLY" -eq 0 ]]; then
   echo "Digital PDF:  s3://$BUCKET/$DIGITAL_PDF_KEY"
+  echo "Digital ePub: s3://$BUCKET/$DIGITAL_EPUB_KEY"
 fi
-echo "Redeploy the API if DigitalPdfKey changed in template.yaml:"
+echo "Redeploy the API if DigitalPdfKey/DigitalEpubKey changed in template.yaml:"
 echo "  cd \"$BACKEND_DIR\" && sam build && sam deploy --no-confirm-changeset"

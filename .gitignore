@@ -26,3 +26,7 @@ dns-backup-*.json
 *.njsproj
 *.sln
 *.sw?
+
+# Paid digital edition (large; delivered from private S3)
+assets/books/modern-java-drm-free_v1.0.pdf
+assets/books/modern-java-drm-free_v1.0.epub

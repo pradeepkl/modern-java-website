@@ -26,7 +26,7 @@ const {
   DIGITAL_ASSETS_BUCKET,
   SAMPLE_PDF_KEY = 'sample/modern-java-preview.pdf',
   DIGITAL_PDF_KEY = 'digital/modern-java-drm-free_v1.0.pdf',
-  DIGITAL_EPUB_KEY = 'digital/modern-java.epub',
+  DIGITAL_EPUB_KEY = 'digital/modern-java-drm-free_v1.0.epub',
   RAZORPAY_KEY_ID,
   RAZORPAY_KEY_SECRET,
   RAZORPAY_WEBHOOK_SECRET,
@@ -422,7 +422,10 @@ const createDigitalOrder = async (event) => {
   }
 
   try {
-    await assertObjectExists(DIGITAL_PDF_KEY);
+    await Promise.all([
+      assertObjectExists(DIGITAL_PDF_KEY),
+      assertObjectExists(DIGITAL_EPUB_KEY),
+    ]);
   } catch (error) {
     if (error.code === 'ASSET_MISSING') {
       return response(503, {

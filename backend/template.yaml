@@ -44,7 +44,7 @@ Parameters:
     Default: digital/modern-java-drm-free_v1.0.pdf
   DigitalEpubKey:
     Type: String
-    Default: digital/modern-java.epub
+    Default: digital/modern-java-drm-free_v1.0.epub
 
 Globals:
   Function:
