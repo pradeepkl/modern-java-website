@@ -341,6 +341,13 @@ export function PaperbackOrderDialog({
               />
             </label>
 
+            {quantity > 4 ? (
+              <p className="order-form__bulk-note" role="status">
+                Eligible for discount — contact{' '}
+                <a href="mailto:pradeep@classpath.in">pradeep@classpath.in</a>
+              </p>
+            ) : null}
+
             <label className="order-form__field order-form__field--full">
               <RequiredLabel>Street address</RequiredLabel>
               <textarea

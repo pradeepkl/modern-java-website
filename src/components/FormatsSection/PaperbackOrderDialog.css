@@ -270,6 +270,28 @@
   border-color: var(--color-blue-600);
 }
 
+.order-form__bulk-note {
+  grid-column: 1 / -1;
+  margin: -4px 0 0;
+  padding: 10px 12px;
+  color: #0f6b5c;
+  background: #d8f3ee;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.order-form__bulk-note a {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.order-form__bulk-note a:hover {
+  color: #0a5246;
+}
+
 .order-form__quantity input:focus {
   outline: 0;
 }
