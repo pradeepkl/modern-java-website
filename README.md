@@ -48,6 +48,7 @@ public/
 assets/
   books/            # Sample chapter PDF source (uploaded to private S3)
 backend/            # SAM API for orders, sample chapter, and digital delivery
+scripts/            # Production deploy helpers (Amplify zip pipeline)
 ```
 
 All asset paths are centralized in `src/data/assets.ts`. Book content and purchase URLs live in `src/data/book.ts`.
@@ -93,11 +94,51 @@ No code changes are needed if filenames stay the same. For new filenames, update
 
 ## Deployment on AWS Amplify
 
-1. Connect your Git repository in the Amplify console
-2. Amplify detects `amplify.yml` automatically
-3. Build command: `npm run build`
-4. Output directory: `dist`
-5. Before deploying, complete items in [`TODO_PRODUCTION_CONTENT.md`](./TODO_PRODUCTION_CONTENT.md)
+Production hosts at [https://modern-java.classpath.in](https://modern-java.classpath.in)
+on Amplify app `modern-java` (manual zip deploy to the `main` branch — the app is
+not Git-connected).
+
+### One-command deploy
+
+Requires the AWS CLI configured for account access in `ap-south-1`, plus
+`curl`, `zip`, and `python3`.
+
+```bash
+npm run deploy
+```
+
+This script:
+
+1. Builds the site with `VITE_ORDER_API_URL`
+2. Zips `dist/`
+3. Creates an Amplify deployment, uploads the zip, and starts it
+4. Polls until the job succeeds or fails
+
+```bash
+# Rebuild skipped if dist/ is already current
+SKIP_BUILD=1 npm run deploy
+
+# Override defaults when needed
+AMPLIFY_APP_ID=... AMPLIFY_BRANCH=main VITE_ORDER_API_URL=https://... npm run deploy
+```
+
+Defaults (overridable via env):
+
+| Variable | Default |
+|----------|---------|
+| `AMPLIFY_APP_ID` | `dd9kgrhw8x8dv` |
+| `AMPLIFY_BRANCH` | `main` |
+| `AWS_REGION` | `ap-south-1` |
+| `VITE_ORDER_API_URL` | Order API URL used by checkout |
+| `DEPLOY_SITE_URL` | `https://modern-java.classpath.in` |
+
+The deploy script lives at `scripts/deploy-amplify.sh`. Run
+`./scripts/deploy-amplify.sh --help` for the full option list.
+
+Before the first production cut, complete items in
+[`TODO_PRODUCTION_CONTENT.md`](./TODO_PRODUCTION_CONTENT.md).
+
+`amplify.yml` remains available if you later connect the repo for CI builds.
 
 ## Responsive Testing
 

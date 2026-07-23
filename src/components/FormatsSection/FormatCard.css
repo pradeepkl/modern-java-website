@@ -76,8 +76,10 @@
 
 .format-card__subtitle {
   margin: 0 0 16px;
-  font-size: 0.95rem;
+  font-size: 0.855rem;
+  font-style: italic;
   line-height: 1.45;
+  text-align: left;
   color: var(--color-muted);
 }
 
