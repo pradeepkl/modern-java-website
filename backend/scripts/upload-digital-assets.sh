@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Upload sample (and optional paid digital) assets to the private DigitalAssets bucket.
+# Upload sample (and paid digital) assets to the private DigitalAssets bucket.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -8,32 +8,42 @@ REGION="${AWS_REGION:-${AWS_DEFAULT_REGION:-ap-south-1}}"
 STACK_NAME="${STACK_NAME:-sam-app}"
 SAMPLE_PDF="${SAMPLE_PDF:-$ROOT_DIR/assets/books/modern-java-preview.pdf}"
 SAMPLE_KEY="${SAMPLE_KEY:-sample/modern-java-preview.pdf}"
-DIGITAL_PDF="${DIGITAL_PDF:-}"
-DIGITAL_PDF_KEY="${DIGITAL_PDF_KEY:-digital/modern-java.pdf}"
+DIGITAL_PDF="${DIGITAL_PDF:-$ROOT_DIR/assets/books/modern-java-drm-free_v1.0.pdf}"
+DIGITAL_PDF_KEY="${DIGITAL_PDF_KEY:-digital/modern-java-drm-free_v1.0.pdf}"
 DIGITAL_EPUB="${DIGITAL_EPUB:-}"
 DIGITAL_EPUB_KEY="${DIGITAL_EPUB_KEY:-digital/modern-java.epub}"
+SAMPLE_ONLY=0
 
 usage() {
   cat <<'EOF'
 Usage: upload-digital-assets.sh [--sample-only]
 
-Uploads the free sample chapter PDF from assets/books/modern-java-preview.pdf
-to the DigitalAssetsBucket created by the SAM stack.
+Uploads:
+  - Free sample chapter: assets/books/modern-java-preview.pdf
+  - Paid DRM-free PDF:   assets/books/modern-java-drm-free_v1.0.pdf
 
-Optional paid editions:
-  DIGITAL_PDF=/path/to/book.pdf DIGITAL_EPUB=/path/to/book.epub ./scripts/upload-digital-assets.sh
+Optional paid ePub:
+  DIGITAL_EPUB=/path/to/book.epub ./scripts/upload-digital-assets.sh
 
 Environment:
   STACK_NAME          CloudFormation/SAM stack name (default: sam-app)
   AWS_REGION          AWS region (default: ap-south-1)
   SAMPLE_PDF          Local sample PDF path
   SAMPLE_KEY          Destination object key (default: sample/modern-java-preview.pdf)
+  DIGITAL_PDF         Local DRM-free PDF path
+  DIGITAL_PDF_KEY     Destination object key (default: digital/modern-java-drm-free_v1.0.pdf)
+  DIGITAL_EPUB        Local ePub path (optional)
+  DIGITAL_EPUB_KEY    Destination object key (default: digital/modern-java.epub)
 EOF
 }
 
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   usage
   exit 0
+fi
+
+if [[ "${1:-}" == "--sample-only" ]]; then
+  SAMPLE_ONLY=1
 fi
 
 if [[ ! -f "$SAMPLE_PDF" ]]; then
@@ -60,12 +70,12 @@ aws s3 cp "$SAMPLE_PDF" "s3://$BUCKET/$SAMPLE_KEY" \
   --content-type application/pdf \
   --metadata-directive REPLACE
 
-if [[ -n "$DIGITAL_PDF" ]]; then
+if [[ "$SAMPLE_ONLY" -eq 0 ]]; then
   if [[ ! -f "$DIGITAL_PDF" ]]; then
     echo "Digital PDF not found: $DIGITAL_PDF" >&2
     exit 1
   fi
-  echo "Uploading digital PDF -> s3://$BUCKET/$DIGITAL_PDF_KEY"
+  echo "Uploading DRM-free PDF -> s3://$BUCKET/$DIGITAL_PDF_KEY"
   aws s3 cp "$DIGITAL_PDF" "s3://$BUCKET/$DIGITAL_PDF_KEY" \
     --region "$REGION" \
     --content-type application/pdf \
@@ -86,5 +96,8 @@ fi
 
 echo "Done."
 echo "Sample object: s3://$BUCKET/$SAMPLE_KEY"
-echo "Redeploy the API if you have not yet shipped the S3 sample-delivery code:"
-echo "  cd \"$BACKEND_DIR\" && sam build && sam deploy"
+if [[ "$SAMPLE_ONLY" -eq 0 ]]; then
+  echo "Digital PDF:  s3://$BUCKET/$DIGITAL_PDF_KEY"
+fi
+echo "Redeploy the API if DigitalPdfKey changed in template.yaml:"
+echo "  cd \"$BACKEND_DIR\" && sam build && sam deploy --no-confirm-changeset"

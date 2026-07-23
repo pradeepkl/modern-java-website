@@ -25,7 +25,7 @@ const {
   SAMPLE_REQUESTS_TABLE,
   DIGITAL_ASSETS_BUCKET,
   SAMPLE_PDF_KEY = 'sample/modern-java-preview.pdf',
-  DIGITAL_PDF_KEY = 'digital/modern-java.pdf',
+  DIGITAL_PDF_KEY = 'digital/modern-java-drm-free_v1.0.pdf',
   DIGITAL_EPUB_KEY = 'digital/modern-java.epub',
   RAZORPAY_KEY_ID,
   RAZORPAY_KEY_SECRET,
@@ -165,6 +165,18 @@ const assertObjectExists = async (key) => {
       const missing = new Error(`Missing digital asset: ${key}`);
       missing.code = 'ASSET_MISSING';
       throw missing;
+    }
+    throw error;
+  }
+};
+
+const objectExists = async (key) => {
+  try {
+    await assertObjectExists(key);
+    return true;
+  } catch (error) {
+    if (error.code === 'ASSET_MISSING') {
+      return false;
     }
     throw error;
   }
@@ -410,10 +422,7 @@ const createDigitalOrder = async (event) => {
   }
 
   try {
-    await Promise.all([
-      assertObjectExists(DIGITAL_PDF_KEY),
-      assertObjectExists(DIGITAL_EPUB_KEY),
-    ]);
+    await assertObjectExists(DIGITAL_PDF_KEY);
   } catch (error) {
     if (error.code === 'ASSET_MISSING') {
       return response(503, {
@@ -499,10 +508,11 @@ const sendPaperbackConfirmationEmails = async (order) => {
 };
 
 const createDigitalDownloadLinks = async () => {
-  const [pdfUrl, epubUrl] = await Promise.all([
-    createSignedDownloadUrl(DIGITAL_PDF_KEY),
-    createSignedDownloadUrl(DIGITAL_EPUB_KEY),
-  ]);
+  const pdfUrl = await createSignedDownloadUrl(DIGITAL_PDF_KEY);
+  const hasEpub = await objectExists(DIGITAL_EPUB_KEY);
+  const epubUrl = hasEpub
+    ? await createSignedDownloadUrl(DIGITAL_EPUB_KEY)
+    : null;
 
   return { pdfUrl, epubUrl };
 };
@@ -513,23 +523,34 @@ const sendDigitalConfirmationEmails = async (order) => {
     `Order ID: ${order.appOrderId}`,
     `Payment ID: ${order.paymentId}`,
     `Amount: ₹${order.amount / 100}`,
-    'Product: PDF + ePub digital bundle',
+    'Product: DRM-free digital edition (PDF' + (epubUrl ? ' + ePub' : '') + ')',
     `Email: ${order.email}`,
     `Marketing consent: ${order.marketingConsent ? 'Yes' : 'No'}`,
   ].join('\n');
-  const customerText = [
+  const customerLines = [
     'Thank you for purchasing Modern Java: The Mindset Shift.',
     '',
     'Your secure download links are below and remain valid for 7 days:',
     '',
     `PDF: ${pdfUrl}`,
-    `ePub: ${epubUrl}`,
+  ];
+
+  if (epubUrl) {
+    customerLines.push(`ePub: ${epubUrl}`);
+  } else {
+    customerLines.push(
+      '',
+      'The ePub edition will be emailed to this address when it becomes available.',
+    );
+  }
+
+  customerLines.push(
     '',
     'You will receive access to revised editions at this email address.',
     'If a link expires before you download the files, contact admin@classpath.in.',
     '',
     `Order ID: ${order.appOrderId}`,
-  ].join('\n');
+  );
 
   await Promise.all([
     sendEmail({
@@ -539,8 +560,10 @@ const sendDigitalConfirmationEmails = async (order) => {
     }),
     sendEmail({
       to: order.email,
-      subject: 'Your Modern Java PDF and ePub downloads',
-      text: customerText,
+      subject: epubUrl
+        ? 'Your Modern Java PDF and ePub downloads'
+        : 'Your Modern Java DRM-free PDF download',
+      text: customerLines.join('\n'),
     }),
   ]);
 };
