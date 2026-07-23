@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { BookOpen, Check, Download, ShoppingCart } from 'lucide-react';
-import { type FormatOption } from '../../data/formats';
+import {
+  type FormatFeature,
+  type FormatOption,
+} from '../../data/formats';
 import { AmazonConsentLink } from '../shared/AmazonConsentLink';
 import { BrandButtonLogo } from '../shared/BrandButtonLogo';
 import { DigitalOrderDialog } from './DigitalOrderDialog';
@@ -30,6 +33,35 @@ function FormatBadgeIcon({ type }: { type: FormatOption['badgeIcon'] }) {
   return <BookOpen size={26} strokeWidth={1.75} aria-hidden="true" />;
 }
 
+function FeatureItem({
+  feature,
+  isUpgrade,
+}: {
+  feature: FormatFeature;
+  isUpgrade: boolean;
+}) {
+  return (
+    <li>
+      <span
+        className={
+          isUpgrade
+            ? 'format-card__check format-card__check--upgrade'
+            : 'format-card__check'
+        }
+        aria-hidden="true"
+      >
+        <Check size={14} strokeWidth={2.5} />
+      </span>
+      <span>
+        {feature.text}
+        {isUpgrade ? (
+          <span className="sr-only"> (upgrade benefit)</span>
+        ) : null}
+      </span>
+    </li>
+  );
+}
+
 export function FormatCard({ format }: FormatCardProps) {
   const [orderFormOpen, setOrderFormOpen] = useState(false);
   const isPaperback = format.id === 'paperback';
@@ -38,6 +70,15 @@ export function FormatCard({ format }: FormatCardProps) {
     format.ctaVariant === 'amazon'
       ? 'button button-amazon'
       : 'button button-primary';
+
+  const upgradeFeatures = format.features.filter(
+    (feature) => feature.tone === 'upgrade',
+  );
+  const coreFeatures = format.features.filter(
+    (feature) => feature.tone !== 'upgrade',
+  );
+  const showFeatureDivider =
+    upgradeFeatures.length > 0 && coreFeatures.length > 0;
 
   return (
     <>
@@ -53,13 +94,26 @@ export function FormatCard({ format }: FormatCardProps) {
           <h3 className="format-card__headline">{format.headline}</h3>
 
           <ul className="format-card__features">
-            {format.features.map((feature) => (
-              <li key={feature}>
-                <span className="format-card__check" aria-hidden="true">
-                  <Check size={14} strokeWidth={2.5} />
-                </span>
-                <span>{feature}</span>
+            {upgradeFeatures.map((feature) => (
+              <FeatureItem
+                key={feature.text}
+                feature={feature}
+                isUpgrade
+              />
+            ))}
+
+            {showFeatureDivider ? (
+              <li className="format-card__feature-divider" aria-hidden="true">
+                <span className="format-card__feature-divider-line" />
               </li>
+            ) : null}
+
+            {coreFeatures.map((feature) => (
+              <FeatureItem
+                key={feature.text}
+                feature={feature}
+                isUpgrade={false}
+              />
             ))}
           </ul>
 

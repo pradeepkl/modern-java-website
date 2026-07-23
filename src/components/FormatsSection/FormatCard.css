@@ -92,6 +92,18 @@
   color: var(--color-text);
 }
 
+.format-card__feature-divider {
+  display: block;
+  padding-block: 4px;
+}
+
+.format-card__feature-divider-line {
+  display: block;
+  width: 100%;
+  height: 1px;
+  background: var(--color-border);
+}
+
 .format-card__check {
   display: inline-flex;
   align-items: center;
@@ -103,6 +115,12 @@
   border-radius: 50%;
   background: var(--color-blue-100);
   color: var(--color-blue-700);
+}
+
+/* Teal marks digital-file / revision extras so upgrades read at a glance. */
+.format-card__check--upgrade {
+  background: #d8f3ee;
+  color: #0f6b5c;
 }
 
 .format-card__pricing {

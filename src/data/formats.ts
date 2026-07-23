@@ -1,11 +1,19 @@
 import { book } from './book';
 
+export type FormatFeatureTone = 'core' | 'upgrade';
+
+export interface FormatFeature {
+  text: string;
+  /** Upgrade extras (e.g. digital files bundled with print) use a distinct check color. */
+  tone?: FormatFeatureTone;
+}
+
 export interface FormatOption {
   id: string;
   badge: string;
   badgeIcon: 'amazon' | 'book' | 'download';
   headline: string;
-  features: readonly string[];
+  features: readonly FormatFeature[];
   price: string;
   listPrice: string;
   discountLabel: string;
@@ -22,10 +30,10 @@ export const formatOptions: FormatOption[] = [
     badgeIcon: 'amazon',
     headline: 'Read instantly anywhere',
     features: [
-      'Instant download',
-      'Works on all devices',
-      'Highlight, search, and take notes',
-      'Pay once, read forever',
+      { text: 'Instant download' },
+      { text: 'Works on all devices' },
+      { text: 'Highlight, search, and take notes' },
+      { text: 'Companion code on GitHub' },
     ],
     price: '₹499',
     listPrice: '₹624',
@@ -41,10 +49,10 @@ export const formatOptions: FormatOption[] = [
     badgeIcon: 'download',
     headline: 'DRM-free PDF + ePub bundle',
     features: [
-      'DRM-free PDF + ePub included',
-      'Secure download links by email',
-      'Access to future revised editions',
-      'Optional promotional offers',
+      { text: 'DRM-free PDF + ePub included', tone: 'upgrade' },
+      { text: 'Access to future revised editions', tone: 'upgrade' },
+      { text: 'Secure download links by email' },
+      { text: 'Optional promotional offers' },
     ],
     price: '₹699',
     listPrice: '₹874',
@@ -59,11 +67,14 @@ export const formatOptions: FormatOption[] = [
     badgeIcon: 'book',
     headline: 'High-quality print edition',
     features: [
-      'Premium print and paper',
-      'Perfect bound',
-      '300+ pages',
-      'Includes DRM-free PDF + ePub',
-      'Includes access to future revised editions',
+      { text: 'Includes DRM-free PDF + ePub', tone: 'upgrade' },
+      {
+        text: 'Includes access to future revised editions',
+        tone: 'upgrade',
+      },
+      { text: 'Premium print and paper (Color edition)' },
+      { text: 'Rich-color architecture and flow diagrams' },
+      { text: 'Deep reading without screen fatigue' },
     ],
     price: '₹899',
     listPrice: '₹1,124',
