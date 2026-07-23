@@ -66,7 +66,7 @@ export function PurchaseButtons({
           aria-label="Buy the Modern Java PDF and ePub bundle"
         >
           <Download size={20} strokeWidth={2} aria-hidden="true" />
-          Buy PDF + ePub — ₹699
+          Buy PDF + ePub — ₹399
         </button>
       ) : null}
       <button

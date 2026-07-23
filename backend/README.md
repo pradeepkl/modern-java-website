@@ -74,7 +74,7 @@ and set the deployed API URL.
   payments.
 - `POST /sample-requests` records optional marketing consent and emails a
   time-limited S3 download link for the sample chapter PDF.
-- `POST /digital-orders` creates a ₹699 Razorpay order for the PDF + ePub
+- `POST /digital-orders` creates a ₹399 Razorpay order for the PDF + ePub
   bundle. The normal verification endpoint emails time-limited S3 download
   links after payment.
 

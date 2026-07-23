@@ -159,7 +159,7 @@ export function DigitalOrderDialog({
               Get the PDF + ePub bundle
             </h2>
             <p id={descriptionId} className="order-dialog__description">
-              Pay ₹699 securely and receive both formats by email.
+              Pay ₹399 securely and receive both formats by email.
             </p>
           </div>
           <button
@@ -239,7 +239,7 @@ export function DigitalOrderDialog({
               disabled={processing}
             >
               <CreditCard size={18} strokeWidth={2} aria-hidden="true" />
-              {processing ? 'Starting payment…' : 'Pay ₹699 securely'}
+              {processing ? 'Starting payment…' : 'Pay ₹399 securely'}
             </button>
           </form>
         )}
