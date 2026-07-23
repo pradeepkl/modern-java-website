@@ -466,13 +466,11 @@ const requestSampleChapter = async (event) => {
   const sampleText = [
     'Thank you for your interest in Modern Java: The Mindset Shift.',
     '',
-    'Download your sample chapter (button preferred in HTML email):',
-    sampleChapterUrl,
-    '',
-    'This secure link remains valid for 2 days.',
+    'Open this email in HTML view and click “Download sample chapter”.',
+    'The secure download remains valid for 2 days.',
     'The sample includes the preface and the first two chapters, with selected diagrams.',
     '',
-    `Visit the book website: ${SITE_URL}`,
+    `Or visit the book site: ${SITE_URL}/#sample-chapter`,
     '',
     marketingLine,
   ].join('\n');
@@ -1001,14 +999,13 @@ const sendDigitalConfirmationEmails = async (order, invoice = null) => {
   const customerLines = [
     'Thank you for purchasing Modern Java: The Mindset Shift.',
     '',
-    'Your secure download links are below and remain valid for 7 days:',
-    '',
-    `PDF: ${pdfUrl}`,
+    'Your secure downloads remain valid for 7 days.',
+    'Open this email in HTML view and click “Download PDF”' +
+      (epubUrl ? ' and “Download ePub”' : '') +
+      '.',
   ];
 
-  if (epubUrl) {
-    customerLines.push(`ePub: ${epubUrl}`);
-  } else {
+  if (!epubUrl) {
     customerLines.push(
       '',
       'The ePub edition will be emailed to this address when it becomes available.',
@@ -1022,7 +1019,7 @@ const sendDigitalConfirmationEmails = async (order, invoice = null) => {
   customerLines.push(
     '',
     'You will receive access to revised editions at this email address.',
-    `If a link expires before you download the files, contact ${REPLY_TO_EMAIL}.`,
+    `If a download expires before you save the files, contact ${REPLY_TO_EMAIL}.`,
     '',
     `Order ID: ${order.appOrderId}`,
     '',
