@@ -211,7 +211,7 @@ export function DigitalOrderDialog({
             </label>
 
             <label className="digital-order__consent">
-              <input type="checkbox" name="marketingConsent" />
+              <input type="checkbox" name="marketingConsent" defaultChecked />
               <span>
                 Send me occasional book updates, Java articles, and promotional
                 offers. Unsubscribe anytime.

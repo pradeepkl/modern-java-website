@@ -123,7 +123,7 @@ export function SampleChapterSection() {
               </div>
 
               <label className="sample-form__consent">
-                <input type="checkbox" name="marketingConsent" />
+                <input type="checkbox" name="marketingConsent" defaultChecked />
                 <span>
                   Send me occasional Modern Java articles, book updates, and
                   future releases. Unsubscribe anytime.
