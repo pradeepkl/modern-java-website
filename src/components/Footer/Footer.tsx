@@ -18,9 +18,6 @@ export function Footer() {
             decoding="async"
           />
           <p className="site-footer__tagline">{book.tagline}</p>
-          <p className="site-footer__copyright">
-            © {book.copyrightYear} {book.author}. All rights reserved.
-          </p>
         </div>
 
         <div className="site-footer__links">
@@ -35,17 +32,21 @@ export function Footer() {
             ))}
           </ul>
         </div>
-
       </div>
 
-      <div className="site-footer__legal page-container">
-        <a href="/privacy-policy" className="site-footer__legal-link">
-          Privacy Policy
-        </a>
-        <span aria-hidden="true">·</span>
-        <a href="/terms-of-use" className="site-footer__legal-link">
-          Terms of Use
-        </a>
+      <div className="site-footer__bottom page-container">
+        <div className="site-footer__legal">
+          <a href="/privacy-policy" className="site-footer__legal-link">
+            Privacy Policy
+          </a>
+          <span aria-hidden="true">·</span>
+          <a href="/terms-of-use" className="site-footer__legal-link">
+            Terms of Use
+          </a>
+        </div>
+        <p className="site-footer__copyright">
+          © {book.copyrightYear} {book.author}. All rights reserved.
+        </p>
       </div>
     </footer>
   );

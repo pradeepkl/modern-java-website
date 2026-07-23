@@ -7,13 +7,14 @@ const {
   QueryCommand,
   UpdateCommand,
 } = require('@aws-sdk/lib-dynamodb');
-const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
+const { SESClient, SendEmailCommand, SendRawEmailCommand } = require('@aws-sdk/client-ses');
 const {
   GetObjectCommand,
   HeadObjectCommand,
   S3Client,
 } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+const { createAndSendInvoice } = require('./zohoInvoice');
 
 const dynamo = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 // Domain identity is verified in us-east-1 (also where inbound MX points).
@@ -35,9 +36,30 @@ const {
   REPLY_TO_EMAIL = 'pradeep@classpath.in',
   ALLOWED_ORIGIN = '*',
   WEBSITE_URL = 'https://modern-java.classpath.in',
+  DIGITAL_CHECKOUT_BYPASS_SECRET = '',
 } = process.env;
 
 const SITE_URL = String(WEBSITE_URL).replace(/\/$/, '');
+const ALLOWED_ORIGINS = String(ALLOWED_ORIGIN)
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean);
+
+let activeAllowOrigin = ALLOWED_ORIGINS[0] || '*';
+
+const resolveAllowOrigin = (event) => {
+  const requestOrigin =
+    event?.headers?.origin ||
+    event?.headers?.Origin ||
+    event?.headers?.['Origin'];
+  if (requestOrigin && ALLOWED_ORIGINS.includes(requestOrigin)) {
+    return requestOrigin;
+  }
+  if (ALLOWED_ORIGINS.includes('*')) {
+    return '*';
+  }
+  return ALLOWED_ORIGINS[0] || '*';
+};
 
 const escapeHtml = (value) =>
   String(value)
@@ -46,21 +68,153 @@ const escapeHtml = (value) =>
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 
-const sendEmail = ({ to, subject, text, html }) =>
-  ses.send(
-    new SendEmailCommand({
-      Source: MAIL_FROM_EMAIL,
-      ReplyToAddresses: [REPLY_TO_EMAIL],
-      Destination: { ToAddresses: [to] },
-      Message: {
-        Subject: { Data: subject },
-        Body: {
-          Text: { Data: text },
-          ...(html ? { Html: { Data: html } } : {}),
+const encodeSubject = (subject) =>
+  `=?UTF-8?B?${Buffer.from(String(subject), 'utf8').toString('base64')}?=`;
+
+const toBase64Lines = (value) =>
+  Buffer.from(String(value), 'utf8')
+    .toString('base64')
+    .replace(/(.{76})/g, '$1\r\n');
+
+const buildRawMimeEmail = ({
+  to,
+  subject,
+  text,
+  html,
+  attachments = [],
+}) => {
+  const mixedBoundary = `Mixed_${randomUUID().replace(/-/g, '')}`;
+  const altBoundary = `Alt_${randomUUID().replace(/-/g, '')}`;
+  const chunks = [
+    `From: ${MAIL_FROM_EMAIL}`,
+    `To: ${to}`,
+    `Reply-To: ${REPLY_TO_EMAIL}`,
+    `Subject: ${encodeSubject(subject)}`,
+    'MIME-Version: 1.0',
+    `Content-Type: multipart/mixed; boundary="${mixedBoundary}"`,
+    '',
+    `--${mixedBoundary}`,
+    `Content-Type: multipart/alternative; boundary="${altBoundary}"`,
+    '',
+    `--${altBoundary}`,
+    'Content-Type: text/plain; charset=UTF-8',
+    'Content-Transfer-Encoding: base64',
+    '',
+    toBase64Lines(text),
+    '',
+  ];
+
+  if (html) {
+    chunks.push(
+      `--${altBoundary}`,
+      'Content-Type: text/html; charset=UTF-8',
+      'Content-Transfer-Encoding: base64',
+      '',
+      toBase64Lines(html),
+      '',
+    );
+  }
+
+  chunks.push(`--${altBoundary}--`, '');
+
+  for (const attachment of attachments) {
+    const filename = String(attachment.filename || 'attachment.bin').replace(
+      /["\r\n]/g,
+      '_',
+    );
+    const contentType = attachment.contentType || 'application/octet-stream';
+    const content = Buffer.isBuffer(attachment.content)
+      ? attachment.content
+      : Buffer.from(attachment.content || '');
+    chunks.push(
+      `--${mixedBoundary}`,
+      `Content-Type: ${contentType}; name="${filename}"`,
+      'Content-Transfer-Encoding: base64',
+      `Content-Disposition: attachment; filename="${filename}"`,
+      '',
+      content.toString('base64').replace(/(.{76})/g, '$1\r\n'),
+      '',
+    );
+  }
+
+  chunks.push(`--${mixedBoundary}--`, '');
+  return Buffer.from(chunks.join('\r\n'), 'utf8');
+};
+
+const sendEmail = async ({ to, subject, text, html, attachments = [] }) => {
+  if (attachments.length === 0) {
+    return ses.send(
+      new SendEmailCommand({
+        Source: MAIL_FROM_EMAIL,
+        ReplyToAddresses: [REPLY_TO_EMAIL],
+        Destination: { ToAddresses: [to] },
+        Message: {
+          Subject: { Data: subject },
+          Body: {
+            Text: { Data: text },
+            ...(html ? { Html: { Data: html } } : {}),
+          },
         },
+      }),
+    );
+  }
+
+  console.info('Sending SES raw email with attachments', {
+    to,
+    attachmentCount: attachments.length,
+    attachmentBytes: attachments.reduce(
+      (sum, item) => sum + (item.content?.length || 0),
+      0,
+    ),
+  });
+
+  return ses.send(
+    new SendRawEmailCommand({
+      Source: MAIL_FROM_EMAIL,
+      Destinations: [to],
+      RawMessage: {
+        Data: buildRawMimeEmail({ to, subject, text, html, attachments }),
       },
     }),
   );
+};
+
+const invoiceEmailCopy = (invoice) => {
+  if (!invoice?.invoiceNumber) {
+    return { text: '', html: '' };
+  }
+  const attached = Boolean(invoice.pdfBuffer?.length);
+  const text = attached
+    ? `Your invoice ${invoice.invoiceNumber} is attached to this email.`
+    : `Your invoice number is ${invoice.invoiceNumber}.`;
+  const html = attached
+    ? `
+                <p style="margin:20px 0 8px;font-size:15px;line-height:1.55;color:#445066;">
+                  Your invoice <strong>${escapeHtml(invoice.invoiceNumber)}</strong> is also attached to this email.
+                </p>`
+    : `
+                <p style="margin:20px 0 8px;font-size:15px;line-height:1.55;color:#445066;">
+                  Your invoice number is <strong>${escapeHtml(invoice.invoiceNumber)}</strong>.
+                </p>`;
+  return { text, html };
+};
+
+const invoiceAttachments = (invoice) => {
+  if (!invoice?.pdfBuffer?.length) {
+    return [];
+  }
+  const safeNumber = String(invoice.invoiceNumber || 'invoice').replace(
+    /[^\w.-]+/g,
+    '-',
+  );
+  return [
+    {
+      filename: `Modern-Java-Invoice-${safeNumber}.pdf`,
+      contentType: 'application/pdf',
+      content: invoice.pdfBuffer,
+    },
+  ];
+};
 
 const PAPERBACK_PRICE_PAISE = 49900;
 const DIGITAL_BUNDLE_PRICE_PAISE = 39900;
@@ -75,8 +229,9 @@ const SAMPLE_REQUEST_COOLDOWN_MS = 60 * 1000;
 const response = (statusCode, body) => ({
   statusCode,
   headers: {
-    'access-control-allow-origin': ALLOWED_ORIGIN,
-    'access-control-allow-headers': 'content-type,x-razorpay-signature',
+    'access-control-allow-origin': activeAllowOrigin,
+    'access-control-allow-headers':
+      'content-type,x-razorpay-signature,x-digital-bypass-secret',
     'access-control-allow-methods': 'POST,OPTIONS',
     'content-type': 'application/json',
   },
@@ -407,13 +562,23 @@ const createRazorpayOrder = async ({ amount, receipt, notes }) => {
   return payload;
 };
 
+const validateDigitalCustomer = (input) => {
+  const name = String(input.name || '').trim();
+  const email = String(input.email || '').trim().toLowerCase();
+  const city = String(input.city || '').trim();
+  const postalCode = String(input.postalCode || input.zipcode || '').trim();
+
+  if (!name) throw new Error('Name is required');
+  if (!EMAIL_PATTERN.test(email)) throw new Error('Invalid email address');
+  if (!city) throw new Error('City is required');
+  if (!PIN_PATTERN.test(postalCode)) throw new Error('Invalid postal code');
+
+  return { name, email, city, postalCode };
+};
+
 const createDigitalOrder = async (event) => {
   const { json } = parseBody(event);
-  const email = String(json.email || '').trim().toLowerCase();
-
-  if (!EMAIL_PATTERN.test(email)) {
-    throw new Error('Invalid email address');
-  }
+  const { name, email, city, postalCode } = validateDigitalCustomer(json);
 
   if (!DIGITAL_ASSETS_BUCKET) {
     return response(503, {
@@ -436,14 +601,78 @@ const createDigitalOrder = async (event) => {
     throw error;
   }
 
+  const bypassSecret = String(DIGITAL_CHECKOUT_BYPASS_SECRET || '');
+  const providedSecret = String(
+    event.headers?.['x-digital-bypass-secret'] ||
+      event.headers?.['X-Digital-Bypass-Secret'] ||
+      '',
+  );
+  const skipPayment =
+    json.skipPayment === true &&
+    bypassSecret.length > 0 &&
+    safeEqual(providedSecret, bypassSecret);
+
   const appOrderId = `MJ-D-${randomUUID().slice(0, 8).toUpperCase()}`;
+  const now = new Date().toISOString();
+  const marketingConsent = json.marketingConsent === true;
+  const customerFields = { name, email, city, postalCode };
+
+  if (skipPayment) {
+    const paymentId = `bypass_${randomUUID().slice(0, 12)}`;
+    await dynamo.send(
+      new PutCommand({
+        TableName: ORDERS_TABLE,
+        Item: {
+          appOrderId,
+          razorpayOrderId: `order_bypass_${appOrderId}`,
+          productType: 'digital_bundle',
+          ...customerFields,
+          amount: DIGITAL_BUNDLE_PRICE_PAISE,
+          currency: 'INR',
+          status: 'paid',
+          paymentId,
+          revisionUpdates: true,
+          marketingConsent,
+          marketingConsentAt: marketingConsent ? now : null,
+          consentVersion: marketingConsent
+            ? String(json.consentVersion || 'unknown')
+            : null,
+          checkoutBypass: true,
+          createdAt: now,
+          updatedAt: now,
+        },
+        ConditionExpression: 'attribute_not_exists(appOrderId)',
+      }),
+    );
+
+    const order = {
+      appOrderId,
+      paymentId,
+      amount: DIGITAL_BUNDLE_PRICE_PAISE,
+      ...customerFields,
+      marketingConsent,
+      productType: 'digital_bundle',
+      checkoutBypass: true,
+    };
+    const downloads = await createDigitalDownloadLinks();
+    try {
+      await sendConfirmationEmails(order);
+    } catch (error) {
+      console.error('Bypass order paid but confirmation email failed', error);
+    }
+
+    return response(201, {
+      appOrderId,
+      skippedPayment: true,
+      downloads,
+    });
+  }
+
   const razorpayOrder = await createRazorpayOrder({
     amount: DIGITAL_BUNDLE_PRICE_PAISE,
     receipt: appOrderId,
     notes: { appOrderId, productType: 'digital_bundle' },
   });
-  const now = new Date().toISOString();
-  const marketingConsent = json.marketingConsent === true;
 
   await dynamo.send(
     new PutCommand({
@@ -452,7 +681,7 @@ const createDigitalOrder = async (event) => {
         appOrderId,
         razorpayOrderId: razorpayOrder.id,
         productType: 'digital_bundle',
-        email,
+        ...customerFields,
         amount: DIGITAL_BUNDLE_PRICE_PAISE,
         currency: 'INR',
         status: 'payment_pending',
@@ -496,9 +725,40 @@ const formatOrderEmail = (order) => [
   `Notes: ${order.notes || 'None'}`,
 ].join('\n');
 
-const sendPaperbackConfirmationEmails = async (order) => {
-  const text = formatOrderEmail(order);
+const sendPaperbackConfirmationEmails = async (order, invoice = null) => {
+  const invoiceCopy = invoiceEmailCopy(invoice);
+  const text = [formatOrderEmail(order), '', invoiceCopy.text]
+    .filter(Boolean)
+    .join('\n');
   const subject = `Modern Java paperback order ${order.appOrderId}`;
+  const customerHtml = `
+<!DOCTYPE html>
+<html lang="en">
+  <body style="margin:0;padding:0;background:#f4f6f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#1a2332;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:12px;padding:32px 28px;">
+            <tr>
+              <td>
+                <p style="margin:0 0 16px;font-size:16px;line-height:1.55;">
+                  Thank you for your <strong>Modern Java</strong> paperback order. Payment was successful.
+                </p>
+                <p style="margin:0 0 12px;font-size:15px;line-height:1.55;color:#445066;white-space:pre-line;">${escapeHtml(formatOrderEmail(order))}</p>
+                ${invoiceCopy.html}
+                <p style="margin:20px 0 0;font-size:15px;line-height:1.55;">
+                  <a href="${escapeHtml(SITE_URL)}" style="color:#1a56db;font-weight:600;text-decoration:none;">
+                    Visit the Modern Java website →
+                  </a>
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`.trim();
 
   await Promise.all([
     sendEmail({ to: ADMIN_EMAIL, subject, text }),
@@ -506,6 +766,8 @@ const sendPaperbackConfirmationEmails = async (order) => {
       to: order.email,
       subject: 'Your Modern Java paperback order is confirmed',
       text: `Thank you for your order. Payment was successful.\n\n${text}`,
+      html: customerHtml,
+      attachments: invoiceAttachments(invoice),
     }),
   ]);
 };
@@ -520,8 +782,9 @@ const createDigitalDownloadLinks = async () => {
   return { pdfUrl, epubUrl };
 };
 
-const sendDigitalConfirmationEmails = async (order) => {
+const sendDigitalConfirmationEmails = async (order, invoice = null) => {
   const { pdfUrl, epubUrl } = await createDigitalDownloadLinks();
+  const invoiceCopy = invoiceEmailCopy(invoice);
   const adminText = [
     `Order ID: ${order.appOrderId}`,
     `Payment ID: ${order.paymentId}`,
@@ -529,7 +792,10 @@ const sendDigitalConfirmationEmails = async (order) => {
     'Product: DRM-free digital edition (PDF' + (epubUrl ? ' + ePub' : '') + ')',
     `Email: ${order.email}`,
     `Marketing consent: ${order.marketingConsent ? 'Yes' : 'No'}`,
-  ].join('\n');
+    invoice ? `Invoice: ${invoice.invoiceNumber}` : null,
+  ]
+    .filter(Boolean)
+    .join('\n');
   const customerLines = [
     'Thank you for purchasing Modern Java: The Mindset Shift.',
     '',
@@ -547,13 +813,84 @@ const sendDigitalConfirmationEmails = async (order) => {
     );
   }
 
+  if (invoiceCopy.text) {
+    customerLines.push('', invoiceCopy.text);
+  }
+
   customerLines.push(
     '',
     'You will receive access to revised editions at this email address.',
-    'If a link expires before you download the files, contact admin@classpath.in.',
+    `If a link expires before you download the files, contact ${REPLY_TO_EMAIL}.`,
     '',
     `Order ID: ${order.appOrderId}`,
+    '',
+    `Visit the book website: ${SITE_URL}`,
   );
+
+  const epubButton = epubUrl
+    ? `
+                <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 12px;">
+                  <tr>
+                    <td align="center" bgcolor="#0f6b5c" style="border-radius:8px;">
+                      <a href="${escapeHtml(epubUrl)}"
+                         style="display:inline-block;padding:14px 28px;font-size:16px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
+                        Download ePub
+                      </a>
+                    </td>
+                  </tr>
+                </table>`
+    : `
+                <p style="margin:0 0 20px;font-size:14px;line-height:1.55;color:#445066;">
+                  The ePub edition will be emailed to this address when it becomes available.
+                </p>`;
+
+  const customerHtml = `
+<!DOCTYPE html>
+<html lang="en">
+  <body style="margin:0;padding:0;background:#f4f6f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#1a2332;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:12px;padding:32px 28px;">
+            <tr>
+              <td>
+                <p style="margin:0 0 16px;font-size:16px;line-height:1.55;">
+                  Thank you for purchasing <strong>Modern Java: The Mindset Shift</strong>.
+                </p>
+                <p style="margin:0 0 24px;font-size:15px;line-height:1.55;color:#445066;">
+                  Your DRM-free digital edition is ready. These secure downloads remain valid for
+                  <strong>7 days</strong>.
+                </p>
+                <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 12px;">
+                  <tr>
+                    <td align="center" bgcolor="#1a56db" style="border-radius:8px;">
+                      <a href="${escapeHtml(pdfUrl)}"
+                         style="display:inline-block;padding:14px 28px;font-size:16px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
+                        Download PDF
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+                ${epubButton}
+                ${invoiceCopy.html}
+                <p style="margin:20px 0 8px;font-size:15px;line-height:1.55;">
+                  <a href="${escapeHtml(SITE_URL)}" style="color:#1a56db;font-weight:600;text-decoration:none;">
+                    Visit the Modern Java website →
+                  </a>
+                </p>
+                <p style="margin:24px 0 0;font-size:13px;line-height:1.5;color:#667085;">
+                  Order ID: ${escapeHtml(order.appOrderId)}. You will receive access to revised
+                  editions at this email address. If a link expires, contact
+                  <a href="mailto:${escapeHtml(REPLY_TO_EMAIL)}" style="color:#667085;">${escapeHtml(REPLY_TO_EMAIL)}</a>.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`.trim();
 
   await Promise.all([
     sendEmail({
@@ -567,16 +904,102 @@ const sendDigitalConfirmationEmails = async (order) => {
         ? 'Your Modern Java PDF and ePub downloads'
         : 'Your Modern Java DRM-free PDF download',
       text: customerLines.join('\n'),
+      html: customerHtml,
+      attachments: invoiceAttachments(invoice),
     }),
   ]);
 };
 
-const sendConfirmationEmails = async (order) => {
-  if (order.productType === 'digital_bundle') {
-    return sendDigitalConfirmationEmails(order);
+const customerNameFromOrder = (order) => {
+  const explicit = String(order.name || '').trim();
+  if (explicit) {
+    return explicit;
+  }
+  const local = String(order.email || '')
+    .split('@')[0]
+    .replace(/[._+-]+/g, ' ')
+    .trim();
+  if (!local) {
+    return 'Modern Java customer';
+  }
+  return local.replace(/\b\w/g, (ch) => ch.toUpperCase());
+};
+
+const createInvoiceForOrder = async (order) => {
+  const isDigital = order.productType === 'digital_bundle';
+  const lineItems = isDigital
+    ? [
+        {
+          productCode: 'MJ-DIGITAL',
+          name: 'Modern Java — DRM-free PDF + ePub',
+          description:
+            'Product code: MJ-DIGITAL. Direct digital edition (PDF + ePub).',
+          quantity: 1,
+          rate: Number(order.amount || DIGITAL_BUNDLE_PRICE_PAISE) / 100,
+          unit: 'nos',
+        },
+      ]
+    : [
+        {
+          productCode: 'MJ-PAPERBACK',
+          name: 'Modern Java — Paperback',
+          description: 'Product code: MJ-PAPERBACK. Print edition.',
+          quantity: Number(order.quantity || 1),
+          rate: PAPERBACK_PRICE_PAISE / 100,
+          unit: 'nos',
+        },
+      ];
+
+  const invoice = await createAndSendInvoice({
+    email: order.email,
+    name: customerNameFromOrder(order),
+    city: order.city,
+    postalCode: order.postalCode,
+    lineItems,
+    referenceNumber: order.appOrderId,
+    paymentId: order.paymentId,
+    paymentMode: order.checkoutBypass ? 'Other' : 'Razorpay',
+  });
+
+  if (!invoice) {
+    return null;
   }
 
-  return sendPaperbackConfirmationEmails(order);
+  try {
+    await dynamo.send(
+      new UpdateCommand({
+        TableName: ORDERS_TABLE,
+        Key: { appOrderId: order.appOrderId },
+        UpdateExpression:
+          'SET zohoInvoiceId = :invoiceId, zohoInvoiceNumber = :invoiceNumber, zohoInvoiceUrl = :invoiceUrl, updatedAt = :updatedAt',
+        ExpressionAttributeValues: {
+          ':invoiceId': invoice.invoiceId,
+          ':invoiceNumber': invoice.invoiceNumber,
+          ':invoiceUrl': invoice.invoiceUrl || null,
+          ':updatedAt': new Date().toISOString(),
+        },
+      }),
+    );
+  } catch (error) {
+    console.error('Failed to store Zoho invoice fields on order', error);
+  }
+
+  return invoice;
+};
+
+const sendConfirmationEmails = async (order) => {
+  let invoice = null;
+  try {
+    invoice = await createInvoiceForOrder(order);
+  } catch (error) {
+    console.error('Zoho invoice creation/send failed', error);
+  }
+
+  if (order.productType === 'digital_bundle') {
+    return sendDigitalConfirmationEmails(order, invoice);
+  }
+
+  return sendPaperbackConfirmationEmails(order, invoice);
 };
 
 const createOrder = async (event) => {
@@ -742,6 +1165,7 @@ const processWebhook = async (event) => {
 
 exports.handler = async (event) => {
   try {
+    activeAllowOrigin = resolveAllowOrigin(event);
     const method = event.requestContext?.http?.method;
     const path = event.rawPath;
 

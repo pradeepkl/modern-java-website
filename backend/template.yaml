@@ -45,6 +45,42 @@ Parameters:
   DigitalEpubKey:
     Type: String
     Default: digital/modern-java-drm-free_v1.0.epub
+  DigitalCheckoutBypassSecret:
+    Type: String
+    NoEcho: true
+    Default: ''
+    Description: Optional secret enabling localhost digital checkout without Razorpay
+  ZohoClientId:
+    Type: String
+    NoEcho: true
+    Default: ''
+    Description: Zoho Invoice OAuth client ID (India DC)
+  ZohoClientSecret:
+    Type: String
+    NoEcho: true
+    Default: ''
+    Description: Zoho Invoice OAuth client secret
+  ZohoRefreshToken:
+    Type: String
+    NoEcho: true
+    Default: ''
+    Description: Zoho Invoice OAuth refresh token
+  ZohoOrganizationId:
+    Type: String
+    Default: ''
+    Description: Zoho Invoice organization ID
+  ZohoTaxId:
+    Type: String
+    Default: ''
+    Description: Optional Zoho tax/GST ID applied to invoice line items
+  ZohoTaxExemptionId:
+    Type: String
+    Default: ''
+    Description: Zoho tax exemption ID when invoices are non-taxable (no GST)
+  ZohoInvoiceTemplateId:
+    Type: String
+    Default: ''
+    Description: Zoho invoice PDF template ID (use a qty/rate template, not day-rate)
 
 Globals:
   Function:
@@ -59,6 +95,7 @@ Globals:
         SAMPLE_PDF_KEY: !Ref SamplePdfKey
         DIGITAL_PDF_KEY: !Ref DigitalPdfKey
         DIGITAL_EPUB_KEY: !Ref DigitalEpubKey
+        DIGITAL_CHECKOUT_BYPASS_SECRET: !Ref DigitalCheckoutBypassSecret
         RAZORPAY_KEY_ID: !Ref RazorpayKeyId
         RAZORPAY_KEY_SECRET: !Ref RazorpayKeySecret
         RAZORPAY_WEBHOOK_SECRET: !Ref RazorpayWebhookSecret
@@ -68,6 +105,13 @@ Globals:
         SES_REGION: !Ref SesRegion
         ALLOWED_ORIGIN: !Ref AllowedOrigin
         WEBSITE_URL: !Ref WebsiteUrl
+        ZOHO_CLIENT_ID: !Ref ZohoClientId
+        ZOHO_CLIENT_SECRET: !Ref ZohoClientSecret
+        ZOHO_REFRESH_TOKEN: !Ref ZohoRefreshToken
+        ZOHO_ORGANIZATION_ID: !Ref ZohoOrganizationId
+        ZOHO_TAX_ID: !Ref ZohoTaxId
+        ZOHO_TAX_EXEMPTION_ID: !Ref ZohoTaxExemptionId
+        ZOHO_INVOICE_TEMPLATE_ID: !Ref ZohoInvoiceTemplateId
 
 Resources:
   OrderApi:
@@ -75,10 +119,12 @@ Resources:
     Properties:
       CorsConfiguration:
         AllowOrigins:
-          - !Ref AllowedOrigin
+          - https://modern-java.classpath.in
+          - http://localhost:5173
         AllowHeaders:
           - content-type
           - x-razorpay-signature
+          - x-digital-bypass-secret
         AllowMethods:
           - POST
           - OPTIONS
@@ -88,6 +134,7 @@ Resources:
     Properties:
       CodeUri: .
       Handler: src/app.handler
+      Timeout: 30
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref OrdersTable
@@ -99,6 +146,7 @@ Resources:
             - Effect: Allow
               Action:
                 - ses:SendEmail
+                - ses:SendRawEmail
               Resource: '*'
       Events:
         CreateOrder:

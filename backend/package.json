@@ -5,7 +5,8 @@
   "scripts": {
     "test": "node --test",
     "build": "sam build",
-    "deploy": "sam deploy --guided",
+    "deploy": "./scripts/deploy-api.sh",
+    "deploy:guided": "sam deploy --guided",
     "upload:assets": "./scripts/upload-digital-assets.sh"
   },
   "dependencies": {

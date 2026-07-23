@@ -10,7 +10,16 @@ interface DigitalOrderDialogProps {
   onClose: () => void;
 }
 
+interface DigitalDownloads {
+  pdfUrl: string;
+  epubUrl: string | null;
+}
+
 const ORDER_API_URL = import.meta.env.VITE_ORDER_API_URL?.replace(/\/$/, '');
+const DIGITAL_CHECKOUT_BYPASS =
+  import.meta.env.DEV &&
+  import.meta.env.VITE_DIGITAL_CHECKOUT_BYPASS === 'true' &&
+  Boolean(import.meta.env.VITE_DIGITAL_CHECKOUT_BYPASS_SECRET);
 
 export function DigitalOrderDialog({
   open,
@@ -19,6 +28,8 @@ export function DigitalOrderDialog({
   const [processing, setProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [confirmedOrderId, setConfirmedOrderId] = useState<string | null>(null);
+  const [downloads, setDownloads] = useState<DigitalDownloads | null>(null);
+  const [usedBypass, setUsedBypass] = useState(false);
   const headingId = useId();
   const descriptionId = useId();
   useBodyScrollLock(open);
@@ -28,6 +39,8 @@ export function DigitalOrderDialog({
     setErrorMessage('');
     setProcessing(false);
     setConfirmedOrderId(null);
+    setDownloads(null);
+    setUsedBypass(false);
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
@@ -44,8 +57,19 @@ export function DigitalOrderDialog({
     setProcessing(true);
     setErrorMessage('');
     const data = new FormData(event.currentTarget);
-    const email = String(data.get('email'));
+    const name = String(data.get('name') || '').trim();
+    const email = String(data.get('email') || '').trim();
+    const city = String(data.get('city') || '').trim();
+    const postalCode = String(data.get('postalCode') || '').trim();
     const marketingConsent = data.get('marketingConsent') === 'on';
+    const customerPayload = {
+      name,
+      email,
+      city,
+      postalCode,
+      marketingConsent,
+      consentVersion: '2026-07-21',
+    };
 
     if (!ORDER_API_URL) {
       setErrorMessage('Digital checkout is not configured yet.');
@@ -54,15 +78,40 @@ export function DigitalOrderDialog({
     }
 
     try {
+      if (DIGITAL_CHECKOUT_BYPASS) {
+        const bypassResult = await fetch(`${ORDER_API_URL}/digital-orders`, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            'x-digital-bypass-secret': String(
+              import.meta.env.VITE_DIGITAL_CHECKOUT_BYPASS_SECRET,
+            ),
+          },
+          body: JSON.stringify({
+            ...customerPayload,
+            skipPayment: true,
+          }),
+        });
+        const bypassOrder = await bypassResult.json();
+
+        if (!bypassResult.ok) {
+          throw new Error(
+            bypassOrder.message || 'Unable to complete the bypass checkout',
+          );
+        }
+
+        setUsedBypass(true);
+        setDownloads(bypassOrder.downloads ?? null);
+        setConfirmedOrderId(bypassOrder.appOrderId);
+        setProcessing(false);
+        return;
+      }
+
       await loadRazorpayCheckout();
       const createResult = await fetch(`${ORDER_API_URL}/digital-orders`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          marketingConsent,
-          consentVersion: '2026-07-21',
-        }),
+        body: JSON.stringify(customerPayload),
       });
       const order = await createResult.json();
 
@@ -77,7 +126,7 @@ export function DigitalOrderDialog({
         name: 'Modern Java — Direct Download',
         description: 'Direct download: PDF + ePub bundle',
         order_id: order.razorpayOrderId,
-        prefill: { email },
+        prefill: { name, email },
         notes: { appOrderId: order.appOrderId },
         theme: { color: '#0b3f9f' },
         modal: {
@@ -159,7 +208,9 @@ export function DigitalOrderDialog({
               Get the PDF + ePub bundle
             </h2>
             <p id={descriptionId} className="order-dialog__description">
-              Pay ₹399 securely and receive both formats by email.
+              {DIGITAL_CHECKOUT_BYPASS
+                ? 'Localhost bypass is on — submit an email to receive download links without Razorpay.'
+                : 'Pay ₹399 securely and receive both formats by email.'}
             </p>
           </div>
           <button
@@ -175,12 +226,34 @@ export function DigitalOrderDialog({
         {confirmedOrderId ? (
           <div className="order-dialog__success digital-order__success">
             <CheckCircle2 size={34} strokeWidth={1.75} aria-hidden="true" />
-            <h3>Payment confirmed</h3>
+            <h3>{usedBypass ? 'Delivery ready' : 'Payment confirmed'}</h3>
             <p>
               Your <strong>Modern Java direct download (PDF + ePub)</strong>{' '}
               order <strong>{confirmedOrderId}</strong> is complete. Secure
               download links have been emailed to you.
             </p>
+            {downloads ? (
+              <div className="digital-order__download-links">
+                <a
+                  className="button button-primary"
+                  href={downloads.pdfUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Download PDF
+                </a>
+                {downloads.epubUrl ? (
+                  <a
+                    className="button button-primary"
+                    href={downloads.epubUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Download ePub
+                  </a>
+                ) : null}
+              </div>
+            ) : null}
             <button type="button" className="button button-primary" onClick={onClose}>
               Done
             </button>
@@ -203,6 +276,18 @@ export function DigitalOrderDialog({
             </ul>
 
             <label className="digital-order__field">
+              <span>Name</span>
+              <input
+                type="text"
+                name="name"
+                placeholder="Your full name"
+                autoComplete="name"
+                required
+                autoFocus
+              />
+            </label>
+
+            <label className="digital-order__field">
               <span>Email address</span>
               <input
                 type="email"
@@ -210,9 +295,34 @@ export function DigitalOrderDialog({
                 placeholder="you@example.com"
                 autoComplete="email"
                 required
-                autoFocus
               />
             </label>
+
+            <div className="digital-order__field-row">
+              <label className="digital-order__field">
+                <span>City</span>
+                <input
+                  type="text"
+                  name="city"
+                  placeholder="City"
+                  autoComplete="address-level2"
+                  required
+                />
+              </label>
+              <label className="digital-order__field">
+                <span>ZIP / PIN code</span>
+                <input
+                  type="text"
+                  name="postalCode"
+                  placeholder="560001"
+                  inputMode="numeric"
+                  pattern="\d{6}"
+                  maxLength={6}
+                  autoComplete="postal-code"
+                  required
+                />
+              </label>
+            </div>
 
             <label className="digital-order__consent">
               <input type="checkbox" name="marketingConsent" defaultChecked />
@@ -238,8 +348,18 @@ export function DigitalOrderDialog({
               className="button button-primary digital-order__submit"
               disabled={processing}
             >
-              <CreditCard size={18} strokeWidth={2} aria-hidden="true" />
-              {processing ? 'Starting payment…' : 'Pay ₹399 securely'}
+              {DIGITAL_CHECKOUT_BYPASS ? (
+                <Download size={18} strokeWidth={2} aria-hidden="true" />
+              ) : (
+                <CreditCard size={18} strokeWidth={2} aria-hidden="true" />
+              )}
+              {processing
+                ? DIGITAL_CHECKOUT_BYPASS
+                  ? 'Sending downloads…'
+                  : 'Starting payment…'
+                : DIGITAL_CHECKOUT_BYPASS
+                  ? 'Send download links (no payment)'
+                  : 'Pay ₹399 securely'}
             </button>
           </form>
         )}

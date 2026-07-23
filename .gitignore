@@ -27,6 +27,12 @@ dns-backup-*.json
 *.sln
 *.sw?
 
-# Paid digital edition (large; delivered from private S3)
+# Paid digital edition (large; delivered from private S3 — do not commit)
 assets/books/modern-java-drm-free_v1.0.pdf
 assets/books/modern-java-drm-free_v1.0.epub
+
+# Backend deploy secrets (Zoho OAuth, bypass secret, etc. — do not commit)
+backend/sam-secrets.env
+
+# Separate classpath.in site workspace (local only unless intentionally published)
+classpath-root/

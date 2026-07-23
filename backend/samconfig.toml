@@ -6,7 +6,9 @@ resolve_s3 = true
 s3_prefix = "sam-app"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
-parameter_overrides = "AdminEmail=\"pradeep@classpath.in\" AllowedOrigin=\"https://modern-java.classpath.in\" MailFromEmail=\"no-reply@classpath.in\" ReplyToEmail=\"pradeep@classpath.in\" SesRegion=\"us-east-1\" WebsiteUrl=\"https://modern-java.classpath.in\" SamplePdfKey=\"sample/modern-java-preview.pdf\" DigitalPdfKey=\"digital/modern-java-drm-free_v1.0.pdf\" DigitalEpubKey=\"digital/modern-java-drm-free_v1.0.epub\""
+# Non-secret defaults only. Secrets (Zoho, bypass) come from sam-secrets.env via
+# `npm run deploy` / scripts/deploy-api.sh — do not put credentials here.
+parameter_overrides = "AdminEmail=\"pradeep@classpath.in\" AllowedOrigin=\"https://modern-java.classpath.in,http://localhost:5173\" MailFromEmail=\"no-reply@classpath.in\" ReplyToEmail=\"pradeep@classpath.in\" SesRegion=\"us-east-1\" WebsiteUrl=\"https://modern-java.classpath.in\" SamplePdfKey=\"sample/modern-java-preview.pdf\" DigitalPdfKey=\"digital/modern-java-drm-free_v1.0.pdf\" DigitalEpubKey=\"digital/modern-java-drm-free_v1.0.epub\""
 image_repositories = []
 
 [default.global.parameters]
