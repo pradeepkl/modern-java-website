@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { BookOpen } from 'lucide-react';
 import { getPaperbackMode } from '../../config/features';
 import { assets } from '../../data/assets';
 import { paperbackWaitlistCopy } from '../../data/paperbackWaitlistCopy';
 import { getUtmProps, track } from '../../lib/analytics';
+import { SectionEyebrow } from '../shared/SectionEyebrow';
 import { PaperbackWaitlistDialog } from './PaperbackWaitlistDialog';
 import './PaperbackWaitlistSection.css';
 
@@ -73,12 +73,9 @@ export function PaperbackWaitlistSection() {
       >
         <div className="paperback-waitlist-section__inner page-container">
           <div className="paperback-waitlist-section__copy">
-            {paperbackWaitlistCopy.sectionEyebrow ? (
-              <p className="paperback-waitlist-section__eyebrow">
-                <BookOpen size={18} strokeWidth={1.75} aria-hidden="true" />
-                <span>{paperbackWaitlistCopy.sectionEyebrow}</span>
-              </p>
-            ) : null}
+            <SectionEyebrow className="paperback-waitlist-section__eyebrow">
+              {paperbackWaitlistCopy.sectionEyebrow}
+            </SectionEyebrow>
 
             <h2
               id="paperback-waitlist-heading"

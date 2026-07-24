@@ -5,7 +5,7 @@
  * Keep claims conservative until printer, paper, color, price, and timeline are final.
  */
 export const paperbackWaitlistCopy = {
-  sectionEyebrow: '',
+  sectionEyebrow: 'Coming Soon',
   sectionHeading: 'Paperback Edition',
   sectionLead:
     'The paperback edition is currently being prepared for publication.',
