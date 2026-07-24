@@ -145,7 +145,9 @@ describe('AmazonConsentLink', () => {
     });
 
     expect(fetch).toHaveBeenCalled();
-    const [url, options] = vi.mocked(fetch).mock.calls[0];
+    const fetchCall = vi.mocked(fetch).mock.calls[0];
+    expect(fetchCall).toBeTruthy();
+    const [url, options] = fetchCall;
     expect(String(url)).toMatch(/\/marketing-consents$/);
     expect(options).toEqual(
       expect.objectContaining({
@@ -153,7 +155,7 @@ describe('AmazonConsentLink', () => {
       }),
     );
 
-    const body = JSON.parse(String(options.body));
+    const body = JSON.parse(String(options?.body));
     expect(body.email).toBe('reader@example.com');
     expect(body.source).toBe('amazon_exit_modal');
     expect(body.sourceVersion).toBe('2');
