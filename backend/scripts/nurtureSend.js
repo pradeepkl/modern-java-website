@@ -33,6 +33,7 @@ async function sendMarketingEmail({
   subject,
   text,
   html,
+  recipientRecord,
   tags = {},
 }) {
   return sendEmail({
@@ -41,13 +42,15 @@ async function sendMarketingEmail({
     subject,
     text,
     html,
+    category: 'MARKETING',
+    recipientRecord: recipientRecord || { email: to },
     listUnsubscribeUrl: buildListUnsubscribeUrl(to),
     configurationSetName:
       process.env.SES_CONFIGURATION_SET ||
       `classpath-email-${process.env.APP_ENV || 'prod'}`,
     tags: {
-      emailType: 'nurture',
-      environment: process.env.APP_ENV || 'prod',
+      funnel: tags.funnel,
+      sequenceDay: tags.sequenceDay,
       ...tags,
     },
   });

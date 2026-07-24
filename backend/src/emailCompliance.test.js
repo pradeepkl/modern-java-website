@@ -88,6 +88,68 @@ describe('isMarketingSendAllowed', () => {
   });
 });
 
+describe('transactional vs marketing eligibility', () => {
+  const {
+    isTransactionalSendAllowed,
+    evaluateSendEligibility,
+    EMAIL_CATEGORY,
+  } = require('./emailDelivery');
+
+  const unsubscribed = {
+    email: 'reader@example.com',
+    marketingConsent: false,
+    marketingUnsubscribedAt: '2026-07-21T00:00:00.000Z',
+    emailDeliveryStatus: EMAIL_DELIVERY.ACTIVE,
+  };
+
+  const hardBounced = {
+    email: 'reader@example.com',
+    marketingConsent: true,
+    emailDeliveryStatus: EMAIL_DELIVERY.HARD_BOUNCED,
+  };
+
+  it('allows transactional mail after marketing unsubscribe', () => {
+    assert.equal(isTransactionalSendAllowed(unsubscribed), true);
+    assert.equal(
+      evaluateSendEligibility(EMAIL_CATEGORY.TRANSACTIONAL, unsubscribed)
+        .allowed,
+      true,
+    );
+    assert.equal(
+      evaluateSendEligibility(EMAIL_CATEGORY.MARKETING, unsubscribed).allowed,
+      false,
+    );
+    assert.equal(
+      evaluateSendEligibility(EMAIL_CATEGORY.MARKETING, unsubscribed).reason,
+      'marketing_unsubscribed',
+    );
+  });
+
+  it('blocks both categories after hard bounce or complaint', () => {
+    assert.equal(isTransactionalSendAllowed(hardBounced), false);
+    assert.equal(
+      evaluateSendEligibility(EMAIL_CATEGORY.TRANSACTIONAL, hardBounced)
+        .allowed,
+      false,
+    );
+    assert.equal(
+      evaluateSendEligibility(EMAIL_CATEGORY.MARKETING, hardBounced).allowed,
+      false,
+    );
+  });
+
+  it('allows transactional mail with no recipient record', () => {
+    assert.equal(
+      evaluateSendEligibility(EMAIL_CATEGORY.TRANSACTIONAL, null).allowed,
+      true,
+    );
+    assert.equal(
+      evaluateSendEligibility(EMAIL_CATEGORY.MARKETING, null).allowed,
+      false,
+    );
+  });
+});
+
 describe('classifySesBounce', () => {
   it('treats permanent bounces as hard and transient as soft', () => {
     assert.equal(

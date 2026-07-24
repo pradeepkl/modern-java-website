@@ -84,9 +84,11 @@ const deliver = async (item) => {
     subject: email.subject,
     text: email.text,
     html: email.html,
+    recipientRecord: item,
     tags: { funnel: 'amazon', sequenceDay: '21' },
   });
 };
+
 
 
 const markSent = async (email, { requireUnset = true } = {}) => {

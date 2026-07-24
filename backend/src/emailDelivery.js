@@ -1,7 +1,16 @@
 /**
- * Consent vs deliverability for marketing sends.
+ * Consent vs deliverability for outbound email.
  * SES account suppression remains the final safety net.
+ *
+ * Categories are explicit — never infer from template names:
+ * - TRANSACTIONAL: purchase, invoice, requested sample, download links
+ * - MARKETING: nurture, promotions, paperback announcements
  */
+
+const EMAIL_CATEGORY = {
+  TRANSACTIONAL: 'TRANSACTIONAL',
+  MARKETING: 'MARKETING',
+};
 
 const MARKETING_CONSENT = {
   CONSENTED: 'CONSENTED',
@@ -41,8 +50,30 @@ function resolveEmailDeliveryStatus(item) {
   return EMAIL_DELIVERY.ACTIVE;
 }
 
+function isDeliverySuppressed(item) {
+  const status = resolveEmailDeliveryStatus(item);
+  return (
+    status === EMAIL_DELIVERY.HARD_BOUNCED ||
+    status === EMAIL_DELIVERY.COMPLAINED ||
+    status === EMAIL_DELIVERY.SUPPRESSED
+  );
+}
+
 /**
- * Whether a lead may receive nurture / promotional email.
+ * Transactional mail (purchase, invoice, sample delivery, download links).
+ * Marketing unsubscribe / withdrawn consent must NOT block these.
+ * Hard bounce / complaint still blocks.
+ *
+ * Missing recipient records are allowed — SES account suppression is the net.
+ */
+function isTransactionalSendAllowed(item) {
+  if (!item) return true;
+  return !isDeliverySuppressed(item);
+}
+
+/**
+ * Marketing / nurture / promotional mail.
+ * Requires active consent, no unsubscribe, and ACTIVE delivery.
  */
 function isMarketingSendAllowed(item) {
   if (!item || !normalizeEmail(item.email)) return false;
@@ -54,8 +85,62 @@ function isMarketingSendAllowed(item) {
 }
 
 /**
+ * @param {'TRANSACTIONAL'|'MARKETING'} category
+ * @param {object|null|undefined} item
+ * @returns {{ allowed: boolean, reason: string|null }}
+ */
+function evaluateSendEligibility(category, item) {
+  const normalized = String(category || '')
+    .trim()
+    .toUpperCase();
+
+  if (normalized === EMAIL_CATEGORY.TRANSACTIONAL) {
+    if (isTransactionalSendAllowed(item)) {
+      return { allowed: true, reason: null };
+    }
+    return {
+      allowed: false,
+      reason: `delivery_status:${resolveEmailDeliveryStatus(item)}`,
+    };
+  }
+
+  if (normalized === EMAIL_CATEGORY.MARKETING) {
+    if (isMarketingSendAllowed(item)) {
+      return { allowed: true, reason: null };
+    }
+    if (!item || !normalizeEmail(item?.email)) {
+      return { allowed: false, reason: 'missing_recipient' };
+    }
+    if (item.marketingUnsubscribedAt) {
+      return { allowed: false, reason: 'marketing_unsubscribed' };
+    }
+    if (resolveMarketingConsentStatus(item) !== MARKETING_CONSENT.CONSENTED) {
+      return { allowed: false, reason: 'marketing_consent_inactive' };
+    }
+    return {
+      allowed: false,
+      reason: `delivery_status:${resolveEmailDeliveryStatus(item)}`,
+    };
+  }
+
+  return { allowed: false, reason: 'invalid_category' };
+}
+
+function assertSendEligible(category, item) {
+  const result = evaluateSendEligibility(category, item);
+  if (result.allowed) return result;
+  const error = new Error(
+    `Email send blocked for category ${category}: ${result.reason}`,
+  );
+  error.name = 'EmailEligibilityError';
+  error.reason = result.reason;
+  error.category = category;
+  throw error;
+}
+
+/**
  * Soft bounce / delay: keep ACTIVE, record telemetry only.
- * Hard bounce / complaint: permanently disable marketing delivery.
+ * Hard bounce / complaint: permanently disable delivery status.
  */
 function classifySesBounce(bounce) {
   const bounceType = String(bounce?.bounceType || '').toUpperCase();
@@ -183,12 +268,17 @@ function buildDeliveryTelemetryUpdate({ now, messageId } = {}) {
 }
 
 module.exports = {
+  EMAIL_CATEGORY,
   MARKETING_CONSENT,
   EMAIL_DELIVERY,
   normalizeEmail,
   resolveMarketingConsentStatus,
   resolveEmailDeliveryStatus,
+  isDeliverySuppressed,
+  isTransactionalSendAllowed,
   isMarketingSendAllowed,
+  evaluateSendEligibility,
+  assertSendEligible,
   classifySesBounce,
   buildUnsubscribeUpdate,
   buildHardBounceUpdate,

@@ -1,8 +1,13 @@
 /**
  * Shared SES send helper: configuration set, optional RFC 8058 headers, tags.
+ * Requires an explicit email category — never infer from template names.
  */
 const { randomUUID } = require('node:crypto');
 const { SESClient, SendEmailCommand, SendRawEmailCommand } = require('@aws-sdk/client-ses');
+const {
+  EMAIL_CATEGORY,
+  assertSendEligible,
+} = require('./emailDelivery');
 
 const DEFAULT_MAIL_FROM_EMAIL = 'no-reply@classpath.in';
 const DEFAULT_REPLY_TO = 'pradeep@classpath.in';
@@ -30,6 +35,23 @@ function normalizeTags(tags = {}) {
       Name: String(Name).slice(0, 256),
       Value: String(Value).slice(0, 256),
     }));
+}
+
+function normalizeCategory(category) {
+  const value = String(category || '')
+    .trim()
+    .toUpperCase();
+  if (
+    value !== EMAIL_CATEGORY.TRANSACTIONAL &&
+    value !== EMAIL_CATEGORY.MARKETING
+  ) {
+    const error = new Error(
+      'sendEmail requires an explicit category: TRANSACTIONAL or MARKETING',
+    );
+    error.name = 'EmailCategoryError';
+    throw error;
+  }
+  return value;
 }
 
 function buildRawMimeEmail({
@@ -112,6 +134,8 @@ function buildRawMimeEmail({
 
 /**
  * @param {object} options
+ * @param {'TRANSACTIONAL'|'MARKETING'} options.category Explicit send category
+ * @param {object|null} [options.recipientRecord] Lead/subscriber row for eligibility
  * @param {import('@aws-sdk/client-ses').SESClient} [options.ses]
  * @param {string} options.to
  * @param {string} options.subject
@@ -121,10 +145,12 @@ function buildRawMimeEmail({
  * @param {string} [options.replyTo]
  * @param {string} [options.mailFromEmail]
  * @param {string} [options.configurationSetName]
- * @param {string} [options.listUnsubscribeUrl] RFC 8058 one-click URL
+ * @param {string} [options.listUnsubscribeUrl] RFC 8058 URL (marketing only)
  * @param {Record<string, string>} [options.tags]
  */
 async function sendEmail({
+  category,
+  recipientRecord = null,
   ses,
   to,
   subject,
@@ -137,15 +163,32 @@ async function sendEmail({
   listUnsubscribeUrl,
   tags = {},
 }) {
+  const resolvedCategory = normalizeCategory(category);
+  const record =
+    recipientRecord && typeof recipientRecord === 'object'
+      ? { ...recipientRecord, email: recipientRecord.email || to }
+      : null;
+
+  // Marketing requires a recipient record for consent/unsubscribe checks.
+  // Transactional may omit the record (admin mail, first-time buyers).
+  assertSendEligible(resolvedCategory, record);
+
   const client =
     ses ||
     new SESClient({ region: process.env.SES_REGION || 'us-east-1' });
   const mailFrom = formatMailFrom(mailFromEmail);
-  const replyToAddress = String(replyTo || DEFAULT_REPLY_TO).trim() || DEFAULT_REPLY_TO;
-  const emailTags = normalizeTags(tags);
+  const replyToAddress =
+    String(replyTo || DEFAULT_REPLY_TO).trim() || DEFAULT_REPLY_TO;
+  const marketingUnsubscribe =
+    resolvedCategory === EMAIL_CATEGORY.MARKETING
+      ? String(listUnsubscribeUrl || '').trim() || undefined
+      : undefined;
+  const emailTags = normalizeTags({
+    emailCategory: resolvedCategory,
+    ...tags,
+  });
   const configSet = String(configurationSetName || '').trim();
-  const needsRaw =
-    attachments.length > 0 || Boolean(String(listUnsubscribeUrl || '').trim());
+  const needsRaw = attachments.length > 0 || Boolean(marketingUnsubscribe);
 
   if (!needsRaw) {
     return client.send(
@@ -179,7 +222,7 @@ async function sendEmail({
           html,
           attachments,
           replyTo: replyToAddress,
-          listUnsubscribeUrl: String(listUnsubscribeUrl || '').trim() || undefined,
+          listUnsubscribeUrl: marketingUnsubscribe,
         }),
       },
       ...(configSet ? { ConfigurationSetName: configSet } : {}),
@@ -191,6 +234,7 @@ async function sendEmail({
 module.exports = {
   DEFAULT_CONFIG_SET,
   DISPLAY_NAME,
+  EMAIL_CATEGORY,
   formatMailFrom,
   buildRawMimeEmail,
   sendEmail,

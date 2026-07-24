@@ -35,6 +35,7 @@ const {
   buildUnsubscribeUpdate,
   MARKETING_CONSENT,
   EMAIL_DELIVERY,
+  EMAIL_CATEGORY,
 } = require('./emailDelivery');
 const {
   createUnsubscribeToken,
@@ -181,6 +182,8 @@ const sendEmail = async ({
   replyTo,
   listUnsubscribeUrl,
   tags = {},
+  category,
+  recipientRecord = null,
 }) => {
   if (attachments.length > 0) {
     console.info('Sending SES raw email with attachments', {
@@ -204,11 +207,24 @@ const sendEmail = async ({
     mailFromEmail: MAIL_FROM_EMAIL,
     configurationSetName: SES_CONFIGURATION_SET,
     listUnsubscribeUrl,
+    category,
+    recipientRecord,
     tags: {
       environment: APP_ENV,
       ...tags,
     },
   });
+};
+
+const loadLeadRecord = async (email) => {
+  if (!SAMPLE_REQUESTS_TABLE || !email) return null;
+  const result = await dynamo.send(
+    new GetCommand({
+      TableName: SAMPLE_REQUESTS_TABLE,
+      Key: { email: String(email).trim().toLowerCase() },
+    }),
+  );
+  return result.Item || null;
 };
 
 /**
@@ -224,6 +240,7 @@ const notifyAdmin = async ({ subject, lines }) => {
       to: ADMIN_EMAIL,
       subject: `[Modern Java] ${subject}`,
       text: `${text}\n\nSent: ${new Date().toISOString()}`,
+      category: EMAIL_CATEGORY.TRANSACTIONAL,
     });
   } catch (error) {
     console.error('Admin notification failed', { subject, error });
@@ -597,13 +614,24 @@ const requestSampleChapter = async (event) => {
       subject: 'Your Modern Java chapter preview is ready',
       text: sampleText,
       html: sampleHtml,
+      category: EMAIL_CATEGORY.TRANSACTIONAL,
+      recipientRecord: existing.Item || { email },
       tags: {
-        emailType: 'transactional',
         funnel: 'sample',
         sequenceDay: '0',
       },
     });
   } catch (error) {
+    if (error?.name === 'EmailEligibilityError') {
+      console.error('Chapter preview email blocked by delivery status', {
+        email,
+        reason: error.reason,
+      });
+      return response(503, {
+        message:
+          'Email delivery is temporarily unavailable. Please try again later, or contact pradeep@classpath.in.',
+      });
+    }
     if (
       error?.name === 'MessageRejected' ||
       /not verified|sandbox/i.test(error?.message || '')
@@ -811,9 +839,15 @@ const recordMarketingConsent = async (event) => {
         subject: welcome.subject,
         text: welcome.text,
         html: welcome.html,
+        category: EMAIL_CATEGORY.MARKETING,
+        recipientRecord: {
+          email,
+          marketingConsent: true,
+          marketingConsentStatus: MARKETING_CONSENT.CONSENTED,
+          emailDeliveryStatus: EMAIL_DELIVERY.ACTIVE,
+        },
         listUnsubscribeUrl: buildListUnsubscribeUrlForEmail(email, event),
         tags: {
-          emailType: 'nurture',
           funnel: 'reader-list',
           sequenceDay: '0',
         },
@@ -1007,6 +1041,7 @@ const submitContactMessage = async (event) => {
       subject: `[Modern Java contact] ${subject}`,
       text,
       replyTo: email,
+      category: EMAIL_CATEGORY.TRANSACTIONAL,
     });
   } catch (error) {
     console.error('Contact form email failed', { email, error });
@@ -1307,13 +1342,21 @@ const sendPaperbackConfirmationEmails = async (order, invoice = null) => {
   `);
 
   await Promise.all([
-    sendEmail({ to: ADMIN_EMAIL, subject: adminSubject, text: adminText }),
+    sendEmail({
+      to: ADMIN_EMAIL,
+      subject: adminSubject,
+      text: adminText,
+      category: EMAIL_CATEGORY.TRANSACTIONAL,
+    }),
     sendEmail({
       to: order.email,
       subject: 'Your Modern Java paperback order is confirmed',
       text: customerText,
       html: customerHtml,
       attachments: invoiceAttachments(invoice),
+      category: EMAIL_CATEGORY.TRANSACTIONAL,
+      recipientRecord: await loadLeadRecord(order.email),
+      tags: { funnel: 'paperback-checkout' },
     }),
   ]);
 };
@@ -1411,6 +1454,7 @@ const sendDigitalConfirmationEmails = async (order, invoice = null) => {
       to: ADMIN_EMAIL,
       subject: `Modern Java digital order ${order.appOrderId}`,
       text: adminText,
+      category: EMAIL_CATEGORY.TRANSACTIONAL,
     }),
     sendEmail({
       to: order.email,
@@ -1420,6 +1464,9 @@ const sendDigitalConfirmationEmails = async (order, invoice = null) => {
       text: customerLines.join('\n'),
       html: customerHtml,
       attachments: invoiceAttachments(invoice),
+      category: EMAIL_CATEGORY.TRANSACTIONAL,
+      recipientRecord: await loadLeadRecord(order.email),
+      tags: { funnel: 'digital-checkout' },
     }),
   ]);
 };

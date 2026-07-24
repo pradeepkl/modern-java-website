@@ -98,7 +98,8 @@ const loadPurchaserEmails = async () => {
   return purchased;
 };
 
-const deliver = async (toEmail) => {
+const deliver = async (item) => {
+  const toEmail = String(item.email).trim().toLowerCase();
   const email = buildSampleEducationEmail({ siteUrl });
   await sendMarketingEmail({
     ses,
@@ -106,9 +107,11 @@ const deliver = async (toEmail) => {
     subject: email.subject,
     text: email.text,
     html: email.html,
+    recipientRecord: item,
     tags: { funnel: 'sample', sequenceDay: '10' },
   });
 };
+
 
 
 const markSent = async (email, { requireUnset = true } = {}) => {
@@ -203,7 +206,7 @@ const main = async () => {
       continue;
     }
     try {
-      await deliver(email);
+      await deliver(item);
       await markSent(email, {
         requireUnset: !(force && onlyEmail === email),
       });

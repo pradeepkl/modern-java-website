@@ -258,6 +258,9 @@ async function joinPaperbackWaitlist({
         subject: email.subject,
         text: email.text,
         html: email.html,
+        category: 'TRANSACTIONAL',
+        recipientRecord: { email: payload.email },
+        tags: { funnel: 'paperback-waitlist' },
       });
     } catch (error) {
       console.error('Paperback waitlist confirmation email failed', {
