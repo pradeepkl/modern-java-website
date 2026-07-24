@@ -11,8 +11,13 @@ import { CheckCircle2, CreditCard, Minus, Plus, X } from 'lucide-react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { track, trackPurchase } from '../../lib/analytics';
 import { loadRazorpayCheckout } from '../../lib/razorpay';
-import { isTurnstileConfigured } from '../../lib/turnstile';
+import { isTurnstileConfigured, shouldSkipCheckoutPayment } from '../../lib/turnstile';
 import { CityInput } from '../shared/CityInput';
+import {
+  ModalStatusIcon,
+  MODAL_ACTION_ICON_SIZE,
+  MODAL_CLOSE_ICON_SIZE,
+} from '../shared/ModalStatusIcon';
 import {
   TurnstileWidget,
   type TurnstileWidgetHandle,
@@ -30,6 +35,7 @@ interface PaperbackOrderDialogProps {
 
 const PAPERBACK_PRICE = 899;
 const ORDER_API_URL = import.meta.env.VITE_ORDER_API_URL?.replace(/\/$/, '');
+const SKIP_CHECKOUT_PAYMENT = shouldSkipCheckoutPayment();
 const TEST_ORDER_DEFAULTS = import.meta.env.DEV
   ? {
       name: 'Test Customer',
@@ -39,7 +45,7 @@ const TEST_ORDER_DEFAULTS = import.meta.env.DEV
       city: 'Bengaluru',
       state: 'Karnataka',
       postalCode: '560001',
-      notes: 'Razorpay test order',
+      notes: 'Dev mode test order',
     }
   : undefined;
 
@@ -165,7 +171,6 @@ export function PaperbackOrderDialog({
     };
 
     try {
-      await loadRazorpayCheckout();
       const createResult = await fetch(`${ORDER_API_URL}/orders`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -176,6 +181,28 @@ export function PaperbackOrderDialog({
       if (!createResult.ok) {
         throw new Error(order.message || 'Unable to create the order');
       }
+
+      if (order.skippedPayment) {
+        setConfirmedOrderId(order.appOrderId);
+        completedRef.current = true;
+        trackPurchase({
+          format: 'paperback',
+          value: PAPERBACK_PRICE * orderInput.quantity,
+          transactionId: order.appOrderId,
+          paymentMethod: 'bypass',
+          quantity: orderInput.quantity,
+        });
+        setProcessing(false);
+        return;
+      }
+
+      if (SKIP_CHECKOUT_PAYMENT) {
+        throw new Error(
+          'Dev checkout skip requires the APP_ENV=dev API (modern-java-dev).',
+        );
+      }
+
+      await loadRazorpayCheckout();
 
       track('checkout_payment_start', {
         format: 'paperback',
@@ -301,8 +328,9 @@ export function PaperbackOrderDialog({
               Enter your delivery details
             </h2>
             <p id={descriptionId} className="order-dialog__description">
-              ₹899 per copy. Complete your delivery details and pay securely
-              through Razorpay.
+              {SKIP_CHECKOUT_PAYMENT
+                ? '₹899 per copy. Dev mode — submit delivery details without Razorpay.'
+                : '₹899 per copy. Complete your delivery details and pay securely through Razorpay.'}
             </p>
           </div>
           <button
@@ -311,13 +339,13 @@ export function PaperbackOrderDialog({
             onClick={requestClose}
             aria-label="Close order form"
           >
-            <X size={22} strokeWidth={2} />
+            <X size={MODAL_CLOSE_ICON_SIZE} strokeWidth={2} />
           </button>
         </div>
 
         {confirmedOrderId ? (
           <div className="order-dialog__success">
-            <CheckCircle2 size={48} strokeWidth={1.75} aria-hidden="true" />
+            <ModalStatusIcon icon={CheckCircle2} />
             <h3>Payment successful</h3>
             <p className="order-dialog__success-lead">
               Your paperback order
@@ -552,11 +580,22 @@ export function PaperbackOrderDialog({
             </button>
             <button
               type="submit"
-              className="button button-primary"
+              className={`button button-primary${processing ? ' button-progress' : ''}`}
               disabled={processing}
+              aria-busy={processing}
             >
-              <CreditCard size={18} strokeWidth={2} aria-hidden="true" />
-              {processing ? 'Starting payment…' : 'Proceed to pay'}
+              <CreditCard
+                size={MODAL_ACTION_ICON_SIZE}
+                strokeWidth={2}
+                aria-hidden="true"
+              />
+              {processing
+                ? SKIP_CHECKOUT_PAYMENT
+                  ? 'Confirming order…'
+                  : 'Starting payment…'
+                : SKIP_CHECKOUT_PAYMENT
+                  ? 'Confirm order (no payment)'
+                  : 'Proceed to pay'}
             </button>
           </div>
         </form>

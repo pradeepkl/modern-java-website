@@ -95,8 +95,8 @@ export function UnsubscribePage() {
           <h1>Unsubscribe</h1>
           <p className="legal-page__updated">
             Stop optional Modern Java articles, book updates, and promotional
-            emails. Transactional messages for purchases and sample downloads
-            are unaffected.
+            emails. Transactional messages for purchases and chapter preview
+            downloads are unaffected.
           </p>
 
           <div className="legal-page__content unsubscribe-page__content">
@@ -113,8 +113,9 @@ export function UnsubscribePage() {
               />
               <button
                 type="submit"
-                className="button button-primary"
+                className={`button button-primary${submitting ? ' button-progress' : ''}`}
                 disabled={submitting}
+                aria-busy={submitting}
               >
                 {submitting ? 'Updating…' : 'Unsubscribe from marketing emails'}
               </button>

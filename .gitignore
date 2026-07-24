@@ -46,3 +46,5 @@ backend/.cloudfront-keys/
 # Separate classpath.in site workspace (local only unless intentionally published)
 classpath-root/
 .payment-test/
+public/email-preview.html
+

@@ -116,11 +116,16 @@ describe('buildExistingRegistrationUpdate', () => {
 });
 
 describe('buildConfirmationEmail', () => {
-  it('includes the visitor name and no-payment wording', () => {
+  it('includes the visitor name and priority-list wording', () => {
     const email = buildConfirmationEmail({ name: 'Pradeep' });
-    assert.match(email.subject, /paperback waitlist/i);
+    assert.match(email.subject, /paperback priority list/i);
     assert.match(email.text, /Hi Pradeep/);
+    assert.match(email.text, /priority list/);
+    assert.match(email.text, /priority access to the next print batch/);
     assert.match(email.text, /No payment has been collected/);
+    assert.match(email.text, /happy learning/i);
+    assert.match(email.html, /You’re on the paperback priority list/);
+    assert.match(email.html, /No payment has been collected/);
   });
 });
 

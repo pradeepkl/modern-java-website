@@ -337,7 +337,11 @@
   align-items: center;
   padding: 44px 28px;
   text-align: center;
-  color: var(--color-blue-700);
+  color: var(--color-navy-900);
+}
+
+.order-dialog__success .modal-status-icon {
+  color: var(--color-blue-600);
 }
 
 .order-dialog__success h3 {

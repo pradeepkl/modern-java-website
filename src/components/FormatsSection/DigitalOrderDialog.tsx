@@ -4,7 +4,12 @@ import { CheckCircle2, CreditCard, Download, X } from 'lucide-react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { track, trackPurchase } from '../../lib/analytics';
 import { loadRazorpayCheckout } from '../../lib/razorpay';
-import { isTurnstileConfigured } from '../../lib/turnstile';
+import { isTurnstileConfigured, shouldSkipCheckoutPayment } from '../../lib/turnstile';
+import {
+  ModalStatusIcon,
+  MODAL_ACTION_ICON_SIZE,
+  MODAL_CLOSE_ICON_SIZE,
+} from '../shared/ModalStatusIcon';
 import {
   TurnstileWidget,
   type TurnstileWidgetHandle,
@@ -27,6 +32,8 @@ const DIGITAL_CHECKOUT_BYPASS =
   import.meta.env.DEV &&
   import.meta.env.VITE_DIGITAL_CHECKOUT_BYPASS === 'true' &&
   Boolean(import.meta.env.VITE_DIGITAL_CHECKOUT_BYPASS_SECRET);
+const SKIP_CHECKOUT_PAYMENT =
+  DIGITAL_CHECKOUT_BYPASS || shouldSkipCheckoutPayment();
 
 export function DigitalOrderDialog({
   open,
@@ -119,15 +126,19 @@ export function DigitalOrderDialog({
     }
 
     try {
-      if (DIGITAL_CHECKOUT_BYPASS) {
+      if (SKIP_CHECKOUT_PAYMENT) {
+        const bypassHeaders: Record<string, string> = {
+          'content-type': 'application/json',
+        };
+        if (DIGITAL_CHECKOUT_BYPASS) {
+          bypassHeaders['x-digital-bypass-secret'] = String(
+            import.meta.env.VITE_DIGITAL_CHECKOUT_BYPASS_SECRET,
+          );
+        }
+
         const bypassResult = await fetch(`${ORDER_API_URL}/digital-orders`, {
           method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-            'x-digital-bypass-secret': String(
-              import.meta.env.VITE_DIGITAL_CHECKOUT_BYPASS_SECRET,
-            ),
-          },
+          headers: bypassHeaders,
           body: JSON.stringify({
             ...customerPayload,
             skipPayment: true,
@@ -138,6 +149,12 @@ export function DigitalOrderDialog({
         if (!bypassResult.ok) {
           throw new Error(
             bypassOrder.message || 'Unable to complete the bypass checkout',
+          );
+        }
+
+        if (!bypassOrder.skippedPayment) {
+          throw new Error(
+            'Dev checkout skip requires the APP_ENV=dev API (modern-java-dev).',
           );
         }
 
@@ -286,8 +303,8 @@ export function DigitalOrderDialog({
               Get the PDF + ePub bundle
             </h2>
             <p id={descriptionId} className="order-dialog__description">
-              {DIGITAL_CHECKOUT_BYPASS
-                ? 'Localhost bypass is on — submit an email to receive download links without Razorpay.'
+              {SKIP_CHECKOUT_PAYMENT
+                ? 'Dev mode — submit to receive download links without Razorpay.'
                 : 'Pay ₹699 securely and receive both formats by email.'}
             </p>
           </div>
@@ -297,13 +314,13 @@ export function DigitalOrderDialog({
             onClick={requestClose}
             aria-label="Close digital order form"
           >
-            <X size={22} strokeWidth={2} />
+            <X size={MODAL_CLOSE_ICON_SIZE} strokeWidth={2} />
           </button>
         </div>
 
         {confirmedOrderId ? (
           <div className="order-dialog__success">
-            <CheckCircle2 size={48} strokeWidth={1.75} aria-hidden="true" />
+            <ModalStatusIcon icon={CheckCircle2} />
             <h3>{usedBypass ? 'Delivery ready' : 'Payment successful'}</h3>
             <p className="order-dialog__success-lead">
               Your PDF + ePub bundle is confirmed.
@@ -328,11 +345,11 @@ export function DigitalOrderDialog({
               <li>
                 <span className="digital-order__benefit-lines">
                   <span className="digital-order__benefit-line">
-                    <Download size={18} aria-hidden="true" />
+                    <Download size={MODAL_ACTION_ICON_SIZE} aria-hidden="true" />
                     Secure links for PDF and ePub
                   </span>
                   <span className="digital-order__benefit-line">
-                    <CheckCircle2 size={18} aria-hidden="true" />
+                    <CheckCircle2 size={MODAL_ACTION_ICON_SIZE} aria-hidden="true" />
                     Future revised editions included
                   </span>
                 </span>
@@ -408,19 +425,28 @@ export function DigitalOrderDialog({
 
             <button
               type="submit"
-              className="button button-primary digital-order__submit"
+              className={`button button-primary digital-order__submit${processing ? ' button-progress' : ''}`}
               disabled={processing}
+              aria-busy={processing}
             >
-              {DIGITAL_CHECKOUT_BYPASS ? (
-                <Download size={18} strokeWidth={2} aria-hidden="true" />
+              {SKIP_CHECKOUT_PAYMENT ? (
+                <Download
+                  size={MODAL_ACTION_ICON_SIZE}
+                  strokeWidth={2}
+                  aria-hidden="true"
+                />
               ) : (
-                <CreditCard size={18} strokeWidth={2} aria-hidden="true" />
+                <CreditCard
+                  size={MODAL_ACTION_ICON_SIZE}
+                  strokeWidth={2}
+                  aria-hidden="true"
+                />
               )}
               {processing
-                ? DIGITAL_CHECKOUT_BYPASS
+                ? SKIP_CHECKOUT_PAYMENT
                   ? 'Sending downloads…'
                   : 'Starting payment…'
-                : DIGITAL_CHECKOUT_BYPASS
+                : SKIP_CHECKOUT_PAYMENT
                   ? 'Send download links (no payment)'
                   : 'Pay ₹699 securely'}
             </button>

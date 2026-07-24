@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Modern Java ordering and sample chapter delivery API
+Description: Modern Java ordering and chapter preview delivery API
 
 Parameters:
   AppEnv:
@@ -43,11 +43,11 @@ Parameters:
   WebsiteUrl:
     Type: String
     Default: https://modern-java.classpath.in
-    Description: Public book website URL included in sample-chapter emails
+    Description: Public book website URL included in chapter preview emails
   SamplePdfKey:
     Type: String
     Default: sample/modern-java-preview.pdf
-    Description: S3 object key for the free sample chapter PDF in DigitalAssetsBucket
+    Description: S3 object key for the free chapter preview PDF in DigitalAssetsBucket
   DigitalPdfKey:
     Type: String
     Default: digital/modern-java-drm-free_v1.0.pdf
@@ -431,7 +431,7 @@ Outputs:
     Description: CloudFront distribution ID for digital assets
     Value: !Ref DigitalAssetsDistribution
   SamplePdfObjectKey:
-    Description: Object key for the free sample chapter PDF
+    Description: Object key for the free chapter preview PDF
     Value: !Ref SamplePdfKey
   DigitalPdfObjectKey:
     Description: Object key for the paid digital PDF

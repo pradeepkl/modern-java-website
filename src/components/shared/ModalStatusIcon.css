@@ -1,0 +1,15 @@
+.modal-status-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  color: var(--color-blue-600);
+  background: var(--color-blue-050);
+  border-radius: 50%;
+}
+
+.modal-status-icon svg {
+  display: block;
+}

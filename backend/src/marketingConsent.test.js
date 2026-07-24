@@ -11,6 +11,8 @@ const {
   buildFirstOptInUpdate,
   buildExistingSubscriberUpdate,
   buildWelcomeEmail,
+  buildAmazonReviewFollowUpEmail,
+  isEligibleForAmazonReviewFollowUp,
 } = require('./marketingConsent');
 
 describe('resolveMarketingSource', () => {
@@ -68,7 +70,7 @@ describe('buildExistingSubscriberUpdate', () => {
 });
 
 describe('buildWelcomeEmail', () => {
-  it('includes benefits, independent review wording, and unsubscribe link', () => {
+  it('includes benefits, membership focus, and unsubscribe link', () => {
     const email = buildWelcomeEmail({
       siteUrl: 'https://modern-java.classpath.in',
     });
@@ -77,20 +79,103 @@ describe('buildWelcomeEmail', () => {
       email.unsubscribeUrl,
       'https://modern-java.classpath.in/unsubscribe',
     );
-    assert.match(email.text, /early access to upcoming books/);
-    assert.match(email.text, /reader-only launch offers/);
-    assert.match(email.text, /Modern Java updates and practical articles/);
-    assert.match(email.text, /paperback availability updates/);
+    assert.match(email.text, /Early access to upcoming books/);
+    assert.match(email.text, /Reader-only launch offers/);
+    assert.match(email.text, /Practical Modern Java articles and book updates/);
+    assert.match(email.text, /Priority notifications for paperback availability/);
     assert.match(
       email.text,
-      /Your reader-list benefits are not dependent on leaving a review/,
+      /We’ll only send occasional emails that are relevant to Classpath readers/,
     );
-    assert.match(
-      email.text,
-      /You can unsubscribe at any time using the link below/,
-    );
+    assert.match(email.text, /Unsubscribe anytime/);
     assert.match(email.text, /https:\/\/modern-java\.classpath\.in\/unsubscribe/);
-    assert.doesNotMatch(email.text, /after purchasing|review url|screenshot/i);
+    assert.match(email.html, /Welcome to the Classpath Reader List/);
+    assert.match(email.html, /happy learning/i);
+    assert.doesNotMatch(email.text, /Amazon|review/i);
+    assert.doesNotMatch(email.html, /Amazon|review/i);
+  });
+});
+
+describe('buildAmazonReviewFollowUpEmail', () => {
+  it('acknowledges unknown purchase with buy paths then optional review', () => {
+    const email = buildAmazonReviewFollowUpEmail({
+      siteUrl: 'https://modern-java.classpath.in',
+      amazonUrl: 'https://www.amazon.in/dp/B0H6R4334W',
+      name: 'Pradeep',
+    });
+    assert.equal(email.subject, 'A quick follow-up on Modern Java');
+    assert.match(email.text, /^Hi Pradeep,/);
+    assert.match(email.text, /you showed interest in Modern Java - The Mindset Shift/);
+    assert.match(email.text, /Buy directly from Classpath/);
+    assert.match(email.text, /https:\/\/modern-java\.classpath\.in\/#formats/);
+    assert.match(email.text, /Buy on Amazon/);
+    assert.match(email.text, /If you’ve already purchased the book/);
+    assert.match(email.text, /Even a few sentences/);
+    assert.match(
+      email.text,
+      /does not affect any Classpath Reader List benefits/,
+    );
+    assert.doesNotMatch(email.text, /preview|chapter preview|preface/i);
+    assert.doesNotMatch(email.text, /Enjoying Modern Java\?/);
+    assert.match(email.html, /Buy directly from Classpath/);
+    assert.match(email.html, /Leave an honest Amazon review/);
+    assert.match(email.html, /happy learning/i);
+    const buyIndex = email.text.indexOf('Buy directly from Classpath');
+    const reviewIndex = email.text.indexOf('Leave an honest Amazon review');
+    assert.ok(buyIndex >= 0 && reviewIndex > buyIndex);
+    assert.doesNotMatch(
+      email.text,
+      /discount|coupon|reward|screenshot|review link|after purchasing/i,
+    );
+  });
+});
+
+describe('isEligibleForAmazonReviewFollowUp', () => {
+  const now = new Date('2026-07-24T12:00:00.000Z');
+  const base = {
+    email: 'reader@example.com',
+    marketingConsent: true,
+    marketingConsentSource: 'amazon_exit_modal',
+    marketingConsentAt: '2026-07-20T12:00:00.000Z',
+  };
+
+  it('requires Amazon-intent opt-in past the delay with active consent', () => {
+    assert.equal(isEligibleForAmazonReviewFollowUp(base, { now }), true);
+    assert.equal(
+      isEligibleForAmazonReviewFollowUp(
+        { ...base, marketingConsentAt: '2026-07-23T12:00:00.000Z' },
+        { now },
+      ),
+      false,
+    );
+    assert.equal(
+      isEligibleForAmazonReviewFollowUp(
+        { ...base, marketingConsentSource: 'sample-chapter-form' },
+        { now },
+      ),
+      false,
+    );
+    assert.equal(
+      isEligibleForAmazonReviewFollowUp(
+        { ...base, marketingConsent: false },
+        { now },
+      ),
+      false,
+    );
+    assert.equal(
+      isEligibleForAmazonReviewFollowUp(
+        { ...base, marketingUnsubscribedAt: '2026-07-21T12:00:00.000Z' },
+        { now },
+      ),
+      false,
+    );
+    assert.equal(
+      isEligibleForAmazonReviewFollowUp(
+        { ...base, amazonReviewEmailSentAt: '2026-07-22T12:00:00.000Z' },
+        { now },
+      ),
+      false,
+    );
   });
 });
 

@@ -22,6 +22,11 @@ import {
 import { isTurnstileConfigured } from '../../lib/turnstile';
 import { CityInput } from '../shared/CityInput';
 import {
+  ModalStatusIcon,
+  MODAL_ACTION_ICON_SIZE,
+  MODAL_CLOSE_ICON_SIZE,
+} from '../shared/ModalStatusIcon';
+import {
   TurnstileWidget,
   type TurnstileWidgetHandle,
 } from '../shared/TurnstileWidget';
@@ -288,7 +293,7 @@ export function PaperbackWaitlistDialog({
             onClick={onClose}
             aria-label="Close paperback waitlist form"
           >
-            <X size={22} strokeWidth={2} />
+            <X size={MODAL_CLOSE_ICON_SIZE} strokeWidth={2} />
           </button>
         </div>
 
@@ -299,7 +304,7 @@ export function PaperbackWaitlistDialog({
             aria-live="polite"
             data-testid="paperback-waitlist-success"
           >
-            <CheckCircle2 size={34} strokeWidth={1.75} aria-hidden="true" />
+            <ModalStatusIcon icon={CheckCircle2} />
             <h3>{paperbackWaitlistCopy.successHeading}</h3>
             <p>
               {successStatus === 'already_registered'
@@ -440,10 +445,15 @@ export function PaperbackWaitlistDialog({
 
             <button
               type="submit"
-              className="button button-primary paperback-waitlist__submit"
+              className={`button button-primary paperback-waitlist__submit${processing ? ' button-progress' : ''}`}
               disabled={processing}
+              aria-busy={processing}
             >
-              <Bell size={18} strokeWidth={2} aria-hidden="true" />
+              <Bell
+                size={MODAL_ACTION_ICON_SIZE}
+                strokeWidth={2}
+                aria-hidden="true"
+              />
               {processing
                 ? paperbackWaitlistCopy.submitting
                 : paperbackWaitlistCopy.submit}

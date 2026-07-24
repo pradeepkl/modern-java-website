@@ -3,8 +3,39 @@ const TURNSTILE_SCRIPT_SRC =
 
 export const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim();
 
+function isLocalHostname(hostname: string) {
+  return hostname === 'localhost' || hostname === '127.0.0.1';
+}
+
+/**
+ * Local Vite, Amplify APP_ENV=dev builds, and localhost hosts skip Turnstile.
+ * Production builds always require captcha when VITE_TURNSTILE_SITE_KEY is set.
+ */
+export function shouldDisableTurnstile() {
+  if (import.meta.env.DEV) return true;
+  if (import.meta.env.VITE_APP_ENV === 'dev') return true;
+  if (typeof window !== 'undefined' && isLocalHostname(window.location.hostname)) {
+    return true;
+  }
+  return false;
+}
+
 export function isTurnstileConfigured() {
+  if (shouldDisableTurnstile()) return false;
   return Boolean(TURNSTILE_SITE_KEY);
+}
+
+/**
+ * Skip Razorpay checkout UI and complete without payment.
+ * Pair with APP_ENV=dev (or the digital bypass secret against a configured API).
+ */
+export function shouldSkipCheckoutPayment() {
+  if (import.meta.env.DEV) return true;
+  if (import.meta.env.VITE_APP_ENV === 'dev') return true;
+  if (typeof window !== 'undefined' && isLocalHostname(window.location.hostname)) {
+    return true;
+  }
+  return false;
 }
 
 export interface TurnstileRenderOptions {

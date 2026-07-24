@@ -21,6 +21,10 @@ import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { getUtmProps, track } from '../../lib/analytics';
 import { isTurnstileConfigured } from '../../lib/turnstile';
 import {
+  ModalStatusIcon,
+  MODAL_CLOSE_ICON_SIZE,
+} from './ModalStatusIcon';
+import {
   TurnstileWidget,
   type TurnstileWidgetHandle,
 } from './TurnstileWidget';
@@ -356,7 +360,7 @@ export function AmazonConsentLink({
                   aria-label="Close"
                   disabled={submitting}
                 >
-                  <X size={20} strokeWidth={2} />
+                  <X size={MODAL_CLOSE_ICON_SIZE} strokeWidth={2} />
                 </button>
 
                 {successStatus ? (
@@ -366,9 +370,7 @@ export function AmazonConsentLink({
                     aria-live="polite"
                     data-testid="amazon-exit-success"
                   >
-                    <span className="amazon-consent__icon" aria-hidden="true">
-                      <CheckCircle2 size={28} strokeWidth={1.75} />
-                    </span>
+                    <ModalStatusIcon icon={CheckCircle2} />
                     <p className="amazon-consent__eyebrow">
                       {amazonExitModalCopy.eyebrow}
                     </p>
@@ -400,9 +402,7 @@ export function AmazonConsentLink({
                   </div>
                 ) : (
                   <>
-                    <span className="amazon-consent__icon" aria-hidden="true">
-                      <Mail size={28} strokeWidth={1.75} />
-                    </span>
+                    <ModalStatusIcon icon={Mail} />
                     <p className="amazon-consent__eyebrow">
                       {amazonExitModalCopy.eyebrow}
                     </p>
@@ -504,8 +504,9 @@ export function AmazonConsentLink({
 
                       <button
                         type="submit"
-                        className="button button-primary amazon-consent__submit"
+                        className={`button button-primary amazon-consent__submit${submitting ? ' button-progress' : ''}`}
                         disabled={submitting}
+                        aria-busy={submitting}
                         data-testid="amazon-exit-submit"
                       >
                         {submitting

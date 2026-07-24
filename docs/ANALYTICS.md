@@ -25,7 +25,7 @@ Admin → **Admin** → **Events** (or **Key events**):
 
 | Event name | When it fires | Recommended |
 |------------|---------------|-------------|
-| `sample_form_success` | Sample chapter email accepted by API | Key event (lead) |
+| `sample_form_success` | Chapter preview email accepted by API | Key event (lead) |
 | `paperback_waitlist_success` | Paperback waitlist registration accepted | Key event (demand) |
 | `purchase` | Razorpay (or bypass) payment verified | Key event (revenue) |
 | `amazon_exit` | Visitor leaves to Amazon Kindle | Key event (assisted) |

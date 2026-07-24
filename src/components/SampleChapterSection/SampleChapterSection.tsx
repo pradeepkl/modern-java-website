@@ -38,7 +38,9 @@ export function SampleChapterSection() {
 
     if (!SAMPLE_API_URL) {
       setStatus('error');
-      setMessage('Sample delivery is not configured yet. Please try again later.');
+      setMessage(
+        'Chapter preview delivery is not configured yet. Please try again later.',
+      );
       setSubmitting(false);
       track('sample_form_error', { reason: 'not_configured' });
       return;
@@ -66,14 +68,14 @@ export function SampleChapterSection() {
       const payload = await result.json();
 
       if (!result.ok) {
-        throw new Error(payload.message || 'Unable to send the sample chapter');
+        throw new Error(payload.message || 'Unable to send the chapter preview');
       }
 
       form.reset();
       setCaptchaToken(null);
       turnstileRef.current?.reset();
       setStatus('success');
-      setMessage('Check your inbox—the sample chapter is on its way.');
+      setMessage('Check your inbox—the chapter preview is on its way.');
       track('sample_form_success', { marketing_consent: marketingConsent });
     } catch (error) {
       setStatus('error');
@@ -85,10 +87,10 @@ export function SampleChapterSection() {
           /load failed|failed to fetch|network/i.test(error.message));
       setMessage(
         isNetworkError
-          ? 'The sample service is not available yet. Please try again after it is configured.'
+          ? 'The chapter preview service is not available yet. Please try again after it is configured.'
           : error instanceof Error
           ? error.message
-          : 'Unable to send the sample chapter',
+          : 'Unable to send the chapter preview',
       );
       track('sample_form_error', {
         reason: isNetworkError ? 'network' : 'api',
@@ -100,7 +102,7 @@ export function SampleChapterSection() {
 
   return (
     <section
-      id="sample-chapter"
+      id="chapter-preview"
       className="sample-section"
       aria-labelledby="sample-heading"
     >
@@ -108,17 +110,20 @@ export function SampleChapterSection() {
         <div className="sample-card">
           <div className="sample-card__content">
             <SectionEyebrow className="sample-card__eyebrow">
-              Free book preview
+              Free chapter preview
             </SectionEyebrow>
             <h2 id="sample-heading" className="sample-card__title">
               Preview the book before you decide
             </h2>
             <p className="sample-card__copy">
               Get the first two chapters of{' '}
-              <em>Modern Java: The Mindset Shift</em> and experience its
+              <em>Modern Java - The Mindset Shift</em> and experience its
               intent-first approach—not another feature list.
             </p>
-            <ul className="sample-card__includes" aria-label="Sample contents">
+            <ul
+              className="sample-card__includes"
+              aria-label="Chapter preview contents"
+            >
               <li>
                 <Check size={17} strokeWidth={2.5} aria-hidden="true" />
                 The first two chapters, complete
@@ -168,10 +173,11 @@ export function SampleChapterSection() {
                 </span>
                 <button
                   type="submit"
-                  className="button sample-form__submit"
+                  className={`button sample-form__submit${submitting ? ' button-progress' : ''}`}
                   disabled={submitting}
+                  aria-busy={submitting}
                 >
-                  {submitting ? 'Sending…' : 'Send me the sample'}
+                  {submitting ? 'Sending…' : 'Get the preview'}
                 </button>
               </div>
 
@@ -191,7 +197,8 @@ export function SampleChapterSection() {
               </label>
 
               <p className="sample-form__privacy">
-                The sample is sent whether or not you choose to receive updates.
+                The chapter preview is sent whether or not you choose to receive
+                updates.
               </p>
 
               <div

@@ -37,7 +37,7 @@ function PrivacyPolicy() {
           messages are emailed to admin@classpath.in.
         </p>
         <p>
-          When you request a sample chapter, we collect your email address and
+          When you request a chapter preview, we collect your email address and
           record whether you separately chose to receive occasional updates.
           Before visiting Amazon, you may also optionally share your email
           address to subscribe to book updates and promotional offers.
@@ -52,7 +52,7 @@ function PrivacyPolicy() {
       <section>
         <h2>Bot protection (Cloudflare Turnstile)</h2>
         <p>
-          Sample-chapter requests, Amazon email signup, the contact form, and
+          Chapter preview requests, Amazon email signup, the contact form, and
           paperback and direct digital checkout use Cloudflare Turnstile to
           reduce automated abuse.
           When you submit those forms, a short-lived verification token is
@@ -65,7 +65,7 @@ function PrivacyPolicy() {
         <p>
           Turnstile is provided by Cloudflare and is subject to Cloudflare&apos;s
           privacy policy. If verification fails, we may reject the submission
-          without creating an order or sending a sample.
+          without creating an order or sending a chapter preview.
         </p>
       </section>
 
@@ -76,7 +76,7 @@ function PrivacyPolicy() {
           we load Google Analytics 4 and, when configured, Microsoft Clarity.
           These tools may set cookies or similar identifiers and collect page
           URL, device and browser type, approximate location, scroll and click
-          behaviour, and conversion events such as sample requests and
+          behaviour, and conversion events such as chapter preview requests and
           completed checkouts. We do not send your email address, name, phone
           number, delivery address, postal code, or payment card details to
           these analytics providers.
@@ -97,7 +97,7 @@ function PrivacyPolicy() {
             orders.
           </li>
           <li>
-            To email secure sample-chapter and digital download links to the
+            To email secure chapter preview and digital download links to the
             address you provide.
           </li>
           <li>To verify payment and send order confirmations and invoices.</li>
@@ -125,7 +125,7 @@ function PrivacyPolicy() {
           and terms.
         </p>
         <p>
-          Order and sample information may be processed by service providers
+          Order and chapter preview information may be processed by service providers
           that help us operate the store, including Amazon Web Services for
           hosting, order records, file delivery, and transactional email, and
           Cloudflare for Turnstile bot protection. Kindle purchases are
@@ -145,7 +145,7 @@ function PrivacyPolicy() {
           when required by law.
         </p>
         <p>
-          We retain order, sample-request, and payment records only for as long
+          We retain orders, chapter preview requests, and payment records only for as long
           as reasonably necessary for fulfilment, support, accounting, fraud
           prevention, and legal obligations. Secure download links expire after
           a limited time for security.

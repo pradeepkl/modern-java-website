@@ -5,7 +5,7 @@ const SECTION_IDS = [
   'why-this-book',
   'about-the-book',
   'inside-the-book',
-  'sample-chapter',
+  'chapter-preview',
   'author',
   'why-trust-this-book',
   'formats',

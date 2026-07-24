@@ -2,6 +2,7 @@ const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 const {
   getAppEnvironment,
+  isDevAppEnvironment,
   getRazorpayConfig,
   formatRazorpayDiagnostics,
   maskKeyId,
@@ -21,6 +22,14 @@ const baseProd = {
   RAZORPAY_KEY_SECRET: 'live_secret_value',
   RAZORPAY_WEBHOOK_SECRET: 'live_webhook_secret',
 };
+
+describe('isDevAppEnvironment', () => {
+  it('is true only for APP_ENV=dev', () => {
+    assert.equal(isDevAppEnvironment({ APP_ENV: 'dev' }), true);
+    assert.equal(isDevAppEnvironment({ APP_ENV: 'prod' }), false);
+    assert.equal(isDevAppEnvironment({}), false);
+  });
+});
 
 describe('getAppEnvironment', () => {
   it('accepts dev and prod', () => {

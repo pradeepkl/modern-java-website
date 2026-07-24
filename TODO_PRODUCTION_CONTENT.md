@@ -49,7 +49,7 @@ See `docs/ANALYTICS.md`. Mark `sample_form_success`, `purchase`, and `amazon_exi
 - Final high-resolution author portrait
 - Paid digital PDF/ePub upload to S3 (`backend/npm run upload:assets`)
 
-## Sample chapter
+## Chapter preview
 
 | Asset | Path | Status |
 |-------|------|--------|

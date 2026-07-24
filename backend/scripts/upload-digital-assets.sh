@@ -19,7 +19,7 @@ usage() {
 Usage: upload-digital-assets.sh [--sample-only]
 
 Uploads:
-  - Free sample chapter: assets/books/modern-java-preview.pdf
+  - Free chapter preview: assets/books/modern-java-preview.pdf
   - Paid DRM-free PDF:   assets/books/modern-java-drm-free_v1.0.pdf
   - Paid DRM-free ePub:  assets/books/modern-java-drm-free_v1.0.epub
 
@@ -62,7 +62,7 @@ if [[ -z "$BUCKET" || "$BUCKET" == "None" ]]; then
   exit 1
 fi
 
-echo "Uploading sample chapter -> s3://$BUCKET/$SAMPLE_KEY"
+echo "Uploading chapter preview -> s3://$BUCKET/$SAMPLE_KEY"
 aws s3 cp "$SAMPLE_PDF" "s3://$BUCKET/$SAMPLE_KEY" \
   --region "$REGION" \
   --content-type application/pdf \

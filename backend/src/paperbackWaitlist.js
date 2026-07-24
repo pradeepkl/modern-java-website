@@ -1,8 +1,8 @@
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const CREATED_MESSAGE = 'You have joined the paperback waitlist.';
+const CREATED_MESSAGE = 'You have joined the paperback priority list.';
 const ALREADY_REGISTERED_MESSAGE =
-  'You are already on the paperback waitlist. We will notify you when it becomes available.';
+  'You are already on the paperback priority list. We will notify you when ordering opens.';
 
 /**
  * Normalize and validate a waitlist payload.
@@ -118,25 +118,55 @@ function buildExistingRegistrationUpdate(payload, now = new Date().toISOString()
   };
 }
 
-function buildConfirmationEmail({ name }) {
+function buildConfirmationEmail({
+  name,
+  siteUrl = 'https://modern-java.classpath.in',
+}) {
+  const {
+    escapeHtml,
+    BOOK_FULL_TITLE,
+    wrapTransactionalEmail,
+    emailHeadline,
+    emailParagraph,
+    emailSiteLink,
+    emailClosing,
+  } = require('./emailLayout');
+
+  const site = String(siteUrl).replace(/\/$/, '');
   const text = [
     `Hi ${name},`,
     '',
-    'Thank you for joining the waitlist for the paperback edition of Modern Java — The Mindset Shift.',
+    `Thank you for joining the priority list for the paperback edition of ${BOOK_FULL_TITLE}.`,
     '',
-    'We will email you when the print edition becomes available.',
+    'When ordering opens, we’ll send an email to your registered email address with the available ordering options. Readers on this list will receive priority access to the next print batch.',
     '',
-    'No payment has been collected, and joining the waitlist does not create a purchase obligation.',
+    'No payment has been collected, and joining the priority list does not create any purchase obligation.',
     '',
-    'Regards,',
-    'Pradeep Kumar L',
-    'Classpath Publishing',
-    'modern-java.classpath.in',
+    `Visit the Modern Java website: ${site}`,
+    '',
+    'Thank you again — happy learning!',
   ].join('\n');
 
+  const html = wrapTransactionalEmail(`
+                ${emailHeadline('You’re on the paperback priority list')}
+                ${emailParagraph(
+                  `Hi ${escapeHtml(name)}, thank you for joining the priority list for the paperback edition of <strong style="color:#1a2332;">${escapeHtml(BOOK_FULL_TITLE)}</strong>.`,
+                )}
+                ${emailParagraph(
+                  'When ordering opens, we’ll send an email to your registered email address with the available ordering options. Readers on this list will receive priority access to the next print batch.',
+                )}
+                ${emailParagraph(
+                  'No payment has been collected, and joining the priority list does not create any purchase obligation.',
+                  '0 0 8px',
+                )}
+                ${emailSiteLink(site)}
+                ${emailClosing()}
+  `);
+
   return {
-    subject: 'You’re on the Modern Java paperback waitlist',
+    subject: 'You’re on the Modern Java paperback priority list',
     text,
+    html,
   };
 }
 
@@ -219,11 +249,15 @@ async function joinPaperbackWaitlist({
   // Persist succeeded — attempt confirmation email only for new registrations.
   if (registrationStatus === 'created') {
     try {
-      const email = buildConfirmationEmail({ name: payload.name });
+      const email = buildConfirmationEmail({
+        name: payload.name,
+        siteUrl: process.env.WEBSITE_URL || 'https://modern-java.classpath.in',
+      });
       await sendEmail({
         to: payload.email,
         subject: email.subject,
         text: email.text,
+        html: email.html,
       });
     } catch (error) {
       console.error('Paperback waitlist confirmation email failed', {

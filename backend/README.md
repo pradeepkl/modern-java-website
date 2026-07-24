@@ -2,7 +2,7 @@
 
 AWS SAM backend for paperback orders, Razorpay payment verification, DynamoDB
 storage, SES email confirmation, Zoho Invoice creation, and private S3 +
-CloudFront delivery for the sample chapter and paid digital editions.
+CloudFront delivery for the chapter preview and paid digital editions.
 
 ## Prerequisites
 
@@ -116,6 +116,12 @@ Sample-only upload:
 For local frontend development, copy the root `.env.example` to `.env.local`
 and set the **dev** API URL.
 
+When `APP_ENV=dev`, the API skips Turnstile verification, Razorpay checkout
+(orders are marked paid immediately), and Zoho invoice creation. Requests from
+`http://localhost` / `http://127.0.0.1` also skip Turnstile so local Vite can
+talk to a deployed API without captcha. Vite `npm run dev` (and builds with
+`VITE_APP_ENV=dev`) hide Turnstile and use the no-payment checkout path.
+
 ### Verify which Razorpay environment is active
 
 ```bash
@@ -138,8 +144,12 @@ ID only). Orders persist `paymentProvider: "razorpay"` and
 
 ### Cloudflare Turnstile (bot protection)
 
-Sample chapter, DRM-free digital checkout, paperback waitlist, contact, and
+Chapter preview, DRM-free digital checkout, paperback waitlist, contact, and
 pre-Amazon reader-list forms use Turnstile.
+
+- **Production (`APP_ENV=prod`):** captcha is mandatory (secret + token required).
+- **Dev (`APP_ENV=dev`) and localhost:** captcha is skipped for faster testing.
+  Vite `npm run dev` / `VITE_APP_ENV=dev` also hide the widget.
 
 1. Create a widget at [Cloudflare Turnstile](https://dash.cloudflare.com/?to=/:account/turnstile)
    with your production (and localhost) hostnames.
@@ -213,7 +223,7 @@ behaves as before.
 - `POST /webhooks/razorpay` verifies webhook signatures and reconciles captured
   payments.
 - `POST /sample-requests` records optional marketing consent and emails a
-  time-limited CloudFront signed download link for the sample chapter PDF.
+  time-limited CloudFront signed download link for the chapter preview PDF.
 - `POST /marketing-consents` records Classpath Reader List / marketing opt-in
   on `SampleRequestsTable` (email PK). First valid opt-in is atomic
   (`marketingConsent` missing or false → true); only that write sends the
@@ -251,6 +261,57 @@ PAPERBACK_WAITLIST_TABLE=<table-name> node scripts/export-paperback-waitlist.js 
 
 Table name is the CloudFormation physical ID for `PaperbackWaitlistTable`
 (from `aws cloudformation describe-stack-resources` / console).
+
+### Amazon buying-intent follow-up
+
+For readers who entered their email and continued to Amazon
+(`amazon_exit_modal` / `amazon-pre-navigation`). Purchase completion is
+**unknown**, so the email:
+
+1. Offers Classpath + Amazon buy paths first
+2. Then gently asks for an honest review if they already purchased
+
+Default delay: **3 days** after `marketingConsentAt`. Never mentions the
+chapter preview. Benefits are never tied to leaving a review.
+
+```bash
+SAMPLE_REQUESTS_TABLE=<table-name> npm run send:review-followup -- --dry-run
+SAMPLE_REQUESTS_TABLE=<table-name> npm run send:review-followup
+SAMPLE_REQUESTS_TABLE=<table-name> npm run send:review-followup -- --days 5
+SAMPLE_REQUESTS_TABLE=<table-name> npm run send:review-followup -- --email reader@example.com --force
+```
+
+Successful sends set `amazonReviewEmailSentAt` on the lead row.
+
+### Sample chapter nurture follow-up
+
+After someone requests the free chapter preview, send a soft full-book follow-up
+**3 days** later (short lead-magnet best practice: enough time to read the
+two chapters, still within the warm interest window, and just after
+the usual 2-day download-link expiry).
+
+Primary CTA is the website formats section; Amazon is offered as an alternative.
+
+Skips:
+
+- people who already purchased on the website (paid digital/paperback)
+- anyone who already received `sampleFollowUpEmailSentAt`
+- unsubscribed leads (`marketingUnsubscribedAt`) or withdrawn marketing consent
+  (`marketingConsent === false`)
+
+Limitation: Amazon-direct purchases cannot be suppressed unless that buyer’s
+email is already known from a site order or lead record.
+
+```bash
+SAMPLE_REQUESTS_TABLE=<table> ORDERS_TABLE=<orders-table> \
+  npm run send:sample-followup -- --dry-run
+
+SAMPLE_REQUESTS_TABLE=<table> ORDERS_TABLE=<orders-table> \
+  npm run send:sample-followup
+
+SAMPLE_REQUESTS_TABLE=<table> ORDERS_TABLE=<orders-table> \
+  npm run send:sample-followup -- --email reader@example.com --force
+```
 
 ### CloudFront digital downloads
 

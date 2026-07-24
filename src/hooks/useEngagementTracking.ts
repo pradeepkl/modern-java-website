@@ -4,7 +4,7 @@ import { getConsent, track } from '../lib/analytics';
 const SECTION_TRACK_IDS = [
   'why-this-book',
   'inside-the-book',
-  'sample-chapter',
+  'chapter-preview',
   'formats',
   'author',
 ] as const;

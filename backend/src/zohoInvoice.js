@@ -1,7 +1,9 @@
 /**
  * Zoho Invoice (India) helpers for paid Modern Java orders.
- * No-ops when OAuth/org env vars are incomplete.
+ * No-ops when OAuth/org env vars are incomplete, or when APP_ENV=dev.
  */
+
+const { isDevAppEnvironment } = require('./razorpayConfig');
 
 const ZOHO_ACCOUNTS_URL = 'https://accounts.zoho.in/oauth/v2/token';
 const ZOHO_API_BASE = 'https://www.zohoapis.in/invoice/v3';
@@ -118,12 +120,15 @@ const contactDisplayName = ({ email, name }) =>
   'Modern Java customer';
 
 const billingAddressPayload = ({ city, postalCode }) => {
-  const payload = {
-    country: 'India',
-  };
   const cityValue = String(city || '').trim();
   const zipValue = String(postalCode || '').trim();
-  if (cityValue) payload.city = cityValue.slice(0, 50);
+  // Zoho India rejects country-only billing addresses ("City is required").
+  // Omit billing_address entirely when we have no city (digital checkout).
+  if (!cityValue) return null;
+  const payload = {
+    country: 'India',
+    city: cityValue.slice(0, 50),
+  };
   if (zipValue) payload.zip = zipValue.slice(0, 20);
   return payload;
 };
@@ -176,9 +181,10 @@ const findOrCreateContact = async ({ email, name, city, postalCode }) => {
   });
 
   if (existing?.contact_id) {
-    const updatePayload = {
-      billing_address: billingAddress,
-    };
+    const updatePayload = {};
+    if (billingAddress) {
+      updatePayload.billing_address = billingAddress;
+    }
     // Avoid renaming into a duplicate contact_name when another record owns it.
     if (
       !existing.contact_name ||
@@ -198,13 +204,18 @@ const findOrCreateContact = async ({ email, name, city, postalCode }) => {
       ];
     }
 
-    try {
-      await zohoRequest(`/contacts/${existing.contact_id}`, {
-        method: 'PUT',
-        json: updatePayload,
-      });
-    } catch (error) {
-      console.error('Zoho contact update failed; continuing with existing contact', error);
+    if (Object.keys(updatePayload).length > 0) {
+      try {
+        await zohoRequest(`/contacts/${existing.contact_id}`, {
+          method: 'PUT',
+          json: updatePayload,
+        });
+      } catch (error) {
+        console.error(
+          'Zoho contact update failed; continuing with existing contact',
+          error,
+        );
+      }
     }
 
     return {
@@ -214,21 +225,24 @@ const findOrCreateContact = async ({ email, name, city, postalCode }) => {
   }
 
   try {
+    const createPayload = {
+      contact_name: contactName,
+      contact_type: 'customer',
+      email: emailValue,
+      contact_persons: [
+        {
+          first_name: contactName.slice(0, 50),
+          email: emailValue,
+          is_primary_contact: true,
+        },
+      ],
+    };
+    if (billingAddress) {
+      createPayload.billing_address = billingAddress;
+    }
     const created = await zohoRequest('/contacts', {
       method: 'POST',
-      json: {
-        contact_name: contactName,
-        contact_type: 'customer',
-        email: emailValue,
-        billing_address: billingAddress,
-        contact_persons: [
-          {
-            first_name: contactName.slice(0, 50),
-            email: emailValue,
-            is_primary_contact: true,
-          },
-        ],
-      },
+      json: createPayload,
     });
 
     return {
@@ -249,21 +263,24 @@ const findOrCreateContact = async ({ email, name, city, postalCode }) => {
         };
       }
       const uniqueName = `${contactName} (${emailValue})`.slice(0, 100);
+      const uniquePayload = {
+        contact_name: uniqueName,
+        contact_type: 'customer',
+        email: emailValue,
+        contact_persons: [
+          {
+            first_name: contactName.slice(0, 50),
+            email: emailValue,
+            is_primary_contact: true,
+          },
+        ],
+      };
+      if (billingAddress) {
+        uniquePayload.billing_address = billingAddress;
+      }
       const createdUnique = await zohoRequest('/contacts', {
         method: 'POST',
-        json: {
-          contact_name: uniqueName,
-          contact_type: 'customer',
-          email: emailValue,
-          billing_address: billingAddress,
-          contact_persons: [
-            {
-              first_name: contactName.slice(0, 50),
-              email: emailValue,
-              is_primary_contact: true,
-            },
-          ],
-        },
+        json: uniquePayload,
       });
       return {
         contactId: createdUnique.contact.contact_id,
@@ -349,6 +366,11 @@ const createAndSendInvoice = async ({
     return null;
   }
 
+  if (isDevAppEnvironment()) {
+    console.info('Skipping Zoho invoice creation (APP_ENV=dev)');
+    return null;
+  }
+
   const { contactId } = await findOrCreateContact({
     email,
     name,
@@ -392,10 +414,13 @@ const createAndSendInvoice = async ({
     // Leave notes empty so the Standard Template "Authorized Signature"
     // block is shown instead of a "no signature needed" note.
     notes: '',
-    terms: 'Thank you for your purchase of Modern Java: The Mindset Shift.',
+    terms: 'Thank you for your purchase of Modern Java - The Mindset Shift.',
     line_items: items,
-    billing_address: billingAddressPayload({ city, postalCode }),
   };
+  const billingAddress = billingAddressPayload({ city, postalCode });
+  if (billingAddress) {
+    invoicePayload.billing_address = billingAddress;
+  }
 
   if (ZOHO_INVOICE_TEMPLATE_ID) {
     invoicePayload.template_id = ZOHO_INVOICE_TEMPLATE_ID;

@@ -155,41 +155,219 @@ function buildExistingSubscriberUpdate({ attribution = {}, now }) {
 }
 
 function buildWelcomeEmail({ siteUrl }) {
+  const {
+    escapeHtml,
+    wrapTransactionalEmail,
+    emailHeadline,
+    emailParagraph,
+    emailBulletList,
+    emailSiteLink,
+    emailClosing,
+    emailMutedNote,
+  } = require('./emailLayout');
+
   const site = String(siteUrl || 'https://modern-java.classpath.in').replace(
     /\/$/,
     '',
   );
   const unsubscribeUrl = `${site}/unsubscribe`;
+  const benefits = [
+    'Early access to upcoming books',
+    'Reader-only launch offers',
+    'Practical Modern Java articles and book updates',
+    'Priority notifications for paperback availability',
+  ];
   const text = [
-    'Hi,',
-    '',
     'Thank you for joining the Classpath Reader List.',
     '',
-    'You’ll receive:',
+    'As a registered reader, you can expect:',
     '',
-    '- early access to upcoming books',
-    '- reader-only launch offers',
-    '- Modern Java updates and practical articles',
-    '- paperback availability updates',
+    ...benefits.map((item) => `• ${item}`),
     '',
-    'After you’ve had time to read Modern Java — The Mindset Shift, please consider leaving an honest review on Amazon. Reader feedback helps other Java developers decide whether the book is right for them.',
+    'We’ll only send occasional emails that are relevant to Classpath readers.',
     '',
-    'Your reader-list benefits are not dependent on leaving a review.',
+    `Unsubscribe anytime: ${unsubscribeUrl}`,
     '',
-    'You can unsubscribe at any time using the link below.',
-    unsubscribeUrl,
+    `Visit the Modern Java website: ${site}`,
     '',
-    'Regards,',
-    'Pradeep Kumar L',
-    'Classpath',
-    site.replace(/^https?:\/\//, ''),
+    'Thank you again — happy learning!',
   ].join('\n');
+
+  const html = wrapTransactionalEmail(`
+                ${emailHeadline('Welcome to the Classpath Reader List')}
+                ${emailParagraph(
+                  'Thank you for joining. As a registered reader, you can expect:',
+                )}
+                ${emailBulletList(benefits)}
+                ${emailParagraph(
+                  'We’ll only send occasional emails that are relevant to Classpath readers.',
+                  '0 0 8px',
+                )}
+                ${emailSiteLink(site)}
+                ${emailMutedNote(
+                  `You can <a href="${escapeHtml(unsubscribeUrl)}" style="color:#667085;font-weight:600;">unsubscribe</a> anytime.`,
+                )}
+                ${emailClosing()}
+  `);
 
   return {
     subject: 'Welcome to the Classpath Reader List',
     text,
+    html,
     unsubscribeUrl,
   };
+}
+
+/**
+ * Amazon buying-intent follow-up.
+ *
+ * Recipients showed interest (email + continue to Amazon) but purchase completion
+ * is unknown. Copy acknowledges both paths: complete purchase, or leave a review
+ * if they already bought. Never mentions the chapter preview.
+ *
+ * Compliance: never ties benefits, discounts, or offers to leaving a review.
+ * Never asks for review URLs, screenshots, or other proof.
+ */
+function buildAmazonReviewFollowUpEmail({
+  siteUrl,
+  amazonUrl = 'https://www.amazon.in/dp/B0H6R4334W',
+  name,
+}) {
+  const {
+    escapeHtml,
+    BOOK_FULL_TITLE,
+    wrapTransactionalEmail,
+    emailHeadline,
+    emailParagraph,
+    emailButton,
+    emailSiteLink,
+    emailClosing,
+    emailMutedNote,
+  } = require('./emailLayout');
+
+  const site = String(siteUrl || 'https://modern-java.classpath.in').replace(
+    /\/$/,
+    '',
+  );
+  const formatsUrl = `${site}/#formats`;
+  const amazonLink = String(
+    amazonUrl || 'https://www.amazon.in/dp/B0H6R4334W',
+  ).trim();
+  const unsubscribeUrl = `${site}/unsubscribe`;
+  const greetingName = String(name || '').trim();
+  const greeting = greetingName ? `Hi ${greetingName},` : 'Hi,';
+
+  const text = [
+    greeting,
+    '',
+    `A few days ago, you showed interest in ${BOOK_FULL_TITLE}.`,
+    '',
+    'If you haven’t had a chance to get your copy yet, you can choose whichever option works best for you:',
+    '',
+    'Buy directly from Classpath',
+    formatsUrl,
+    '',
+    'Buy on Amazon',
+    amazonLink,
+    '',
+    'If you’ve already purchased the book and found it helpful, we’d be grateful if you would consider leaving an honest review on Amazon. Even a few sentences can help other Java developers decide whether the book is right for them.',
+    '',
+    `Leave an honest Amazon review: ${amazonLink}`,
+    '',
+    'Leaving a review is entirely optional and does not affect any Classpath Reader List benefits.',
+    '',
+    `Visit the Modern Java website: ${site}`,
+    '',
+    `Unsubscribe anytime: ${unsubscribeUrl}`,
+    '',
+    'Thank you again — happy learning!',
+  ].join('\n');
+
+  const html = wrapTransactionalEmail(`
+                ${emailHeadline('A quick follow-up on Modern Java')}
+                ${emailParagraph(escapeHtml(greeting), '0 0 16px')}
+                ${emailParagraph(
+                  `A few days ago, you showed interest in <strong style="color:#1a2332;">${escapeHtml(BOOK_FULL_TITLE)}</strong>.`,
+                )}
+                ${emailParagraph(
+                  'If you haven’t had a chance to get your copy yet, you can choose whichever option works best for you:',
+                )}
+                ${emailButton({
+                  href: formatsUrl,
+                  label: 'Buy directly from Classpath',
+                })}
+                ${emailParagraph(
+                  `<a href="${escapeHtml(amazonLink)}" style="color:#1a56db;font-weight:600;text-decoration:none;">Buy on Amazon →</a>`,
+                )}
+                ${emailParagraph(
+                  'If you’ve already purchased the book and found it helpful, we’d be grateful if you would consider leaving an honest review on Amazon. Even a few sentences can help other Java developers decide whether the book is right for them.',
+                )}
+                ${emailButton({
+                  href: amazonLink,
+                  label: 'Leave an honest Amazon review',
+                  bgcolor: '#0f6b5c',
+                })}
+                ${emailParagraph(
+                  'Leaving a review is entirely optional and does not affect any Classpath Reader List benefits.',
+                  '0 0 8px',
+                )}
+                ${emailSiteLink(site)}
+                ${emailMutedNote(
+                  `You can <a href="${escapeHtml(unsubscribeUrl)}" style="color:#667085;font-weight:600;">unsubscribe</a> anytime.`,
+                )}
+                ${emailClosing()}
+  `);
+
+  return {
+    subject: 'A quick follow-up on Modern Java',
+    text,
+    html,
+    unsubscribeUrl,
+    formatsUrl,
+    amazonUrl: amazonLink,
+  };
+}
+
+const AMAZON_INTENT_SOURCES = new Set([
+  AMAZON_EXIT_SOURCE,
+  'amazon-pre-navigation',
+]);
+
+/** Default delay after Amazon exit / reader-list opt-in before this follow-up. */
+const AMAZON_FOLLOWUP_DAYS = 3;
+
+/**
+ * Whether a Classpath Reader List lead from Amazon buying intent is due.
+ * Targets email + continue-to-Amazon signups; purchase completion is unknown.
+ * @param {object} item SAMPLE_REQUESTS_TABLE row
+ * @param {{ now?: Date, minAgeDays?: number }} [options]
+ */
+function isEligibleForAmazonReviewFollowUp(
+  item,
+  { now = new Date(), minAgeDays = AMAZON_FOLLOWUP_DAYS } = {},
+) {
+  if (!item || !item.email) {
+    return false;
+  }
+  if (item.marketingConsent !== true) {
+    return false;
+  }
+  if (item.marketingUnsubscribedAt) {
+    return false;
+  }
+  if (item.amazonReviewEmailSentAt) {
+    return false;
+  }
+  const source = String(item.marketingConsentSource || '');
+  if (!AMAZON_INTENT_SOURCES.has(source)) {
+    return false;
+  }
+  const consentedAt = Date.parse(item.marketingConsentAt || '');
+  if (!Number.isFinite(consentedAt)) {
+    return false;
+  }
+  const minAgeMs = Math.max(0, Number(minAgeDays) || 0) * 24 * 60 * 60 * 1000;
+  return consentedAt <= now.getTime() - minAgeMs;
 }
 
 module.exports = {
@@ -199,10 +377,14 @@ module.exports = {
   SOURCE_VERSION,
   CONSENT_TYPE,
   ALLOWED_SOURCES,
+  AMAZON_INTENT_SOURCES,
+  AMAZON_FOLLOWUP_DAYS,
   isConditionalCheckFailed,
   resolveMarketingSource,
   normalizeAttribution,
   buildFirstOptInUpdate,
   buildExistingSubscriberUpdate,
   buildWelcomeEmail,
+  buildAmazonReviewFollowUpEmail,
+  isEligibleForAmazonReviewFollowUp,
 };

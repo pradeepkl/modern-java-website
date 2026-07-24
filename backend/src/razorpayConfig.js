@@ -24,6 +24,13 @@ const requireEnv = (name, env = process.env) => {
 
 /**
  * @param {NodeJS.ProcessEnv} [env]
+ * @returns {boolean}
+ */
+const isDevAppEnvironment = (env = process.env) =>
+  String(env.APP_ENV || '').trim() === 'dev';
+
+/**
+ * @param {NodeJS.ProcessEnv} [env]
  * @returns {'dev' | 'prod'}
  */
 const getAppEnvironment = (env = process.env) => {
@@ -107,6 +114,7 @@ const resolvePaymentEnvironment = (order) => {
 module.exports = {
   ACCEPTED_ENVIRONMENTS,
   getAppEnvironment,
+  isDevAppEnvironment,
   getRazorpayConfig,
   formatRazorpayDiagnostics,
   maskKeyId,

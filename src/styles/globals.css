@@ -96,6 +96,47 @@ a:hover {
   width: 100%;
 }
 
+/* Indeterminate progress: shadow/shine sweeps across the button while submitting */
+.button.button-progress,
+.button.button-progress:disabled {
+  position: relative;
+  overflow: hidden;
+  cursor: wait;
+  opacity: 1;
+  pointer-events: none;
+}
+
+.button.button-progress::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.42) 50%,
+    transparent 65%
+  );
+  transform: translateX(-120%);
+  animation: button-progress-sweep 1.35s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.button-amazon.button-progress::after,
+.sample-form__submit.button-progress::after {
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 65%
+  );
+}
+
+@keyframes button-progress-sweep {
+  to {
+    transform: translateX(120%);
+  }
+}
+
 .noscript-fallback {
   padding: var(--space-8);
   max-width: var(--page-max-width);

@@ -3,6 +3,8 @@
 interface ImportMetaEnv {
   readonly VITE_ORDER_API_URL?: string;
   readonly VITE_TURNSTILE_SITE_KEY?: string;
+  /** Set to "dev" for Amplify/dev builds — disables Turnstile and payment UI. */
+  readonly VITE_APP_ENV?: string;
   readonly VITE_DIGITAL_CHECKOUT_BYPASS?: string;
   readonly VITE_DIGITAL_CHECKOUT_BYPASS_SECRET?: string;
   readonly VITE_GA_MEASUREMENT_ID?: string;

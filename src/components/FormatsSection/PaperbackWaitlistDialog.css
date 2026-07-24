@@ -113,8 +113,9 @@
 .paperback-waitlist__success {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
+  text-align: center;
   color: var(--color-navy-900);
 }
 

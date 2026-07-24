@@ -49,8 +49,8 @@ public/
     social/         # Open Graph preview
     icons/          # Format, brand, and social utility icons
 assets/
-  books/            # Sample chapter PDF source (uploaded to private S3)
-backend/            # SAM API for orders, sample chapter, and digital delivery
+  books/            # Chapter preview PDF source (uploaded to private S3)
+backend/            # SAM API for orders, chapter preview, and digital delivery
 scripts/            # Production deploy helpers (Amplify zip pipeline)
 ```
 
@@ -99,7 +99,7 @@ VITE_PAPERBACK_SALES_ENABLED=true VITE_PAPERBACK_WAITLIST_ENABLED=false npm run 
 
 Existing Razorpay/order APIs remain deployed; only the frontend surface switches.
 
-The free sample chapter PDF lives at `assets/books/modern-java-preview.pdf`.
+The free chapter preview PDF lives at `assets/books/modern-java-preview.pdf`.
 After the backend stack is deployed, upload it to the private digital-assets
 bucket with:
 

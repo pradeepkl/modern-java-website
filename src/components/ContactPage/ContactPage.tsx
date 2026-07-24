@@ -187,8 +187,9 @@ export function ContactPage() {
 
               <button
                 type="submit"
-                className="button button-primary"
+                className={`button button-primary${submitting ? ' button-progress' : ''}`}
                 disabled={submitting}
+                aria-busy={submitting}
               >
                 {submitting ? 'Sending…' : 'Send message'}
               </button>
