@@ -342,10 +342,33 @@
 }
 
 .order-dialog__success p {
-  max-width: 48ch;
-  margin: 0 0 24px;
-  line-height: 1.6;
+  max-width: 32ch;
+  margin: 0;
+  line-height: 1.55;
   color: var(--color-muted);
+}
+
+.order-dialog__success .order-dialog__success-lead {
+  margin-top: 4px;
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.order-dialog__success .order-dialog__order-id {
+  margin-top: 10px;
+  font-size: 0.92rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+.order-dialog__success .order-dialog__order-id strong {
+  color: var(--color-navy-900);
+  font-weight: 700;
+}
+
+.order-dialog__success .order-dialog__success-note {
+  margin: 12px 0 24px;
+  font-size: 0.92rem;
 }
 
 .order-dialog__success strong {

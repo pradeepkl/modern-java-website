@@ -191,6 +191,38 @@
   text-align: center;
 }
 
+.digital-order__success .digital-order__success-lead,
+.digital-order__success .digital-order__order-id,
+.digital-order__success .digital-order__success-note {
+  max-width: 28ch;
+  margin-inline: auto;
+  line-height: 1.55;
+  color: var(--color-muted);
+}
+
+.digital-order__success .digital-order__success-lead {
+  margin-top: 4px;
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.digital-order__success .digital-order__order-id {
+  margin-top: 10px;
+  font-size: 0.92rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+.digital-order__success .digital-order__order-id strong {
+  color: var(--color-navy-900);
+  font-weight: 700;
+}
+
+.digital-order__success .digital-order__success-note {
+  margin: 12px auto 24px;
+  font-size: 0.92rem;
+}
+
 .digital-order__download-links {
   display: flex;
   flex-direction: column;

@@ -108,24 +108,24 @@ export function SampleChapterSection() {
         <div className="sample-card">
           <div className="sample-card__content">
             <SectionEyebrow className="sample-card__eyebrow">
-              Free sample chapter
+              Free book preview
             </SectionEyebrow>
             <h2 id="sample-heading" className="sample-card__title">
-              Read a chapter before you decide
+              Preview the book before you decide
             </h2>
             <p className="sample-card__copy">
-              Get a complete sample from <em>Modern Java: The Mindset Shift</em>{' '}
-              and experience its intent-first approach—not another feature
-              list.
+              Get the first two chapters of{' '}
+              <em>Modern Java: The Mindset Shift</em> and experience its
+              intent-first approach—not another feature list.
             </p>
             <ul className="sample-card__includes" aria-label="Sample contents">
               <li>
                 <Check size={17} strokeWidth={2.5} aria-hidden="true" />
-                Preface and the first two chapters
+                The first two chapters, complete
               </li>
               <li>
                 <Check size={17} strokeWidth={2.5} aria-hidden="true" />
-                Selected diagrams from the sample
+                Diagrams included in those chapters
               </li>
             </ul>
           </div>

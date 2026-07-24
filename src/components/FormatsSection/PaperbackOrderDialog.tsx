@@ -306,10 +306,15 @@ export function PaperbackOrderDialog({
           <div className="order-dialog__success">
             <CheckCircle2 size={48} strokeWidth={1.75} aria-hidden="true" />
             <h3>Payment successful</h3>
-            <p>
-              Your <strong>Modern Java paperback × {quantity}</strong> order{' '}
-              <strong>{confirmedOrderId}</strong> is confirmed. Confirmation
-              details have been emailed to you.
+            <p className="order-dialog__success-lead">
+              Your paperback order
+              {quantity > 1 ? ` (${quantity} copies)` : ''} is confirmed.
+            </p>
+            <p className="order-dialog__order-id">
+              Order ID <strong>{confirmedOrderId}</strong>
+            </p>
+            <p className="order-dialog__success-note">
+              Confirmation details have been emailed to you.
             </p>
             <button
               type="button"

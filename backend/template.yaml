@@ -86,6 +86,14 @@ Parameters:
     Type: String
     Default: ''
     Description: Zoho invoice PDF template ID (use a qty/rate template, not day-rate)
+  CloudFrontPublicKeySsmParam:
+    Type: String
+    Default: /modern-java/cloudfront/public-key
+    Description: SSM parameter holding the CloudFront URL-signing public key PEM
+  CloudFrontPrivateKeySsmParam:
+    Type: String
+    Default: /modern-java/cloudfront/private-key
+    Description: SSM SecureString parameter holding the CloudFront URL-signing private key PEM
 
 Globals:
   Function:
@@ -118,6 +126,9 @@ Globals:
         ZOHO_TAX_ID: !Ref ZohoTaxId
         ZOHO_TAX_EXEMPTION_ID: !Ref ZohoTaxExemptionId
         ZOHO_INVOICE_TEMPLATE_ID: !Ref ZohoInvoiceTemplateId
+        CLOUDFRONT_DOMAIN: !GetAtt DigitalAssetsDistribution.DomainName
+        CLOUDFRONT_KEY_PAIR_ID: !Ref DigitalAssetsCloudFrontPublicKey
+        CLOUDFRONT_PRIVATE_KEY_SSM_PARAM: !Ref CloudFrontPrivateKeySsmParam
 
 Resources:
   OrderApi:
@@ -154,6 +165,12 @@ Resources:
                 - ses:SendEmail
                 - ses:SendRawEmail
               Resource: '*'
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+              Resource: !Sub
+                - 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParamName}'
+                - ParamName: !Ref CloudFrontPrivateKeySsmParam
       Events:
         CreateOrder:
           Type: HttpApi
@@ -248,6 +265,101 @@ Resources:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
 
+  DigitalAssetsCloudFrontPublicKey:
+    Type: AWS::CloudFront::PublicKey
+    Properties:
+      PublicKeyConfig:
+        CallerReference: !Sub '${AWS::StackName}-digital-assets-signing-key'
+        Name: !Sub '${AWS::StackName}-digital-assets'
+        Comment: Signs time-limited PDF/ePub download URLs
+        EncodedKey: !Sub
+          - '{{resolve:ssm:${ParamName}}}'
+          - ParamName: !Ref CloudFrontPublicKeySsmParam
+
+  DigitalAssetsCloudFrontKeyGroup:
+    Type: AWS::CloudFront::KeyGroup
+    Properties:
+      KeyGroupConfig:
+        Name: !Sub '${AWS::StackName}-digital-assets'
+        Comment: Trusted key group for digital download signed URLs
+        Items:
+          - !Ref DigitalAssetsCloudFrontPublicKey
+
+  DigitalAssetsOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub '${AWS::StackName}-digital-assets-oac'
+        Description: Allow CloudFront to read private digital assets
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  DigitalAssetsCachePolicy:
+    Type: AWS::CloudFront::CachePolicy
+    Properties:
+      CachePolicyConfig:
+        Name: !Sub '${AWS::StackName}-digital-assets'
+        Comment: Long-lived cache for versioned PDF/ePub objects (signature query strings excluded)
+        DefaultTTL: 31536000
+        MaxTTL: 31536000
+        MinTTL: 86400
+        ParametersInCacheKeyAndForwardedToOrigin:
+          EnableAcceptEncodingGzip: true
+          EnableAcceptEncodingBrotli: true
+          CookiesConfig:
+            CookieBehavior: none
+          HeadersConfig:
+            HeaderBehavior: none
+          QueryStringsConfig:
+            QueryStringBehavior: none
+
+  DigitalAssetsDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: !Sub '${AWS::StackName} private digital downloads'
+        HttpVersion: http2
+        PriceClass: PriceClass_200
+        IPV6Enabled: true
+        DefaultCacheBehavior:
+          TargetOriginId: DigitalAssetsS3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - GET
+            - HEAD
+          CachedMethods:
+            - GET
+            - HEAD
+          Compress: true
+          CachePolicyId: !Ref DigitalAssetsCachePolicy
+          TrustedKeyGroups:
+            - !Ref DigitalAssetsCloudFrontKeyGroup
+        Origins:
+          - Id: DigitalAssetsS3Origin
+            DomainName: !GetAtt DigitalAssetsBucket.RegionalDomainName
+            OriginAccessControlId: !Ref DigitalAssetsOriginAccessControl
+            S3OriginConfig:
+              OriginAccessIdentity: ''
+
+  DigitalAssetsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref DigitalAssetsBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowCloudFrontServicePrincipalRead
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub '${DigitalAssetsBucket.Arn}/*'
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${DigitalAssetsDistribution}'
+
 Outputs:
   OrderApiUrl:
     Description: Set this value as VITE_ORDER_API_URL in the website
@@ -258,6 +370,12 @@ Outputs:
   DigitalAssetsBucketName:
     Description: Upload sample and digital edition files to this private bucket
     Value: !Ref DigitalAssetsBucket
+  DigitalAssetsDistributionDomain:
+    Description: CloudFront domain used for signed PDF/ePub download links
+    Value: !GetAtt DigitalAssetsDistribution.DomainName
+  DigitalAssetsDistributionId:
+    Description: CloudFront distribution ID for digital assets
+    Value: !Ref DigitalAssetsDistribution
   SamplePdfObjectKey:
     Description: Object key for the free sample chapter PDF
     Value: !Ref SamplePdfKey

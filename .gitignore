@@ -33,6 +33,7 @@ assets/books/modern-java-drm-free_v1.0.epub
 
 # Backend deploy secrets (Zoho OAuth, bypass secret, etc. — do not commit)
 backend/sam-secrets.env
+backend/.cloudfront-keys/
 
 # Separate classpath.in site workspace (local only unless intentionally published)
 classpath-root/

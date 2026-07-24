@@ -301,10 +301,14 @@ export function DigitalOrderDialog({
           <div className="order-dialog__success digital-order__success">
             <CheckCircle2 size={34} strokeWidth={1.75} aria-hidden="true" />
             <h3>{usedBypass ? 'Delivery ready' : 'Payment confirmed'}</h3>
-            <p>
-              Your <strong>Modern Java direct download (PDF + ePub)</strong>{' '}
-              order <strong>{confirmedOrderId}</strong> is complete. Secure
-              download links have been emailed to you.
+            <p className="digital-order__success-lead">
+              Your PDF + ePub bundle is ready.
+            </p>
+            <p className="digital-order__order-id">
+              Order ID <strong>{confirmedOrderId}</strong>
+            </p>
+            <p className="digital-order__success-note">
+              Secure download links have been emailed to you.
             </p>
             {downloads ? (
               <div className="digital-order__download-links">

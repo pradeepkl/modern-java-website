@@ -66,6 +66,8 @@ echo "Uploading sample chapter -> s3://$BUCKET/$SAMPLE_KEY"
 aws s3 cp "$SAMPLE_PDF" "s3://$BUCKET/$SAMPLE_KEY" \
   --region "$REGION" \
   --content-type application/pdf \
+  --cache-control "public, max-age=31536000, immutable" \
+  --content-disposition 'attachment; filename="modern-java-preview.pdf"' \
   --metadata-directive REPLACE
 
 if [[ "$SAMPLE_ONLY" -eq 0 ]]; then
@@ -77,6 +79,8 @@ if [[ "$SAMPLE_ONLY" -eq 0 ]]; then
   aws s3 cp "$DIGITAL_PDF" "s3://$BUCKET/$DIGITAL_PDF_KEY" \
     --region "$REGION" \
     --content-type application/pdf \
+    --cache-control "public, max-age=31536000, immutable" \
+    --content-disposition 'attachment; filename="modern-java-drm-free.pdf"' \
     --metadata-directive REPLACE
 
   if [[ ! -f "$DIGITAL_EPUB" ]]; then
@@ -87,6 +91,8 @@ if [[ "$SAMPLE_ONLY" -eq 0 ]]; then
   aws s3 cp "$DIGITAL_EPUB" "s3://$BUCKET/$DIGITAL_EPUB_KEY" \
     --region "$REGION" \
     --content-type application/epub+zip \
+    --cache-control "public, max-age=31536000, immutable" \
+    --content-disposition 'attachment; filename="modern-java-drm-free.epub"' \
     --metadata-directive REPLACE
 fi
 
@@ -96,5 +102,27 @@ if [[ "$SAMPLE_ONLY" -eq 0 ]]; then
   echo "Digital PDF:  s3://$BUCKET/$DIGITAL_PDF_KEY"
   echo "Digital ePub: s3://$BUCKET/$DIGITAL_EPUB_KEY"
 fi
+
+DISTRIBUTION_ID="$(
+  aws cloudformation describe-stacks \
+    --stack-name "$STACK_NAME" \
+    --region "$REGION" \
+    --query "Stacks[0].Outputs[?OutputKey=='DigitalAssetsDistributionId'].OutputValue" \
+    --output text 2>/dev/null || true
+)"
+
+if [[ -n "$DISTRIBUTION_ID" && "$DISTRIBUTION_ID" != "None" ]]; then
+  echo "Invalidating CloudFront cache for uploaded keys ($DISTRIBUTION_ID)"
+  PATHS=("/$SAMPLE_KEY")
+  if [[ "$SAMPLE_ONLY" -eq 0 ]]; then
+    PATHS+=("/$DIGITAL_PDF_KEY" "/$DIGITAL_EPUB_KEY")
+  fi
+  aws cloudfront create-invalidation \
+    --distribution-id "$DISTRIBUTION_ID" \
+    --paths "${PATHS[@]}" \
+    --query 'Invalidation.Id' \
+    --output text
+fi
+
 echo "Redeploy the API if DigitalPdfKey/DigitalEpubKey changed in template.yaml:"
-echo "  cd \"$BACKEND_DIR\" && sam build && sam deploy --no-confirm-changeset"
+echo "  cd \"$BACKEND_DIR\" && npm run deploy"

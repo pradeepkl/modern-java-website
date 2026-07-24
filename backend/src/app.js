@@ -13,13 +13,23 @@ const {
   HeadObjectCommand,
   S3Client,
 } = require('@aws-sdk/client-s3');
+const { SSMClient, GetParameterCommand } = require('@aws-sdk/client-ssm');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+const {
+  getSignedUrl: getCloudFrontSignedUrl,
+} = require('@aws-sdk/cloudfront-signer');
 const { createAndSendInvoice } = require('./zohoInvoice');
 
 const dynamo = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 // Domain identity is verified in us-east-1 (also where inbound MX points).
 const ses = new SESClient({ region: process.env.SES_REGION || 'us-east-1' });
 const s3 = new S3Client({});
+const ssm = new SSMClient({});
+
+const normalizePem = (value) =>
+  String(value || '')
+    .replace(/\\n/g, '\n')
+    .trim();
 
 const {
   ORDERS_TABLE,
@@ -38,7 +48,32 @@ const {
   WEBSITE_URL = 'https://modern-java.classpath.in',
   DIGITAL_CHECKOUT_BYPASS_SECRET = '',
   TURNSTILE_SECRET_KEY = '',
+  CLOUDFRONT_DOMAIN = '',
+  CLOUDFRONT_KEY_PAIR_ID = '',
+  CLOUDFRONT_PRIVATE_KEY_SSM_PARAM = '',
 } = process.env;
+
+let cloudFrontPrivateKeyPromise = null;
+
+const loadCloudFrontPrivateKey = async () => {
+  if (!CLOUDFRONT_PRIVATE_KEY_SSM_PARAM) return '';
+  if (!cloudFrontPrivateKeyPromise) {
+    cloudFrontPrivateKeyPromise = ssm
+      .send(
+        new GetParameterCommand({
+          Name: CLOUDFRONT_PRIVATE_KEY_SSM_PARAM,
+          WithDecryption: true,
+        }),
+      )
+      .then((result) => normalizePem(result.Parameter?.Value))
+      .catch((error) => {
+        cloudFrontPrivateKeyPromise = null;
+        console.error('Unable to load CloudFront signing key from SSM', error);
+        throw error;
+      });
+  }
+  return cloudFrontPrivateKeyPromise;
+};
 
 const SITE_URL = String(WEBSITE_URL).replace(/\/$/, '');
 const ALLOWED_ORIGINS = String(ALLOWED_ORIGIN)
@@ -366,8 +401,32 @@ const validateOrder = (input) => {
   };
 };
 
-const createSignedDownloadUrl = (key, expiresIn = DOWNLOAD_LINK_TTL_SECONDS) =>
-  getSignedUrl(
+const createSignedDownloadUrl = async (
+  key,
+  expiresIn = DOWNLOAD_LINK_TTL_SECONDS,
+) => {
+  const privateKey =
+    CLOUDFRONT_DOMAIN && CLOUDFRONT_KEY_PAIR_ID
+      ? await loadCloudFrontPrivateKey()
+      : '';
+
+  if (CLOUDFRONT_DOMAIN && CLOUDFRONT_KEY_PAIR_ID && privateKey) {
+    const path = String(key)
+      .split('/')
+      .filter(Boolean)
+      .map((segment) => encodeURIComponent(segment))
+      .join('/');
+    const url = `https://${CLOUDFRONT_DOMAIN}/${path}`;
+    const dateLessThan = new Date(Date.now() + expiresIn * 1000).toISOString();
+    return getCloudFrontSignedUrl({
+      url,
+      keyPairId: CLOUDFRONT_KEY_PAIR_ID,
+      privateKey,
+      dateLessThan,
+    });
+  }
+
+  return getSignedUrl(
     s3,
     new GetObjectCommand({
       Bucket: DIGITAL_ASSETS_BUCKET,
@@ -375,6 +434,7 @@ const createSignedDownloadUrl = (key, expiresIn = DOWNLOAD_LINK_TTL_SECONDS) =>
     }),
     { expiresIn },
   );
+};
 
 const assertObjectExists = async (key) => {
   try {

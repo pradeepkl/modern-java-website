@@ -1,8 +1,8 @@
 # Paperback Order API
 
 AWS SAM backend for paperback orders, Razorpay payment verification, DynamoDB
-storage, SES email confirmation, Zoho Invoice creation, and private S3 delivery
-for the sample chapter and paid digital editions.
+storage, SES email confirmation, Zoho Invoice creation, and private S3 +
+CloudFront delivery for the sample chapter and paid digital editions.
 
 ## Prerequisites
 
@@ -25,9 +25,12 @@ cp sam-secrets.env.example sam-secrets.env   # once; fill secrets
 npm run deploy
 ```
 
-`npm run deploy` runs `scripts/deploy-api.sh`, which loads **`sam-secrets.env`**
-(gitignored) and deploys with those parameter overrides. Never put Zoho or
-bypass secrets in `samconfig.toml`.
+`npm run deploy` runs `scripts/deploy-api.sh`, which:
+1. Ensures CloudFront URL-signing keys exist (local `.cloudfront-keys/` + SSM)
+2. Loads **`sam-secrets.env`** (gitignored) for Zoho/Turnstile/etc.
+3. Builds and deploys the stack
+
+Never put Zoho or bypass secrets in `samconfig.toml`.
 
 First-time / Razorpay keys (guided):
 
@@ -54,7 +57,8 @@ After deployment:
 2. Configure the `RazorpayWebhookUrl` stack output in Razorpay.
 3. Subscribe to the `payment.captured` webhook event.
 4. Use the same webhook secret in Razorpay and the SAM deployment parameter.
-5. Upload digital assets to the private bucket:
+5. Upload digital assets to the private bucket (sets long-lived cache headers
+   and invalidates CloudFront):
 
 ```bash
 npm run upload:assets
@@ -66,6 +70,10 @@ That uploads `../assets/books/modern-java-preview.pdf` to
 `digital/modern-java-drm-free_v1.0.pdf`, and
 `../assets/books/modern-java-drm-free_v1.0.epub` to
 `digital/modern-java-drm-free_v1.0.epub` in `DigitalAssetsBucketName`.
+
+Sample and paid downloads are served through CloudFront with time-limited
+**signed URLs** (edge-cached). The API falls back to S3 presigned URLs only if
+CloudFront env vars are missing.
 
 Sample-only upload:
 
@@ -152,9 +160,23 @@ behaves as before.
 - `POST /webhooks/razorpay` verifies webhook signatures and reconciles captured
   payments.
 - `POST /sample-requests` records optional marketing consent and emails a
-  time-limited S3 download link for the sample chapter PDF.
-- `POST /digital-orders` creates a ₹399 Razorpay order for the DRM-free PDF
-  + ePub bundle. The normal verification endpoint emails time-limited S3
-  download links after payment (and creates a Zoho Invoice when configured).
+  time-limited CloudFront signed download link for the sample chapter PDF.
+- `POST /digital-orders` creates a Razorpay order for the DRM-free PDF
+  + ePub bundle. The normal verification endpoint emails time-limited
+  CloudFront signed download links after payment (and creates a Zoho Invoice
+  when configured).
+
+### CloudFront digital downloads
+
+PDF/ePub objects stay in the private `DigitalAssetsBucket`. A CloudFront
+distribution (OAC + trusted key group) serves them at the edge.
+
+- `npm run setup:cloudfront-keys` (also run automatically by `npm run deploy`)
+  generates an RSA key pair under `.cloudfront-keys/` and syncs it to SSM:
+  - `/modern-java/cloudfront/public-key`
+  - `/modern-java/cloudfront/private-key`
+- Signed links expire after 7 days (paid) or 2 days (sample), same as before.
+- Re-upload with `npm run upload:assets` after replacing files so cache headers
+  and CloudFront invalidation stay correct.
 
 Razorpay secrets are backend-only. The browser receives only the public key ID.
