@@ -22,7 +22,7 @@ interface DigitalDownloads {
   epubUrl: string | null;
 }
 
-const DIGITAL_PRICE = 399;
+const DIGITAL_PRICE = 699;
 const ORDER_API_URL = import.meta.env.VITE_ORDER_API_URL?.replace(/\/$/, '');
 const DIGITAL_CHECKOUT_BYPASS =
   import.meta.env.DEV &&
@@ -284,7 +284,7 @@ export function DigitalOrderDialog({
             <p id={descriptionId} className="order-dialog__description">
               {DIGITAL_CHECKOUT_BYPASS
                 ? 'Localhost bypass is on — submit an email to receive download links without Razorpay.'
-                : 'Pay ₹399 securely and receive both formats by email.'}
+                : 'Pay ₹699 securely and receive both formats by email.'}
             </p>
           </div>
           <button
@@ -449,7 +449,7 @@ export function DigitalOrderDialog({
                   : 'Starting payment…'
                 : DIGITAL_CHECKOUT_BYPASS
                   ? 'Send download links (no payment)'
-                  : 'Pay ₹399 securely'}
+                  : 'Pay ₹699 securely'}
             </button>
           </form>
         )}

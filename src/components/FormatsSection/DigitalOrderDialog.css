@@ -1,10 +1,12 @@
 /*
  * Beat shared .order-dialog (720px). Width = header content (title + close)
- * plus ~10% horizontal padding. Benefits stack in one column.
+ * plus ~20% so Turnstile and fields have breathing room.
  */
 .order-dialog.digital-order-dialog {
   width: max-content;
-  max-width: calc(100vw - 48px);
+  /* ~20% wider than title-fit (~22rem → ~26.5rem) */
+  min-width: min(26.5rem, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
 }
 
 .digital-order-dialog .order-dialog__header {
@@ -12,8 +14,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  /* ~20% of header content width as total side padding */
-  padding: 18px 2.6ch 16px;
+  padding: 18px 3.2ch 16px;
 }
 
 .digital-order-dialog .order-dialog__header > div {
@@ -47,7 +48,7 @@
   box-sizing: border-box;
   width: 0;
   min-width: 100%;
-  padding: 18px 2.6ch 20px;
+  padding: 18px 3.2ch 20px;
 }
 
 .digital-order__benefits {
@@ -109,6 +110,16 @@
 }
 
 @media (max-width: 480px) {
+  .order-dialog__backdrop:has(.digital-order-dialog) {
+    padding: 12px;
+  }
+
+  .order-dialog.digital-order-dialog {
+    width: calc(100vw - 24px);
+    min-width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+  }
+
   .digital-order__field-row {
     grid-template-columns: 1fr;
   }
@@ -192,6 +203,16 @@
 }
 
 @media (max-width: 380px) {
+  .order-dialog__backdrop:has(.digital-order-dialog) {
+    padding: 8px;
+  }
+
+  .order-dialog.digital-order-dialog {
+    width: calc(100vw - 16px);
+    min-width: calc(100vw - 16px);
+    max-width: calc(100vw - 16px);
+  }
+
   .digital-order-dialog .order-dialog__title {
     white-space: normal;
   }
@@ -199,6 +220,6 @@
   .digital-order-dialog .order-dialog__header,
   .digital-order-form,
   .digital-order-dialog .digital-order__success {
-    padding-inline: 14px;
+    padding-inline: 16px;
   }
 }

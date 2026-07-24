@@ -24,7 +24,7 @@ interface PaperbackOrderDialogProps {
   onClose: () => void;
 }
 
-const PAPERBACK_PRICE = 499;
+const PAPERBACK_PRICE = 899;
 const ORDER_API_URL = import.meta.env.VITE_ORDER_API_URL?.replace(/\/$/, '');
 const TEST_ORDER_DEFAULTS = import.meta.env.DEV
   ? {
@@ -288,7 +288,7 @@ export function PaperbackOrderDialog({
               Enter your delivery details
             </h2>
             <p id={descriptionId} className="order-dialog__description">
-              ₹499 per copy. Complete your delivery details and pay securely
+              ₹899 per copy. Complete your delivery details and pay securely
               through Razorpay.
             </p>
           </div>

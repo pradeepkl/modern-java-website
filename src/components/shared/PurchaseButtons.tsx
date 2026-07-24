@@ -86,7 +86,7 @@ export function PurchaseButtons({
           aria-label="Buy the Modern Java PDF and ePub bundle"
         >
           <Download size={20} strokeWidth={2} aria-hidden="true" />
-          Buy PDF + ePub — ₹399
+          Buy PDF + ePub — ₹699
         </button>
       ) : null}
       <button
@@ -100,7 +100,7 @@ export function PurchaseButtons({
         aria-label="Place an order for the Modern Java paperback"
       >
         <ShoppingCart size={20} strokeWidth={2} aria-hidden="true" />
-        Place paperback order — ₹499
+        Place paperback order — ₹899
       </button>
       <PaperbackOrderDialog
         open={orderFormOpen}
