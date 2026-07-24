@@ -10,14 +10,14 @@ export const paperbackWaitlistCopy = {
   sectionLead:
     'The paperback edition is currently being prepared for publication.',
   sectionBody:
-    'Register your interest to be notified when ordering opens and receive updates on the first printing. The initial print run will be produced in limited quantities, and enrolled subscribers will receive priority access when ordering becomes available.',
+    'Register your interest to receive launch updates and be notified when ordering opens. The first print run will be available in limited quantities, with priority access for enrolled subscribers.',
   /** Optional social proof, e.g. "83 readers have already joined the waitlist." */
   socialProof: '',
   button: 'Notify Me',
   buttonNote: 'No payment required.',
   modalTitle: 'Paperback Edition',
   modalDescription:
-    'Register your interest to be notified when ordering opens and receive updates on the first printing.',
+    'Register your interest to receive launch updates and be notified when ordering opens.',
   disclaimer:
     'No payment required. We will email you when the paperback becomes available.',
   submit: 'Notify Me',
