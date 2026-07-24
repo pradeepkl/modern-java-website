@@ -72,8 +72,9 @@
 }
 
 .amazon-consent__description {
-  margin: 0 auto 12px;
-  max-width: 40ch;
+  margin: 0 0 12px;
+  width: 100%;
+  max-width: none;
   line-height: 1.55;
   color: var(--color-muted);
 }
@@ -107,9 +108,10 @@
 }
 
 .amazon-consent__review-note {
-  margin: 0 auto 18px;
+  margin: 0 0 18px;
   padding: 12px 14px;
-  max-width: 40ch;
+  max-width: none;
+  width: 100%;
   font-size: 0.8rem;
   line-height: 1.5;
   text-align: left;

@@ -22,6 +22,10 @@ import './PaperbackOrderDialog.css';
 interface PaperbackOrderDialogProps {
   open: boolean;
   onClose: () => void;
+  /** Formatting preview only — embeds dialog inline without portal/scroll lock. */
+  embed?: boolean;
+  /** Formatting preview only — force success confirmation UI. */
+  previewState?: 'form' | 'success';
 }
 
 const PAPERBACK_PRICE = 899;
@@ -65,6 +69,8 @@ function RequiredLabel({ children }: { children: string }) {
 export function PaperbackOrderDialog({
   open,
   onClose,
+  embed = false,
+  previewState = 'form',
 }: PaperbackOrderDialogProps) {
   const [quantity, setQuantity] = useState(1);
   const [processing, setProcessing] = useState(false);
@@ -75,7 +81,7 @@ export function PaperbackOrderDialog({
   const turnstileRef = useRef<TurnstileWidgetHandle>(null);
   const headingId = useId();
   const descriptionId = useId();
-  useBodyScrollLock(open);
+  useBodyScrollLock(open && !embed);
   const totalPrice = new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
@@ -92,9 +98,16 @@ export function PaperbackOrderDialog({
   useEffect(() => {
     if (!open) return;
     setErrorMessage('');
-    setConfirmedOrderId(null);
+    if (previewState === 'success') {
+      setConfirmedOrderId('MJ-PREVIEW01');
+      completedRef.current = true;
+    } else {
+      setConfirmedOrderId(null);
+      completedRef.current = false;
+    }
     setCaptchaToken(null);
-    completedRef.current = false;
+
+    if (embed) return undefined;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') requestClose();
@@ -102,9 +115,7 @@ export function PaperbackOrderDialog({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, requestClose]);
-
-  if (!open) return null;
+  }, [open, requestClose, previewState, embed]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -267,17 +278,19 @@ export function PaperbackOrderDialog({
     }
   };
 
-  return createPortal(
+  if (!open) return null;
+
+  const dialog = (
     <div
-      className="order-dialog__backdrop"
+      className={`order-dialog__backdrop${embed ? ' order-dialog__backdrop--embed' : ''}`}
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) requestClose();
+        if (!embed && event.target === event.currentTarget) requestClose();
       }}
     >
       <div
         className="order-dialog"
         role="dialog"
-        aria-modal="true"
+        aria-modal={!embed}
         aria-labelledby={headingId}
         aria-describedby={descriptionId}
       >
@@ -549,7 +562,9 @@ export function PaperbackOrderDialog({
         </form>
         )}
       </div>
-    </div>,
-    document.body,
+    </div>
   );
+
+  if (embed) return dialog;
+  return createPortal(dialog, document.body);
 }

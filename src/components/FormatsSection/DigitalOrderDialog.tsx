@@ -9,16 +9,16 @@ import {
   TurnstileWidget,
   type TurnstileWidgetHandle,
 } from '../shared/TurnstileWidget';
+import './PaperbackOrderDialog.css';
 import './DigitalOrderDialog.css';
 
 interface DigitalOrderDialogProps {
   open: boolean;
   onClose: () => void;
-}
-
-interface DigitalDownloads {
-  pdfUrl: string;
-  epubUrl: string | null;
+  /** Formatting preview only — embeds dialog inline without portal/scroll lock. */
+  embed?: boolean;
+  /** Formatting preview only — force success confirmation UI. */
+  previewState?: 'form' | 'success';
 }
 
 const DIGITAL_PRICE = 699;
@@ -31,18 +31,19 @@ const DIGITAL_CHECKOUT_BYPASS =
 export function DigitalOrderDialog({
   open,
   onClose,
+  embed = false,
+  previewState = 'form',
 }: DigitalOrderDialogProps) {
   const [processing, setProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [confirmedOrderId, setConfirmedOrderId] = useState<string | null>(null);
-  const [downloads, setDownloads] = useState<DigitalDownloads | null>(null);
   const [usedBypass, setUsedBypass] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const completedRef = useRef(false);
   const turnstileRef = useRef<TurnstileWidgetHandle>(null);
   const headingId = useId();
   const descriptionId = useId();
-  useBodyScrollLock(open);
+  useBodyScrollLock(open && !embed);
 
   const requestClose = useCallback(() => {
     if (!completedRef.current) {
@@ -55,11 +56,18 @@ export function DigitalOrderDialog({
     if (!open) return;
     setErrorMessage('');
     setProcessing(false);
-    setConfirmedOrderId(null);
-    setDownloads(null);
-    setUsedBypass(false);
+    if (previewState === 'success') {
+      setConfirmedOrderId('MJ-D-PREVIEW');
+      setUsedBypass(false);
+      completedRef.current = true;
+    } else {
+      setConfirmedOrderId(null);
+      setUsedBypass(false);
+      completedRef.current = false;
+    }
     setCaptchaToken(null);
-    completedRef.current = false;
+
+    if (embed) return undefined;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') requestClose();
@@ -67,7 +75,7 @@ export function DigitalOrderDialog({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, requestClose]);
+  }, [open, requestClose, previewState, embed]);
 
   if (!open) return null;
 
@@ -134,7 +142,6 @@ export function DigitalOrderDialog({
         }
 
         setUsedBypass(true);
-        setDownloads(bypassOrder.downloads ?? null);
         setConfirmedOrderId(bypassOrder.appOrderId);
         completedRef.current = true;
         trackPurchase({
@@ -256,17 +263,19 @@ export function DigitalOrderDialog({
     }
   };
 
-  return createPortal(
+  if (!open) return null;
+
+  const dialog = (
     <div
-      className="order-dialog__backdrop"
+      className={`order-dialog__backdrop${embed ? ' order-dialog__backdrop--embed' : ''}`}
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) requestClose();
+        if (!embed && event.target === event.currentTarget) requestClose();
       }}
     >
       <div
         className="order-dialog digital-order-dialog"
         role="dialog"
-        aria-modal="true"
+        aria-modal={!embed}
         aria-labelledby={headingId}
         aria-describedby={descriptionId}
       >
@@ -293,41 +302,23 @@ export function DigitalOrderDialog({
         </div>
 
         {confirmedOrderId ? (
-          <div className="order-dialog__success digital-order__success">
-            <CheckCircle2 size={34} strokeWidth={1.75} aria-hidden="true" />
-            <h3>{usedBypass ? 'Delivery ready' : 'Payment confirmed'}</h3>
-            <p className="digital-order__success-lead">
-              Your PDF + ePub bundle is ready.
+          <div className="order-dialog__success">
+            <CheckCircle2 size={48} strokeWidth={1.75} aria-hidden="true" />
+            <h3>{usedBypass ? 'Delivery ready' : 'Payment successful'}</h3>
+            <p className="order-dialog__success-lead">
+              Your PDF + ePub bundle is confirmed.
             </p>
-            <p className="digital-order__order-id">
+            <p className="order-dialog__order-id">
               Order ID - <strong>{confirmedOrderId}</strong>
             </p>
-            <p className="digital-order__success-note">
+            <p className="order-dialog__success-note">
               Secure download links have been emailed to you.
             </p>
-            {downloads ? (
-              <div className="digital-order__download-links">
-                <a
-                  className="button button-primary"
-                  href={downloads.pdfUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Download PDF
-                </a>
-                {downloads.epubUrl ? (
-                  <a
-                    className="button button-primary"
-                    href={downloads.epubUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Download ePub
-                  </a>
-                ) : null}
-              </div>
-            ) : null}
-            <button type="button" className="button button-primary" onClick={onClose}>
+            <button
+              type="button"
+              className="button button-primary"
+              onClick={onClose}
+            >
               Done
             </button>
           </div>
@@ -436,7 +427,9 @@ export function DigitalOrderDialog({
           </form>
         )}
       </div>
-    </div>,
-    document.body,
+    </div>
   );
+
+  if (embed) return dialog;
+  return createPortal(dialog, document.body);
 }

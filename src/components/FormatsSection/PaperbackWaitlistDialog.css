@@ -13,6 +13,7 @@
 }
 
 .paperback-waitlist-dialog .order-dialog__header > div {
+  flex: 1;
   min-width: 0;
 }
 
@@ -23,8 +24,7 @@
 }
 
 .paperback-waitlist-dialog .order-dialog__description {
-  width: 0;
-  min-width: 100%;
+  width: 100%;
   max-width: none;
   font-size: 0.84rem;
 }

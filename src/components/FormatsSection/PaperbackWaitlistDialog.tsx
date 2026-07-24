@@ -34,6 +34,10 @@ interface PaperbackWaitlistDialogProps {
   onClose: () => void;
   /** Analytics source for open/submit/success events. */
   source?: string;
+  /** Formatting preview only — embeds dialog inline without portal/scroll lock. */
+  embed?: boolean;
+  /** Formatting preview only — force form or success UI. */
+  previewState?: 'form' | 'success' | 'already_registered';
 }
 
 type SuccessStatus = 'created' | 'already_registered';
@@ -60,6 +64,8 @@ export function PaperbackWaitlistDialog({
   open,
   onClose,
   source = 'waitlist_section',
+  embed = false,
+  previewState = 'form',
 }: PaperbackWaitlistDialogProps) {
   const [values, setValues] =
     useState<PaperbackWaitlistFormValues>(INITIAL_VALUES);
@@ -78,7 +84,7 @@ export function PaperbackWaitlistDialog({
   const nameErrorId = useId();
   const emailErrorId = useId();
   const consentErrorId = useId();
-  useBodyScrollLock(open);
+  useBodyScrollLock(open && !embed);
 
   const resetTransientState = useCallback(() => {
     setFieldErrors({});
@@ -91,6 +97,13 @@ export function PaperbackWaitlistDialog({
   useEffect(() => {
     if (!open) return;
     resetTransientState();
+    if (previewState === 'success') {
+      setSuccessStatus('created');
+    } else if (previewState === 'already_registered') {
+      setSuccessStatus('already_registered');
+    }
+
+    if (embed) return undefined;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
@@ -98,7 +111,7 @@ export function PaperbackWaitlistDialog({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, onClose, resetTransientState]);
+  }, [open, onClose, resetTransientState, previewState, embed]);
 
   useEffect(() => {
     if (!open || !dialogRef.current) return;
@@ -234,18 +247,18 @@ export function PaperbackWaitlistDialog({
     }
   };
 
-  return createPortal(
+  const dialog = (
     <div
-      className="order-dialog__backdrop"
+      className={`order-dialog__backdrop${embed ? ' order-dialog__backdrop--embed' : ''}`}
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (!embed && event.target === event.currentTarget) onClose();
       }}
     >
       <div
         ref={dialogRef}
         className="order-dialog paperback-waitlist-dialog"
         role="dialog"
-        aria-modal="true"
+        aria-modal={!embed}
         aria-labelledby={headingId}
         aria-describedby={descriptionId}
         data-testid="paperback-waitlist-modal"
@@ -253,7 +266,9 @@ export function PaperbackWaitlistDialog({
       >
         <div className="order-dialog__header">
           <div>
-            <p className="order-dialog__eyebrow">Paperback edition</p>
+            <p className="order-dialog__eyebrow">
+              {paperbackWaitlistCopy.modalEyebrow}
+            </p>
             <h2 id={headingId} className="order-dialog__title">
               {successStatus
                 ? paperbackWaitlistCopy.successHeading
@@ -261,7 +276,9 @@ export function PaperbackWaitlistDialog({
             </h2>
             <p id={descriptionId} className="order-dialog__description">
               {successStatus
-                ? paperbackWaitlistCopy.successMessage
+                ? successStatus === 'already_registered'
+                  ? paperbackWaitlistCopy.alreadyRegisteredMessage
+                  : paperbackWaitlistCopy.successMessage
                 : paperbackWaitlistCopy.modalDescription}
             </p>
           </div>
@@ -290,7 +307,10 @@ export function PaperbackWaitlistDialog({
                 : paperbackWaitlistCopy.successMessage}
             </p>
             <p className="paperback-waitlist__success-secondary">
-              {paperbackWaitlistCopy.successSecondary}
+              {paperbackWaitlistCopy.successFollowUp}
+            </p>
+            <p className="paperback-waitlist__success-secondary">
+              {paperbackWaitlistCopy.successThanks}
             </p>
             <button
               type="button"
@@ -431,7 +451,9 @@ export function PaperbackWaitlistDialog({
           </form>
         )}
       </div>
-    </div>,
-    document.body,
+    </div>
   );
+
+  if (embed) return dialog;
+  return createPortal(dialog, document.body);
 }

@@ -5,16 +5,18 @@
  * Keep claims conservative until printer, paper, color, price, and timeline are final.
  */
 export const paperbackWaitlistCopy = {
-  sectionEyebrow: 'Coming Soon',
+  /** Distinct from sectionHeading — use Priority Access, not “Paperback Edition”. */
+  sectionEyebrow: 'Priority Access',
   sectionHeading: 'Paperback Edition',
   sectionLead:
     'The paperback edition is currently being prepared for publication.',
   sectionBody:
-    'Register your interest to receive launch updates and be notified when ordering opens. The first print run will be available in limited quantities, with priority access for enrolled subscribers.',
+    'Register your interest to receive launch updates and be notified when ordering opens. The print run will be available in limited quantities, with priority access for enrolled subscribers.',
   /** Optional social proof, e.g. "83 readers have already joined the waitlist." */
   socialProof: '',
   button: 'Notify Me',
   buttonNote: 'No payment required.',
+  modalEyebrow: 'Priority Access',
   modalTitle: 'Paperback Edition',
   modalDescription:
     'Register your interest to receive launch updates and be notified when ordering opens.',
@@ -22,14 +24,16 @@ export const paperbackWaitlistCopy = {
     'No payment required. We will email you when the paperback becomes available.',
   submit: 'Notify Me',
   submitting: 'Submitting…',
-  successHeading: 'You’re on the list',
+  successHeading: 'You’re on the Priority List',
   successMessage:
-    'We will email you as soon as the paperback edition becomes available.',
-  successSecondary:
-    'Thank you for registering your interest in the first printing.',
+    'You are registered for paperback updates and will receive priority access when ordering opens.',
+  successFollowUp:
+    'As soon as printing becomes available, we’ll send an email to your registered address with the ordering options.',
+  successThanks:
+    'Thank you for joining the priority list for the printing.',
   alreadyRegisteredMessage:
-    'You are already registered for paperback updates. We will notify you when ordering opens.',
-  createdMessage: 'You have registered for paperback updates.',
+    'You’re already registered for paperback updates and will receive priority access when ordering opens.',
+  createdMessage: 'You have joined the priority list for the printing.',
   serverError:
     'We could not add you to the waitlist right now. Please try again.',
   consentLabel: 'I agree to receive updates about the paperback edition.',

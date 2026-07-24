@@ -88,7 +88,7 @@ describe('PaperbackWaitlistDialog', () => {
     });
     expect(
       screen.getByTestId('paperback-waitlist-success').textContent,
-    ).toMatch(/on the list/i);
+    ).toMatch(/priority list/i);
   });
 
   it('preserves form values when the API fails', async () => {

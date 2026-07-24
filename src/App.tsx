@@ -14,6 +14,7 @@ import { Footer } from './components/Footer/Footer';
 import { LegalPage } from './components/LegalPage/LegalPage';
 import { ContactPage } from './components/ContactPage/ContactPage';
 import { UnsubscribePage } from './components/UnsubscribePage/UnsubscribePage';
+import { ModalPreviewPage } from './components/ModalPreviewPage';
 import { useActiveSection } from './hooks/useActiveSection';
 import { useEngagementTracking } from './hooks/useEngagementTracking';
 
@@ -42,6 +43,10 @@ function App() {
   const handleMenuClose = useCallback(() => {
     setMenuOpen(false);
   }, []);
+
+  if (path === '/modal-preview') {
+    return <ModalPreviewPage />;
+  }
 
   if (path === '/privacy-policy') {
     return (

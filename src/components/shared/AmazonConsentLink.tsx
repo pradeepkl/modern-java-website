@@ -34,6 +34,11 @@ interface AmazonConsentLinkProps {
   /** Non-PII analytics location for the Buy on Amazon control. */
   buttonLocation?: string;
   children: ReactNode;
+  /** Formatting preview only. */
+  preview?: {
+    embed?: boolean;
+    state?: 'form' | 'success' | 'already_registered';
+  };
 }
 
 type SuccessStatus = 'created' | 'already_registered';
@@ -56,15 +61,21 @@ export function AmazonConsentLink({
   onIntent,
   buttonLocation = 'unknown',
   children,
+  preview,
 }: AmazonConsentLinkProps) {
-  const [open, setOpen] = useState(false);
+  const previewEmbed = Boolean(preview?.embed);
+  const [open, setOpen] = useState(Boolean(preview));
   const [email, setEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [emailError, setEmailError] = useState('');
   const [turnstileError, setTurnstileError] = useState(false);
   const [successStatus, setSuccessStatus] = useState<SuccessStatus | null>(
-    null,
+    preview?.state === 'success'
+      ? 'created'
+      : preview?.state === 'already_registered'
+        ? 'already_registered'
+        : null,
   );
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const exited = useRef(false);
@@ -77,7 +88,7 @@ export function AmazonConsentLink({
   const descriptionId = useId();
   const emailErrorId = useId();
   const turnstileErrorId = useId();
-  useBodyScrollLock(open);
+  useBodyScrollLock(open && !previewEmbed);
   submittingRef.current = submitting;
 
   const analyticsBase = {
@@ -100,6 +111,22 @@ export function AmazonConsentLink({
 
   useEffect(() => {
     if (!open) return;
+    if (preview) {
+      setSubmitting(false);
+      setErrorMessage('');
+      setEmailError('');
+      setTurnstileError(false);
+      setCaptchaToken(null);
+      setSuccessStatus(
+        preview.state === 'success'
+          ? 'created'
+          : preview.state === 'already_registered'
+            ? 'already_registered'
+            : null,
+      );
+      return undefined;
+    }
+
     resetTransientState();
     exited.current = false;
     track('amazon_exit_modal_open', {
@@ -113,7 +140,7 @@ export function AmazonConsentLink({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, closeModal, resetTransientState, buttonLocation]);
+  }, [open, closeModal, resetTransientState, buttonLocation, preview]);
 
   useEffect(() => {
     if (open) {
@@ -281,26 +308,33 @@ export function AmazonConsentLink({
 
   return (
     <>
-      <a
-        ref={triggerRef}
-        href={href}
-        className={className}
-        aria-label={ariaLabel}
-        onClick={(event) => {
-          event.preventDefault();
-          onIntent?.();
-          setOpen(true);
-        }}
-      >
-        {children}
-      </a>
+      {preview ? null : (
+        <a
+          ref={triggerRef}
+          href={href}
+          className={className}
+          aria-label={ariaLabel}
+          onClick={(event) => {
+            event.preventDefault();
+            onIntent?.();
+            setOpen(true);
+          }}
+        >
+          {children}
+        </a>
+      )}
 
       {open
-        ? createPortal(
+        ? (() => {
+            const modal = (
             <div
-              className="amazon-consent__backdrop"
+              className={`amazon-consent__backdrop${previewEmbed ? ' amazon-consent__backdrop--embed' : ''}`}
               onMouseDown={(event) => {
-                if (event.target === event.currentTarget && !submitting) {
+                if (
+                  !previewEmbed &&
+                  event.target === event.currentTarget &&
+                  !submitting
+                ) {
                   closeModal();
                 }
               }}
@@ -309,7 +343,7 @@ export function AmazonConsentLink({
                 ref={dialogRef}
                 className="amazon-consent"
                 role="dialog"
-                aria-modal="true"
+                aria-modal={!previewEmbed}
                 aria-labelledby={headingId}
                 aria-describedby={descriptionId}
                 data-testid="amazon-exit-modal"
@@ -496,9 +530,10 @@ export function AmazonConsentLink({
                   </>
                 )}
               </div>
-            </div>,
-            document.body,
-          )
+            </div>
+            );
+            return previewEmbed ? modal : createPortal(modal, document.body);
+          })()
         : null}
     </>
   );
