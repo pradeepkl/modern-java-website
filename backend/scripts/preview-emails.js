@@ -10,9 +10,16 @@
 const { writeFileSync, mkdirSync } = require('node:fs');
 const { resolve } = require('node:path');
 const { buildWelcomeEmail } = require('../src/marketingConsent');
-const { buildAmazonReviewFollowUpEmail } = require('../src/marketingConsent');
+const {
+  buildAmazonReviewFollowUpEmail,
+  buildAmazonEducationEmail,
+} = require('../src/marketingConsent');
 const { buildConfirmationEmail } = require('../src/paperbackWaitlist');
-const { buildSampleChapterFollowUpEmail } = require('../src/sampleChapterFollowUp');
+const {
+  buildSampleChapterFollowUpEmail,
+  buildSampleEducationEmail,
+  buildSampleReminderEmail,
+} = require('../src/sampleChapterFollowUp');
 const {
   escapeHtml,
   BOOK_FULL_TITLE,
@@ -149,6 +156,20 @@ const sampleFollowUp = buildSampleChapterFollowUpEmail({
   siteUrl: SITE,
   amazonUrl: AMAZON,
 });
+const sampleEducation = buildSampleEducationEmail({ siteUrl: SITE });
+const sampleReminder = buildSampleReminderEmail({
+  siteUrl: SITE,
+  amazonUrl: AMAZON,
+});
+const amazonEducation = buildAmazonEducationEmail({
+  siteUrl: SITE,
+  amazonUrl: AMAZON,
+});
+const amazonEducationNamed = buildAmazonEducationEmail({
+  siteUrl: SITE,
+  amazonUrl: AMAZON,
+  name: 'Pradeep',
+});
 
 const emails = [
   chapterPreview,
@@ -168,7 +189,7 @@ const emails = [
   },
   {
     id: 'review-followup',
-    label: '6. Amazon buying-intent follow-up (day 3) — Hi,',
+    label: '6. Amazon buying-intent follow-up (day 7) — Hi,',
     subject: review.subject,
     html: review.html,
   },
@@ -180,9 +201,33 @@ const emails = [
   },
   {
     id: 'sample-followup',
-    label: '7. Sample chapter nurture (day 3)',
+    label: '7. Sample chapter nurture (day 4)',
     subject: sampleFollowUp.subject,
     html: sampleFollowUp.html,
+  },
+  {
+    id: 'sample-education',
+    label: '8. Sample chapter education (day 10)',
+    subject: sampleEducation.subject,
+    html: sampleEducation.html,
+  },
+  {
+    id: 'sample-reminder',
+    label: '9. Sample chapter final reminder (day 18)',
+    subject: sampleReminder.subject,
+    html: sampleReminder.html,
+  },
+  {
+    id: 'amazon-education',
+    label: '10. Amazon education + soft review (day 21) — Hi,',
+    subject: amazonEducation.subject,
+    html: amazonEducation.html,
+  },
+  {
+    id: 'amazon-education-named',
+    label: '10b. Same email with name — Hi Pradeep,',
+    subject: amazonEducationNamed.subject,
+    html: amazonEducationNamed.html,
   },
 ];
 

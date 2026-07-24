@@ -1,16 +1,15 @@
 #!/usr/bin/env node
 /**
- * Send the sample-chapter Day 4 nurture follow-up.
+ * Send the sample-chapter Day 10 educational nurture email.
  *
- * Default delay: 4 days after lastRequestedAt (time to read two chapters,
- * including a weekend / busy work week). Skips anyone who already purchased
- * (paid digital/paperback) or already received sampleFollowUpEmailSentAt.
+ * Requires the Day 4 follow-up to have been sent. Skips purchasers and anyone
+ * who already received sampleEducationEmailSentAt.
  *
  * Usage:
- *   SAMPLE_REQUESTS_TABLE=... ORDERS_TABLE=... node scripts/send-sample-followup.js --dry-run
- *   SAMPLE_REQUESTS_TABLE=... ORDERS_TABLE=... node scripts/send-sample-followup.js
- *   SAMPLE_REQUESTS_TABLE=... ORDERS_TABLE=... node scripts/send-sample-followup.js --days 4
- *   SAMPLE_REQUESTS_TABLE=... ORDERS_TABLE=... node scripts/send-sample-followup.js --email reader@example.com --force
+ *   SAMPLE_REQUESTS_TABLE=... ORDERS_TABLE=... node scripts/send-sample-education.js --dry-run
+ *   SAMPLE_REQUESTS_TABLE=... ORDERS_TABLE=... node scripts/send-sample-education.js
+ *   SAMPLE_REQUESTS_TABLE=... ORDERS_TABLE=... node scripts/send-sample-education.js --days 10
+ *   SAMPLE_REQUESTS_TABLE=... ORDERS_TABLE=... node scripts/send-sample-education.js --email reader@example.com --force
  */
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const {
@@ -21,9 +20,9 @@ const {
 } = require('@aws-sdk/lib-dynamodb');
 const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
 const {
-  SAMPLE_FOLLOWUP_DAYS,
-  buildSampleChapterFollowUpEmail,
-  isEligibleForSampleChapterFollowUp,
+  SAMPLE_EDUCATION_DAYS,
+  buildSampleEducationEmail,
+  isEligibleForSampleEducationEmail,
 } = require('../src/sampleChapterFollowUp');
 
 const sampleTable =
@@ -35,8 +34,6 @@ const ordersTable =
 const siteUrl = (
   process.env.WEBSITE_URL || 'https://modern-java.classpath.in'
 ).replace(/\/$/, '');
-const amazonUrl =
-  process.env.AMAZON_URL || 'https://www.amazon.in/dp/B0H6R4334W';
 const mailFrom = process.env.MAIL_FROM_EMAIL || 'no-reply@classpath.in';
 const replyTo = process.env.REPLY_TO_EMAIL || 'pradeep@classpath.in';
 const sesRegion = process.env.SES_REGION || 'us-east-1';
@@ -47,8 +44,8 @@ const force = argv.includes('--force');
 const daysFlag = argv.indexOf('--days');
 const minAgeDays =
   daysFlag >= 0
-    ? Number(argv[daysFlag + 1]) || SAMPLE_FOLLOWUP_DAYS
-    : Number(process.env.SAMPLE_FOLLOWUP_DAYS || SAMPLE_FOLLOWUP_DAYS);
+    ? Number(argv[daysFlag + 1]) || SAMPLE_EDUCATION_DAYS
+    : Number(process.env.SAMPLE_EDUCATION_DAYS || SAMPLE_EDUCATION_DAYS);
 const emailFlag = argv.indexOf('--email');
 const onlyEmail =
   emailFlag >= 0 ? String(argv[emailFlag + 1] || '').trim().toLowerCase() : '';
@@ -84,7 +81,7 @@ const loadPurchaserEmails = async () => {
   const purchased = new Set();
   if (!ordersTable) {
     console.warn(
-      'ORDERS_TABLE not set — cannot exclude existing purchasers from sample follow-up.',
+      'ORDERS_TABLE not set — cannot exclude existing purchasers from sample education email.',
     );
     return purchased;
   }
@@ -105,7 +102,7 @@ const loadPurchaserEmails = async () => {
 };
 
 const deliver = async (toEmail) => {
-  const email = buildSampleChapterFollowUpEmail({ siteUrl, amazonUrl });
+  const email = buildSampleEducationEmail({ siteUrl });
   await ses.send(
     new SendEmailCommand({
       Source: mailFrom,
@@ -128,10 +125,11 @@ const markSent = async (email, { requireUnset = true } = {}) => {
     new UpdateCommand({
       TableName: sampleTable,
       Key: { email },
-      UpdateExpression: 'SET sampleFollowUpEmailSentAt = :now',
+      UpdateExpression: 'SET sampleEducationEmailSentAt = :now',
       ...(requireUnset
         ? {
-            ConditionExpression: 'attribute_not_exists(sampleFollowUpEmailSentAt)',
+            ConditionExpression:
+              'attribute_not_exists(sampleEducationEmailSentAt)',
             ExpressionAttributeValues: { ':now': now },
           }
         : {
@@ -142,11 +140,11 @@ const markSent = async (email, { requireUnset = true } = {}) => {
 };
 
 const main = async () => {
-  console.log('Sample chapter nurture follow-up');
-  console.log('================================');
+  console.log('Sample chapter Day 10 education email');
+  console.log('====================================');
   console.log(`Sample table: ${sampleTable}`);
   console.log(`Orders table: ${ordersTable || '(not set)'}`);
-  console.log(`Min age days: ${minAgeDays} (default ${SAMPLE_FOLLOWUP_DAYS})`);
+  console.log(`Min age days: ${minAgeDays} (default ${SAMPLE_EDUCATION_DAYS})`);
   console.log(`Dry run: ${dryRun}`);
   console.log(`Force single: ${force && onlyEmail ? onlyEmail : 'no'}`);
   console.log('');
@@ -176,9 +174,9 @@ const main = async () => {
       .toLowerCase();
     const hasPurchased = purchasers.has(email);
     if (force && onlyEmail && email === onlyEmail) {
-      return Boolean(item.lastRequestedAt || item.firstRequestedAt);
+      return Boolean(item.sampleFollowUpEmailSentAt);
     }
-    return isEligibleForSampleChapterFollowUp(item, {
+    return isEligibleForSampleEducationEmail(item, {
       now,
       minAgeDays,
       hasPurchased,

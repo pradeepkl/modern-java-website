@@ -12,7 +12,11 @@ const {
   buildExistingSubscriberUpdate,
   buildWelcomeEmail,
   buildAmazonReviewFollowUpEmail,
+  buildAmazonEducationEmail,
   isEligibleForAmazonReviewFollowUp,
+  isEligibleForAmazonEducationEmail,
+  AMAZON_FOLLOWUP_DAYS,
+  AMAZON_EDUCATION_DAYS,
 } = require('./marketingConsent');
 
 describe('resolveMarketingSource', () => {
@@ -96,6 +100,13 @@ describe('buildWelcomeEmail', () => {
   });
 });
 
+describe('AMAZON_FOLLOWUP_DAYS', () => {
+  it('waits 7 days for typical Amazon delivery windows', () => {
+    assert.equal(AMAZON_FOLLOWUP_DAYS, 7);
+    assert.equal(AMAZON_EDUCATION_DAYS, 21);
+  });
+});
+
 describe('buildAmazonReviewFollowUpEmail', () => {
   it('acknowledges unknown purchase with buy paths then optional review', () => {
     const email = buildAmazonReviewFollowUpEmail({
@@ -105,7 +116,7 @@ describe('buildAmazonReviewFollowUpEmail', () => {
     });
     assert.equal(email.subject, 'A quick follow-up on Modern Java');
     assert.match(email.text, /^Hi Pradeep,/);
-    assert.match(email.text, /you showed interest in Modern Java - The Mindset Shift/);
+    assert.match(email.text, /About a week ago, you showed interest in Modern Java - The Mindset Shift/);
     assert.match(email.text, /Buy directly from Classpath/);
     assert.match(email.text, /https:\/\/modern-java\.classpath\.in\/#formats/);
     assert.match(email.text, /Buy on Amazon/);
@@ -130,20 +141,42 @@ describe('buildAmazonReviewFollowUpEmail', () => {
   });
 });
 
+describe('buildAmazonEducationEmail', () => {
+  it('leads with education and a soft optional review ask', () => {
+    const email = buildAmazonEducationEmail({
+      siteUrl: 'https://modern-java.classpath.in',
+      amazonUrl: 'https://www.amazon.in/dp/B0H6R4334W',
+      name: 'Pradeep',
+    });
+    assert.equal(
+      email.subject,
+      'How the Java compiler has changed over the last decade',
+    );
+    assert.match(email.text, /Already own the book\?/);
+    assert.match(email.text, /honest review helps other developers/);
+    assert.match(email.html, /Continue exploring/);
+    assert.doesNotMatch(email.text, /preview|chapter preview/i);
+    assert.doesNotMatch(
+      email.text,
+      /discount|coupon|reward|screenshot|review link/i,
+    );
+  });
+});
+
 describe('isEligibleForAmazonReviewFollowUp', () => {
   const now = new Date('2026-07-24T12:00:00.000Z');
   const base = {
     email: 'reader@example.com',
     marketingConsent: true,
     marketingConsentSource: 'amazon_exit_modal',
-    marketingConsentAt: '2026-07-20T12:00:00.000Z',
+    marketingConsentAt: '2026-07-17T12:00:00.000Z',
   };
 
   it('requires Amazon-intent opt-in past the delay with active consent', () => {
     assert.equal(isEligibleForAmazonReviewFollowUp(base, { now }), true);
     assert.equal(
       isEligibleForAmazonReviewFollowUp(
-        { ...base, marketingConsentAt: '2026-07-23T12:00:00.000Z' },
+        { ...base, marketingConsentAt: '2026-07-20T12:00:00.000Z' },
         { now },
       ),
       false,
@@ -172,6 +205,42 @@ describe('isEligibleForAmazonReviewFollowUp', () => {
     assert.equal(
       isEligibleForAmazonReviewFollowUp(
         { ...base, amazonReviewEmailSentAt: '2026-07-22T12:00:00.000Z' },
+        { now },
+      ),
+      false,
+    );
+  });
+});
+
+describe('isEligibleForAmazonEducationEmail', () => {
+  const now = new Date('2026-07-24T12:00:00.000Z');
+  const base = {
+    email: 'reader@example.com',
+    marketingConsent: true,
+    marketingConsentSource: 'amazon_exit_modal',
+    marketingConsentAt: '2026-07-03T12:00:00.000Z',
+    amazonReviewEmailSentAt: '2026-07-10T12:00:00.000Z',
+  };
+
+  it('requires day-7 send, age, and no prior education send', () => {
+    assert.equal(isEligibleForAmazonEducationEmail(base, { now }), true);
+    assert.equal(
+      isEligibleForAmazonEducationEmail(
+        { ...base, amazonReviewEmailSentAt: undefined },
+        { now },
+      ),
+      false,
+    );
+    assert.equal(
+      isEligibleForAmazonEducationEmail(
+        { ...base, amazonEducationEmailSentAt: '2026-07-20T12:00:00.000Z' },
+        { now },
+      ),
+      false,
+    );
+    assert.equal(
+      isEligibleForAmazonEducationEmail(
+        { ...base, marketingConsentAt: '2026-07-10T12:00:00.000Z' },
         { now },
       ),
       false,

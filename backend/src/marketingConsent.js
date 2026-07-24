@@ -219,11 +219,12 @@ function buildWelcomeEmail({ siteUrl }) {
 }
 
 /**
- * Amazon buying-intent follow-up.
+ * Amazon buying-intent follow-up (Day 7).
  *
- * Recipients showed interest (email + continue to Amazon) but purchase completion
- * is unknown. Copy acknowledges both paths: complete purchase, or leave a review
- * if they already bought. Never mentions the chapter preview.
+ * Delay covers typical Amazon India (2–6 days) and international (5–10 days)
+ * delivery so recipients may have the book before seeing this. Purchase
+ * completion is unknown. Copy acknowledges both paths: complete purchase, or
+ * leave a review if they already bought. Never mentions the chapter preview.
  *
  * Compliance: never ties benefits, discounts, or offers to leaving a review.
  * Never asks for review URLs, screenshots, or other proof.
@@ -260,7 +261,7 @@ function buildAmazonReviewFollowUpEmail({
   const text = [
     greeting,
     '',
-    `A few days ago, you showed interest in ${BOOK_FULL_TITLE}.`,
+    `About a week ago, you showed interest in ${BOOK_FULL_TITLE}.`,
     '',
     'If you haven’t had a chance to get your copy yet, you can choose whichever option works best for you:',
     '',
@@ -287,7 +288,7 @@ function buildAmazonReviewFollowUpEmail({
                 ${emailHeadline('A quick follow-up on Modern Java')}
                 ${emailParagraph(escapeHtml(greeting), '0 0 16px')}
                 ${emailParagraph(
-                  `A few days ago, you showed interest in <strong style="color:#1a2332;">${escapeHtml(BOOK_FULL_TITLE)}</strong>.`,
+                  `About a week ago, you showed interest in <strong style="color:#1a2332;">${escapeHtml(BOOK_FULL_TITLE)}</strong>.`,
                 )}
                 ${emailParagraph(
                   'If you haven’t had a chance to get your copy yet, you can choose whichever option works best for you:',
@@ -328,16 +329,119 @@ function buildAmazonReviewFollowUpEmail({
   };
 }
 
+/**
+ * Amazon Day 21 — educational email with a soft review ask (no separate review mail).
+ * Sent after the Day 7 buying-intent follow-up.
+ */
+function buildAmazonEducationEmail({
+  siteUrl,
+  amazonUrl = 'https://www.amazon.in/dp/B0H6R4334W',
+  name,
+}) {
+  const {
+    escapeHtml,
+    BOOK_FULL_TITLE,
+    wrapTransactionalEmail,
+    emailHeadline,
+    emailParagraph,
+    emailButton,
+    emailSiteLink,
+    emailClosing,
+    emailMutedNote,
+  } = require('./emailLayout');
+
+  const site = String(siteUrl || 'https://modern-java.classpath.in').replace(
+    /\/$/,
+    '',
+  );
+  const formatsUrl = `${site}/#formats`;
+  const amazonLink = String(
+    amazonUrl || 'https://www.amazon.in/dp/B0H6R4334W',
+  ).trim();
+  const unsubscribeUrl = `${site}/unsubscribe`;
+  const greetingName = String(name || '').trim();
+  const greeting = greetingName ? `Hi ${greetingName},` : 'Hi,';
+
+  const text = [
+    greeting,
+    '',
+    'How the Java compiler has changed over the last decade',
+    '',
+    'A decade ago, many of us treated the compiler as a gatekeeper: make it compile, then move on. Today’s Java compiler is closer to a design partner—catching more mistakes early, enabling safer refactors, and making modern language features practical in day-to-day work.',
+    '',
+    `${BOOK_FULL_TITLE} spends less time cataloging features and more time on how that shift changes the way you write and review code.`,
+    '',
+    `Continue exploring: ${formatsUrl}`,
+    '',
+    'Already own the book? An honest review helps other developers decide whether it is right for them.',
+    '',
+    `Leave an honest Amazon review: ${amazonLink}`,
+    '',
+    'Leaving a review is entirely optional and does not affect any Classpath Reader List benefits.',
+    '',
+    `Visit the Modern Java website: ${site}`,
+    '',
+    `Unsubscribe anytime: ${unsubscribeUrl}`,
+    '',
+    'Thank you again — happy learning!',
+  ].join('\n');
+
+  const html = wrapTransactionalEmail(`
+                ${emailHeadline(
+                  'How the Java compiler has changed over the last decade',
+                )}
+                ${emailParagraph(escapeHtml(greeting), '0 0 16px')}
+                ${emailParagraph(
+                  'A decade ago, many of us treated the compiler as a gatekeeper: make it compile, then move on. Today’s Java compiler is closer to a design partner—catching more mistakes early, enabling safer refactors, and making modern language features practical in day-to-day work.',
+                )}
+                ${emailParagraph(
+                  `<strong style="color:#1a2332;">${escapeHtml(BOOK_FULL_TITLE)}</strong> spends less time cataloging features and more time on how that shift changes the way you write and review code.`,
+                )}
+                ${emailButton({
+                  href: formatsUrl,
+                  label: 'Continue exploring',
+                })}
+                ${emailParagraph(
+                  'Already own the book? An honest review helps other developers decide whether it is right for them.',
+                )}
+                ${emailParagraph(
+                  `<a href="${escapeHtml(amazonLink)}" style="color:#1a56db;font-weight:600;text-decoration:none;">Leave an honest Amazon review →</a>`,
+                  '0 0 8px',
+                )}
+                ${emailParagraph(
+                  'Leaving a review is entirely optional and does not affect any Classpath Reader List benefits.',
+                  '0 0 8px',
+                )}
+                ${emailSiteLink(site)}
+                ${emailMutedNote(
+                  `You can <a href="${escapeHtml(unsubscribeUrl)}" style="color:#667085;font-weight:600;">unsubscribe</a> anytime.`,
+                )}
+                ${emailClosing()}
+  `);
+
+  return {
+    subject: 'How the Java compiler has changed over the last decade',
+    text,
+    html,
+    unsubscribeUrl,
+    formatsUrl,
+    amazonUrl: amazonLink,
+  };
+}
+
 const AMAZON_INTENT_SOURCES = new Set([
   AMAZON_EXIT_SOURCE,
   'amazon-pre-navigation',
 ]);
 
-/** Default delay after Amazon exit / reader-list opt-in before this follow-up. */
-const AMAZON_FOLLOWUP_DAYS = 3;
+/** Default delay after Amazon exit / reader-list opt-in before the Day 7 follow-up. */
+const AMAZON_FOLLOWUP_DAYS = 7;
+
+/** Default delay before the Day 21 educational + soft review email. */
+const AMAZON_EDUCATION_DAYS = 21;
 
 /**
- * Whether a Classpath Reader List lead from Amazon buying intent is due.
+ * Whether a Classpath Reader List lead from Amazon buying intent is due for Day 7.
  * Targets email + continue-to-Amazon signups; purchase completion is unknown.
  * @param {object} item SAMPLE_REQUESTS_TABLE row
  * @param {{ now?: Date, minAgeDays?: number }} [options]
@@ -370,6 +474,40 @@ function isEligibleForAmazonReviewFollowUp(
   return consentedAt <= now.getTime() - minAgeMs;
 }
 
+/**
+ * Day 21 Amazon education email — after Day 7 follow-up, still consented.
+ */
+function isEligibleForAmazonEducationEmail(
+  item,
+  { now = new Date(), minAgeDays = AMAZON_EDUCATION_DAYS } = {},
+) {
+  if (!item || !item.email) {
+    return false;
+  }
+  if (item.marketingConsent !== true) {
+    return false;
+  }
+  if (item.marketingUnsubscribedAt) {
+    return false;
+  }
+  if (!item.amazonReviewEmailSentAt) {
+    return false;
+  }
+  if (item.amazonEducationEmailSentAt) {
+    return false;
+  }
+  const source = String(item.marketingConsentSource || '');
+  if (!AMAZON_INTENT_SOURCES.has(source)) {
+    return false;
+  }
+  const consentedAt = Date.parse(item.marketingConsentAt || '');
+  if (!Number.isFinite(consentedAt)) {
+    return false;
+  }
+  const minAgeMs = Math.max(0, Number(minAgeDays) || 0) * 24 * 60 * 60 * 1000;
+  return consentedAt <= now.getTime() - minAgeMs;
+}
+
 module.exports = {
   CREATED_MESSAGE,
   ALREADY_ON_LIST_MESSAGE,
@@ -379,6 +517,7 @@ module.exports = {
   ALLOWED_SOURCES,
   AMAZON_INTENT_SOURCES,
   AMAZON_FOLLOWUP_DAYS,
+  AMAZON_EDUCATION_DAYS,
   isConditionalCheckFailed,
   resolveMarketingSource,
   normalizeAttribution,
@@ -386,5 +525,7 @@ module.exports = {
   buildExistingSubscriberUpdate,
   buildWelcomeEmail,
   buildAmazonReviewFollowUpEmail,
+  buildAmazonEducationEmail,
   isEligibleForAmazonReviewFollowUp,
+  isEligibleForAmazonEducationEmail,
 };

@@ -1,16 +1,15 @@
 #!/usr/bin/env node
 /**
- * Send the sample-chapter Day 4 nurture follow-up.
+ * Send the sample-chapter Day 18 final purchase reminder.
  *
- * Default delay: 4 days after lastRequestedAt (time to read two chapters,
- * including a weekend / busy work week). Skips anyone who already purchased
- * (paid digital/paperback) or already received sampleFollowUpEmailSentAt.
+ * Requires the Day 10 education email. After this step, stop direct selling
+ * for the sample funnel; readers stay on the Classpath Reader List cadence.
  *
  * Usage:
- *   SAMPLE_REQUESTS_TABLE=... ORDERS_TABLE=... node scripts/send-sample-followup.js --dry-run
- *   SAMPLE_REQUESTS_TABLE=... ORDERS_TABLE=... node scripts/send-sample-followup.js
- *   SAMPLE_REQUESTS_TABLE=... ORDERS_TABLE=... node scripts/send-sample-followup.js --days 4
- *   SAMPLE_REQUESTS_TABLE=... ORDERS_TABLE=... node scripts/send-sample-followup.js --email reader@example.com --force
+ *   SAMPLE_REQUESTS_TABLE=... ORDERS_TABLE=... node scripts/send-sample-reminder.js --dry-run
+ *   SAMPLE_REQUESTS_TABLE=... ORDERS_TABLE=... node scripts/send-sample-reminder.js
+ *   SAMPLE_REQUESTS_TABLE=... ORDERS_TABLE=... node scripts/send-sample-reminder.js --days 18
+ *   SAMPLE_REQUESTS_TABLE=... ORDERS_TABLE=... node scripts/send-sample-reminder.js --email reader@example.com --force
  */
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const {
@@ -21,9 +20,9 @@ const {
 } = require('@aws-sdk/lib-dynamodb');
 const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
 const {
-  SAMPLE_FOLLOWUP_DAYS,
-  buildSampleChapterFollowUpEmail,
-  isEligibleForSampleChapterFollowUp,
+  SAMPLE_REMINDER_DAYS,
+  buildSampleReminderEmail,
+  isEligibleForSampleReminderEmail,
 } = require('../src/sampleChapterFollowUp');
 
 const sampleTable =
@@ -47,8 +46,8 @@ const force = argv.includes('--force');
 const daysFlag = argv.indexOf('--days');
 const minAgeDays =
   daysFlag >= 0
-    ? Number(argv[daysFlag + 1]) || SAMPLE_FOLLOWUP_DAYS
-    : Number(process.env.SAMPLE_FOLLOWUP_DAYS || SAMPLE_FOLLOWUP_DAYS);
+    ? Number(argv[daysFlag + 1]) || SAMPLE_REMINDER_DAYS
+    : Number(process.env.SAMPLE_REMINDER_DAYS || SAMPLE_REMINDER_DAYS);
 const emailFlag = argv.indexOf('--email');
 const onlyEmail =
   emailFlag >= 0 ? String(argv[emailFlag + 1] || '').trim().toLowerCase() : '';
@@ -84,7 +83,7 @@ const loadPurchaserEmails = async () => {
   const purchased = new Set();
   if (!ordersTable) {
     console.warn(
-      'ORDERS_TABLE not set — cannot exclude existing purchasers from sample follow-up.',
+      'ORDERS_TABLE not set — cannot exclude existing purchasers from sample reminder.',
     );
     return purchased;
   }
@@ -105,7 +104,7 @@ const loadPurchaserEmails = async () => {
 };
 
 const deliver = async (toEmail) => {
-  const email = buildSampleChapterFollowUpEmail({ siteUrl, amazonUrl });
+  const email = buildSampleReminderEmail({ siteUrl, amazonUrl });
   await ses.send(
     new SendEmailCommand({
       Source: mailFrom,
@@ -128,10 +127,11 @@ const markSent = async (email, { requireUnset = true } = {}) => {
     new UpdateCommand({
       TableName: sampleTable,
       Key: { email },
-      UpdateExpression: 'SET sampleFollowUpEmailSentAt = :now',
+      UpdateExpression: 'SET sampleReminderEmailSentAt = :now',
       ...(requireUnset
         ? {
-            ConditionExpression: 'attribute_not_exists(sampleFollowUpEmailSentAt)',
+            ConditionExpression:
+              'attribute_not_exists(sampleReminderEmailSentAt)',
             ExpressionAttributeValues: { ':now': now },
           }
         : {
@@ -142,11 +142,11 @@ const markSent = async (email, { requireUnset = true } = {}) => {
 };
 
 const main = async () => {
-  console.log('Sample chapter nurture follow-up');
-  console.log('================================');
+  console.log('Sample chapter Day 18 final reminder');
+  console.log('===================================');
   console.log(`Sample table: ${sampleTable}`);
   console.log(`Orders table: ${ordersTable || '(not set)'}`);
-  console.log(`Min age days: ${minAgeDays} (default ${SAMPLE_FOLLOWUP_DAYS})`);
+  console.log(`Min age days: ${minAgeDays} (default ${SAMPLE_REMINDER_DAYS})`);
   console.log(`Dry run: ${dryRun}`);
   console.log(`Force single: ${force && onlyEmail ? onlyEmail : 'no'}`);
   console.log('');
@@ -176,9 +176,9 @@ const main = async () => {
       .toLowerCase();
     const hasPurchased = purchasers.has(email);
     if (force && onlyEmail && email === onlyEmail) {
-      return Boolean(item.lastRequestedAt || item.firstRequestedAt);
+      return Boolean(item.sampleEducationEmailSentAt);
     }
-    return isEligibleForSampleChapterFollowUp(item, {
+    return isEligibleForSampleReminderEmail(item, {
       now,
       minAgeDays,
       hasPurchased,

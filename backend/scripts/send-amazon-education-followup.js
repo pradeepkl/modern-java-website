@@ -1,19 +1,14 @@
 #!/usr/bin/env node
 /**
- * Send the Amazon buying-intent Day 7 follow-up to Classpath Reader List members who:
- * - opted in via amazon_exit_modal / amazon-pre-navigation
- * - still have marketingConsent === true
- * - opted in at least --days ago (default 7 — covers Amazon India + international delivery)
- * - have not already received amazonReviewEmailSentAt
+ * Send the Amazon Day 21 educational email (soft review ask, no separate review mail).
  *
- * Purchase completion is unknown; the email offers both buy paths and a soft review ask.
+ * Requires the Day 7 buying-intent follow-up (amazonReviewEmailSentAt).
  *
  * Usage:
- *   SAMPLE_REQUESTS_TABLE=... node scripts/send-amazon-review-followup.js --dry-run
- *   SAMPLE_REQUESTS_TABLE=... node scripts/send-amazon-review-followup.js
- *   SAMPLE_REQUESTS_TABLE=... node scripts/send-amazon-review-followup.js --days 7
- *   SAMPLE_REQUESTS_TABLE=... node scripts/send-amazon-review-followup.js --email reader@example.com
- *   SAMPLE_REQUESTS_TABLE=... node scripts/send-amazon-review-followup.js --email reader@example.com --force
+ *   SAMPLE_REQUESTS_TABLE=... node scripts/send-amazon-education-followup.js --dry-run
+ *   SAMPLE_REQUESTS_TABLE=... node scripts/send-amazon-education-followup.js
+ *   SAMPLE_REQUESTS_TABLE=... node scripts/send-amazon-education-followup.js --days 21
+ *   SAMPLE_REQUESTS_TABLE=... node scripts/send-amazon-education-followup.js --email reader@example.com --force
  */
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const {
@@ -24,9 +19,9 @@ const {
 } = require('@aws-sdk/lib-dynamodb');
 const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
 const {
-  AMAZON_FOLLOWUP_DAYS,
-  buildAmazonReviewFollowUpEmail,
-  isEligibleForAmazonReviewFollowUp,
+  AMAZON_EDUCATION_DAYS,
+  buildAmazonEducationEmail,
+  isEligibleForAmazonEducationEmail,
 } = require('../src/marketingConsent');
 
 const tableName =
@@ -48,8 +43,8 @@ const force = argv.includes('--force');
 const daysFlag = argv.indexOf('--days');
 const minAgeDays =
   daysFlag >= 0
-    ? Number(argv[daysFlag + 1]) || AMAZON_FOLLOWUP_DAYS
-    : Number(process.env.REVIEW_FOLLOWUP_DAYS || AMAZON_FOLLOWUP_DAYS);
+    ? Number(argv[daysFlag + 1]) || AMAZON_EDUCATION_DAYS
+    : Number(process.env.AMAZON_EDUCATION_DAYS || AMAZON_EDUCATION_DAYS);
 const emailFlag = argv.indexOf('--email');
 const onlyEmail =
   emailFlag >= 0 ? String(argv[emailFlag + 1] || '').trim().toLowerCase() : '';
@@ -81,7 +76,7 @@ const scanAll = async () => {
 };
 
 const deliver = async (item) => {
-  const email = buildAmazonReviewFollowUpEmail({
+  const email = buildAmazonEducationEmail({
     siteUrl,
     amazonUrl,
     name: item.name,
@@ -108,11 +103,12 @@ const markSent = async (email, { requireUnset = true } = {}) => {
     new UpdateCommand({
       TableName: tableName,
       Key: { email },
-      UpdateExpression: 'SET amazonReviewEmailSentAt = :now, updatedAt = :now',
+      UpdateExpression:
+        'SET amazonEducationEmailSentAt = :now, updatedAt = :now',
       ...(requireUnset
         ? {
             ConditionExpression:
-              'marketingConsent = :consented AND attribute_not_exists(amazonReviewEmailSentAt)',
+              'marketingConsent = :consented AND attribute_not_exists(amazonEducationEmailSentAt)',
             ExpressionAttributeValues: {
               ':now': now,
               ':consented': true,
@@ -128,10 +124,10 @@ const markSent = async (email, { requireUnset = true } = {}) => {
 };
 
 const main = async () => {
-  console.log('Amazon buying-intent follow-up');
-  console.log('==============================');
+  console.log('Amazon Day 21 education follow-up');
+  console.log('================================');
   console.log(`Table: ${tableName}`);
-  console.log(`Min age days: ${minAgeDays} (default ${AMAZON_FOLLOWUP_DAYS})`);
+  console.log(`Min age days: ${minAgeDays} (default ${AMAZON_EDUCATION_DAYS})`);
   console.log(`Dry run: ${dryRun}`);
   console.log(`Force single: ${force && onlyEmail ? onlyEmail : 'no'}`);
   console.log('');
@@ -156,9 +152,11 @@ const main = async () => {
   const now = new Date();
   const eligible = candidates.filter((item) => {
     if (force && onlyEmail && item.email === onlyEmail) {
-      return item.marketingConsent === true;
+      return (
+        item.marketingConsent === true && Boolean(item.amazonReviewEmailSentAt)
+      );
     }
-    return isEligibleForAmazonReviewFollowUp(item, { now, minAgeDays });
+    return isEligibleForAmazonEducationEmail(item, { now, minAgeDays });
   });
 
   console.log(`Leads scanned: ${candidates.length}`);

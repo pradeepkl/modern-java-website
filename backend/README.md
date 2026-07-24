@@ -271,33 +271,56 @@ For readers who entered their email and continued to Amazon
 1. Offers Classpath + Amazon buy paths first
 2. Then gently asks for an honest review if they already purchased
 
-Default delay: **3 days** after `marketingConsentAt`. Never mentions the
-chapter preview. Benefits are never tied to leaving a review.
+Default delay: **7 days** after `marketingConsentAt` (covers typical Amazon
+India and international delivery). Never mentions the chapter preview.
+Benefits are never tied to leaving a review.
 
 ```bash
 SAMPLE_REQUESTS_TABLE=<table-name> npm run send:review-followup -- --dry-run
 SAMPLE_REQUESTS_TABLE=<table-name> npm run send:review-followup
-SAMPLE_REQUESTS_TABLE=<table-name> npm run send:review-followup -- --days 5
+SAMPLE_REQUESTS_TABLE=<table-name> npm run send:review-followup -- --days 7
 SAMPLE_REQUESTS_TABLE=<table-name> npm run send:review-followup -- --email reader@example.com --force
 ```
 
 Successful sends set `amazonReviewEmailSentAt` on the lead row.
 
-### Sample chapter nurture follow-up
+### Amazon Day 21 education follow-up
 
-After someone requests the free chapter preview, send a soft full-book follow-up
-**3 days** later (short lead-magnet best practice: enough time to read the
-two chapters, still within the warm interest window, and just after
-the usual 2-day download-link expiry).
+After the Day 7 buying-intent email, send an editorial note with a soft
+review ask (no separate review-only email).
+
+```bash
+SAMPLE_REQUESTS_TABLE=<table-name> npm run send:amazon-education -- --dry-run
+SAMPLE_REQUESTS_TABLE=<table-name> npm run send:amazon-education
+```
+
+Successful sends set `amazonEducationEmailSentAt`.
+
+### Sample chapter nurture sequence
+
+Trust-first cadence for chapter-preview downloads (not maximum frequency):
+
+| Day | Email | Script |
+| --: | ----- | ------ |
+| 4 | Soft full-book follow-up | `send:sample-followup` |
+| 10 | Educational / philosophy | `send:sample-education` |
+| 18 | Final gentle format reminder | `send:sample-reminder` |
+
+After Day 18, stop direct selling; keep readers on the Classpath Reader List
+editorial cadence instead.
 
 Primary CTA is the website formats section; Amazon is offered as an alternative.
 
 Skips:
 
 - people who already purchased on the website (paid digital/paperback)
-- anyone who already received `sampleFollowUpEmailSentAt`
+- anyone who already received that step’s sent timestamp
 - unsubscribed leads (`marketingUnsubscribedAt`) or withdrawn marketing consent
   (`marketingConsent === false`)
+
+Later steps require the previous step’s timestamp
+(`sampleFollowUpEmailSentAt` → `sampleEducationEmailSentAt` →
+`sampleReminderEmailSentAt`).
 
 Limitation: Amazon-direct purchases cannot be suppressed unless that buyer’s
 email is already known from a site order or lead record.
@@ -307,11 +330,23 @@ SAMPLE_REQUESTS_TABLE=<table> ORDERS_TABLE=<orders-table> \
   npm run send:sample-followup -- --dry-run
 
 SAMPLE_REQUESTS_TABLE=<table> ORDERS_TABLE=<orders-table> \
-  npm run send:sample-followup
+  npm run send:sample-education -- --dry-run
 
 SAMPLE_REQUESTS_TABLE=<table> ORDERS_TABLE=<orders-table> \
-  npm run send:sample-followup -- --email reader@example.com --force
+  npm run send:sample-reminder -- --dry-run
 ```
+
+### Recommended editorial cadences (manual)
+
+These are not automated send scripts yet—use them when composing newsletters:
+
+- **Classpath Reader List:** about one email every 2 weeks (max two per month).
+  Value first: articles, tips, behind-the-scenes, occasional book news.
+- **Paperback priority list:** confirmation immediately; behind-the-scenes at
+  ~2 weeks; then monthly print-progress updates until launch.
+- **Purchase customers:** receipt immediately; practical article ~14 days;
+  revised-edition note ~45 days; new-book announcement ~90 days. Value before
+  promotions; do not keep reselling the same book.
 
 ### CloudFront digital downloads
 
