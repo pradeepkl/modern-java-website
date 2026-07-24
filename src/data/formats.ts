@@ -56,7 +56,6 @@ export const formatOptions: FormatOption[] = [
       { text: 'DRM-free PDF + ePub included', tone: 'upgrade' },
       { text: 'Access to future revised editions', tone: 'upgrade' },
       { text: 'Secure download links by email' },
-      { text: 'Optional promotional offers' },
     ],
     price: '₹699',
     listPrice: '₹874',
