@@ -6,6 +6,8 @@
  * amazon_exit_modal with sourceVersion "2".
  */
 
+const { isMarketingSendAllowed } = require('./emailDelivery');
+
 const CREATED_MESSAGE =
   'Your email preferences have been saved. You’re on the Classpath Reader List.';
 const ALREADY_ON_LIST_MESSAGE =
@@ -113,7 +115,9 @@ function buildFirstOptInUpdate({
       'consentType = :consentType, ' +
       'createdAt = if_not_exists(createdAt, :now), ' +
       'updatedAt = :now, ' +
-      'marketingStatus = :status ' +
+      'marketingStatus = :status, ' +
+      'marketingConsentStatus = :consentStatus, ' +
+      'emailDeliveryStatus = if_not_exists(emailDeliveryStatus, :deliveryActive) ' +
       'REMOVE marketingUnsubscribedAt',
     ConditionExpression:
       'attribute_not_exists(marketingConsent) OR marketingConsent = :notConsented',
@@ -127,6 +131,8 @@ function buildFirstOptInUpdate({
         resolvedSource === AMAZON_EXIT_SOURCE ? SOURCE_VERSION : '1',
       ':consentType': CONSENT_TYPE,
       ':status': 'subscribed',
+      ':consentStatus': 'CONSENTED',
+      ':deliveryActive': 'ACTIVE',
     },
   };
 
@@ -459,6 +465,9 @@ function isEligibleForAmazonReviewFollowUp(
   if (item.marketingUnsubscribedAt) {
     return false;
   }
+  if (!isMarketingSendAllowed(item)) {
+    return false;
+  }
   if (item.amazonReviewEmailSentAt) {
     return false;
   }
@@ -488,6 +497,9 @@ function isEligibleForAmazonEducationEmail(
     return false;
   }
   if (item.marketingUnsubscribedAt) {
+    return false;
+  }
+  if (!isMarketingSendAllowed(item)) {
     return false;
   }
   if (!item.amazonReviewEmailSentAt) {

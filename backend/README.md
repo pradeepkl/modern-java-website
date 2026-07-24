@@ -10,7 +10,7 @@ CloudFront delivery for the chapter preview and paid digital editions.
 - AWS SAM CLI
 - Razorpay API keys and a webhook secret
 - Domain `classpath.in` verified in Amazon SES (`us-east-1`)
-- Transactional mail sends from `no-reply@classpath.in` (Reply-To: `pradeep@classpath.in`)
+- Transactional mail sends from `Pradeep Kumar L | Classpath <no-reply@classpath.in>` (Reply-To: `pradeep@classpath.in`)
 - SES production access, or every customer email must also be verified while the
   account remains in the SES sandbox
 - Optional: Zoho Invoice (India) OAuth credentials for automatic invoices after

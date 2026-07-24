@@ -18,12 +18,12 @@ const {
   GetCommand,
   UpdateCommand,
 } = require('@aws-sdk/lib-dynamodb');
-const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
 const {
   SAMPLE_EDUCATION_DAYS,
   buildSampleEducationEmail,
   isEligibleForSampleEducationEmail,
 } = require('../src/sampleChapterFollowUp');
+const { createSesClient, sendMarketingEmail } = require('./nurtureSend');
 
 const sampleTable =
   process.env.SAMPLE_REQUESTS_TABLE ||
@@ -34,9 +34,6 @@ const ordersTable =
 const siteUrl = (
   process.env.WEBSITE_URL || 'https://modern-java.classpath.in'
 ).replace(/\/$/, '');
-const mailFrom = process.env.MAIL_FROM_EMAIL || 'no-reply@classpath.in';
-const replyTo = process.env.REPLY_TO_EMAIL || 'pradeep@classpath.in';
-const sesRegion = process.env.SES_REGION || 'us-east-1';
 
 const argv = process.argv.slice(2);
 const dryRun = argv.includes('--dry-run');
@@ -58,7 +55,7 @@ if (!sampleTable) {
 }
 
 const dynamo = DynamoDBDocumentClient.from(new DynamoDBClient({}));
-const ses = new SESClient({ region: sesRegion });
+const ses = createSesClient();
 
 const scanAll = async (tableName, params = {}) => {
   const items = [];
@@ -103,21 +100,16 @@ const loadPurchaserEmails = async () => {
 
 const deliver = async (toEmail) => {
   const email = buildSampleEducationEmail({ siteUrl });
-  await ses.send(
-    new SendEmailCommand({
-      Source: mailFrom,
-      ReplyToAddresses: [replyTo],
-      Destination: { ToAddresses: [toEmail] },
-      Message: {
-        Subject: { Data: email.subject },
-        Body: {
-          Text: { Data: email.text },
-          Html: { Data: email.html },
-        },
-      },
-    }),
-  );
+  await sendMarketingEmail({
+    ses,
+    to: toEmail,
+    subject: email.subject,
+    text: email.text,
+    html: email.html,
+    tags: { funnel: 'sample', sequenceDay: '10' },
+  });
 };
+
 
 const markSent = async (email, { requireUnset = true } = {}) => {
   const now = new Date().toISOString();

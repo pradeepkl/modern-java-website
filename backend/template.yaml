@@ -28,7 +28,7 @@ Parameters:
   MailFromEmail:
     Type: String
     Default: no-reply@classpath.in
-    Description: Send-only From address for transactional mail
+    Description: Send-only address for transactional mail (display name added in app code)
   ReplyToEmail:
     Type: String
     Default: pradeep@classpath.in
@@ -103,6 +103,15 @@ Parameters:
     Type: String
     Default: /modern-java/cloudfront/private-key
     Description: SSM SecureString parameter holding the CloudFront URL-signing private key PEM
+  SesConfigurationSetName:
+    Type: String
+    Default: classpath-email-prod
+    Description: SES configuration set in SesRegion (created by ses-infra stack)
+  UnsubscribeTokenSecret:
+    Type: String
+    NoEcho: true
+    Default: ''
+    Description: HMAC secret for RFC 8058 one-click unsubscribe tokens (required in prod)
 
 Globals:
   Function:
@@ -130,6 +139,9 @@ Globals:
         SES_REGION: !Ref SesRegion
         ALLOWED_ORIGIN: !Ref AllowedOrigin
         WEBSITE_URL: !Ref WebsiteUrl
+        PUBLIC_API_URL: !Sub https://${OrderApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}
+        SES_CONFIGURATION_SET: !Ref SesConfigurationSetName
+        UNSUBSCRIBE_TOKEN_SECRET: !Ref UnsubscribeTokenSecret
         ZOHO_CLIENT_ID: !Ref ZohoClientId
         ZOHO_CLIENT_SECRET: !Ref ZohoClientSecret
         ZOHO_REFRESH_TOKEN: !Ref ZohoRefreshToken
@@ -154,6 +166,7 @@ Resources:
           - x-razorpay-signature
           - x-digital-bypass-secret
         AllowMethods:
+          - GET
           - POST
           - OPTIONS
 
@@ -221,6 +234,18 @@ Resources:
             ApiId: !Ref OrderApi
             Path: /marketing-consents/unsubscribe
             Method: POST
+        OneClickUnsubscribePost:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref OrderApi
+            Path: /marketing-consents/one-click/{token}
+            Method: POST
+        OneClickUnsubscribeGet:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref OrderApi
+            Path: /marketing-consents/one-click/{token}
+            Method: GET
         CreateDigitalOrder:
           Type: HttpApi
           Properties:

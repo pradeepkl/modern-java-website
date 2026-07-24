@@ -39,6 +39,12 @@ set +a
 : "${RAZORPAY_KEY_SECRET:?RAZORPAY_KEY_SECRET is required}"
 : "${RAZORPAY_WEBHOOK_SECRET:?RAZORPAY_WEBHOOK_SECRET is required}"
 
+if [[ -z "${UnsubscribeTokenSecret:-}" ]]; then
+  UnsubscribeTokenSecret="$(openssl rand -hex 32)"
+  printf '\nUnsubscribeTokenSecret=%s\n' "$UnsubscribeTokenSecret" >> "$SECRETS_FILE"
+  echo "==> Generated UnsubscribeTokenSecret and appended to ${SECRETS_FILE}"
+fi
+
 echo "==> Ensuring CloudFront signing keys in SSM"
 "$ROOT/scripts/ensure-cloudfront-keys.sh"
 
@@ -49,7 +55,7 @@ escape_param() {
 
 PARAMETER_OVERRIDES=$(
   cat <<EOF
-AppEnv="${APP_ENV}" RazorpayKeyId="$(escape_param "$RAZORPAY_KEY_ID")" RazorpayKeySecret="$(escape_param "$RAZORPAY_KEY_SECRET")" RazorpayWebhookSecret="$(escape_param "$RAZORPAY_WEBHOOK_SECRET")" AdminEmail="pradeep@classpath.in" AllowedOrigin="https://modern-java.classpath.in,http://localhost:5173" MailFromEmail="no-reply@classpath.in" ReplyToEmail="pradeep@classpath.in" SesRegion="us-east-1" WebsiteUrl="https://modern-java.classpath.in" SamplePdfKey="sample/modern-java-preview.pdf" DigitalPdfKey="digital/modern-java-drm-free_v1.0.pdf" DigitalEpubKey="digital/modern-java-drm-free_v1.0.epub" DigitalCheckoutBypassSecret="$(escape_param "${DigitalCheckoutBypassSecret}")" TurnstileSecretKey="$(escape_param "${TurnstileSecretKey}")" ZohoClientId="$(escape_param "${ZohoClientId}")" ZohoClientSecret="$(escape_param "${ZohoClientSecret}")" ZohoRefreshToken="$(escape_param "${ZohoRefreshToken}")" ZohoOrganizationId="$(escape_param "${ZohoOrganizationId}")" ZohoTaxId="$(escape_param "${ZohoTaxId}")" ZohoTaxExemptionId="$(escape_param "${ZohoTaxExemptionId}")" ZohoInvoiceTemplateId="$(escape_param "${ZohoInvoiceTemplateId}")"
+AppEnv="${APP_ENV}" RazorpayKeyId="$(escape_param "$RAZORPAY_KEY_ID")" RazorpayKeySecret="$(escape_param "$RAZORPAY_KEY_SECRET")" RazorpayWebhookSecret="$(escape_param "$RAZORPAY_WEBHOOK_SECRET")" AdminEmail="pradeep@classpath.in" AllowedOrigin="https://modern-java.classpath.in,http://localhost:5173" MailFromEmail="no-reply@classpath.in" ReplyToEmail="pradeep@classpath.in" SesRegion="us-east-1" WebsiteUrl="https://modern-java.classpath.in" SamplePdfKey="sample/modern-java-preview.pdf" DigitalPdfKey="digital/modern-java-drm-free_v1.0.pdf" DigitalEpubKey="digital/modern-java-drm-free_v1.0.epub" DigitalCheckoutBypassSecret="$(escape_param "${DigitalCheckoutBypassSecret}")" TurnstileSecretKey="$(escape_param "${TurnstileSecretKey}")" ZohoClientId="$(escape_param "${ZohoClientId}")" ZohoClientSecret="$(escape_param "${ZohoClientSecret}")" ZohoRefreshToken="$(escape_param "${ZohoRefreshToken}")" ZohoOrganizationId="$(escape_param "${ZohoOrganizationId}")" ZohoTaxId="$(escape_param "${ZohoTaxId}")" ZohoTaxExemptionId="$(escape_param "${ZohoTaxExemptionId}")" ZohoInvoiceTemplateId="$(escape_param "${ZohoInvoiceTemplateId}")" SesConfigurationSetName="classpath-email-${APP_ENV}" UnsubscribeTokenSecret="$(escape_param "${UnsubscribeTokenSecret}")"
 EOF
 )
 
@@ -63,6 +69,11 @@ sam deploy \
   --resolve-s3 \
   --parameter-overrides "${PARAMETER_OVERRIDES}"
 
+echo "==> Deploying SES email infra in us-east-1"
+chmod +x "$ROOT/scripts/deploy-ses-infra.sh"
+"$ROOT/scripts/deploy-ses-infra.sh"
+
 echo "==> Stack ${STACK_NAME} deploy complete"
 echo "    Configure the Razorpay ${APP_ENV} webhook to this stack's RazorpayWebhookUrl output."
 echo "    Point the matching frontend build at this stack's OrderApiUrl output."
+echo "    Confirm SNS alarm email subscription for pradeep@classpath.in if new."

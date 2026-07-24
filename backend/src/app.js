@@ -7,7 +7,7 @@ const {
   QueryCommand,
   UpdateCommand,
 } = require('@aws-sdk/lib-dynamodb');
-const { SESClient, SendEmailCommand, SendRawEmailCommand } = require('@aws-sdk/client-ses');
+const { SESClient } = require('@aws-sdk/client-ses');
 const {
   GetObjectCommand,
   HeadObjectCommand,
@@ -31,6 +31,17 @@ const {
   buildExistingSubscriberUpdate,
   buildWelcomeEmail,
 } = require('./marketingConsent');
+const {
+  buildUnsubscribeUpdate,
+  MARKETING_CONSENT,
+  EMAIL_DELIVERY,
+} = require('./emailDelivery');
+const {
+  createUnsubscribeToken,
+  verifyUnsubscribeToken,
+  buildOneClickUnsubscribeUrl,
+} = require('./unsubscribeToken');
+const { sendEmail: sendSesEmail } = require('./sesMail');
 const {
   createRazorpayOrder,
   verifyPaymentSignature,
@@ -78,6 +89,10 @@ const {
   REPLY_TO_EMAIL = 'pradeep@classpath.in',
   ALLOWED_ORIGIN = '*',
   WEBSITE_URL = 'https://modern-java.classpath.in',
+  PUBLIC_API_URL = '',
+  UNSUBSCRIBE_TOKEN_SECRET = '',
+  SES_CONFIGURATION_SET = 'classpath-email-prod',
+  APP_ENV = 'dev',
   DIGITAL_CHECKOUT_BYPASS_SECRET = '',
   TURNSTILE_SECRET_KEY = '',
   CLOUDFRONT_DOMAIN = '',
@@ -129,78 +144,32 @@ const resolveAllowOrigin = (event) => {
   return ALLOWED_ORIGINS[0] || '*';
 };
 
-const encodeSubject = (subject) =>
-  `=?UTF-8?B?${Buffer.from(String(subject), 'utf8').toString('base64')}?=`;
-
-const toBase64Lines = (value) =>
-  Buffer.from(String(value), 'utf8')
-    .toString('base64')
-    .replace(/(.{76})/g, '$1\r\n');
-
-const buildRawMimeEmail = ({
-  to,
-  subject,
-  text,
-  html,
-  attachments = [],
-  replyTo,
-}) => {
-  const mixedBoundary = `Mixed_${randomUUID().replace(/-/g, '')}`;
-  const altBoundary = `Alt_${randomUUID().replace(/-/g, '')}`;
-  const chunks = [
-    `From: ${MAIL_FROM_EMAIL}`,
-    `To: ${to}`,
-    `Reply-To: ${replyTo || REPLY_TO_EMAIL}`,
-    `Subject: ${encodeSubject(subject)}`,
-    'MIME-Version: 1.0',
-    `Content-Type: multipart/mixed; boundary="${mixedBoundary}"`,
-    '',
-    `--${mixedBoundary}`,
-    `Content-Type: multipart/alternative; boundary="${altBoundary}"`,
-    '',
-    `--${altBoundary}`,
-    'Content-Type: text/plain; charset=UTF-8',
-    'Content-Transfer-Encoding: base64',
-    '',
-    toBase64Lines(text),
-    '',
-  ];
-
-  if (html) {
-    chunks.push(
-      `--${altBoundary}`,
-      'Content-Type: text/html; charset=UTF-8',
-      'Content-Transfer-Encoding: base64',
-      '',
-      toBase64Lines(html),
-      '',
-    );
+const resolvePublicApiUrl = (event) => {
+  const configured = String(PUBLIC_API_URL || '').trim().replace(/\/$/, '');
+  if (configured) return configured;
+  const domain = event?.requestContext?.domainName;
+  const stage = event?.requestContext?.stage;
+  if (domain) {
+    return stage && stage !== '$default'
+      ? `https://${domain}/${stage}`
+      : `https://${domain}`;
   }
+  return '';
+};
 
-  chunks.push(`--${altBoundary}--`, '');
-
-  for (const attachment of attachments) {
-    const filename = String(attachment.filename || 'attachment.bin').replace(
-      /["\r\n]/g,
-      '_',
-    );
-    const contentType = attachment.contentType || 'application/octet-stream';
-    const content = Buffer.isBuffer(attachment.content)
-      ? attachment.content
-      : Buffer.from(attachment.content || '');
-    chunks.push(
-      `--${mixedBoundary}`,
-      `Content-Type: ${contentType}; name="${filename}"`,
-      'Content-Transfer-Encoding: base64',
-      `Content-Disposition: attachment; filename="${filename}"`,
-      '',
-      content.toString('base64').replace(/(.{76})/g, '$1\r\n'),
-      '',
-    );
+const buildListUnsubscribeUrlForEmail = (email, event) => {
+  if (!UNSUBSCRIBE_TOKEN_SECRET) return undefined;
+  const publicApiUrl = resolvePublicApiUrl(event);
+  if (!publicApiUrl) return undefined;
+  try {
+    const token = createUnsubscribeToken(email, {
+      secret: UNSUBSCRIBE_TOKEN_SECRET,
+    });
+    return buildOneClickUnsubscribeUrl({ publicApiUrl, token });
+  } catch (error) {
+    console.error('Unable to build List-Unsubscribe URL', error);
+    return undefined;
   }
-
-  chunks.push(`--${mixedBoundary}--`, '');
-  return Buffer.from(chunks.join('\r\n'), 'utf8');
 };
 
 const sendEmail = async ({
@@ -210,51 +179,36 @@ const sendEmail = async ({
   html,
   attachments = [],
   replyTo,
+  listUnsubscribeUrl,
+  tags = {},
 }) => {
-  const replyToAddress = String(replyTo || REPLY_TO_EMAIL).trim() || REPLY_TO_EMAIL;
-
-  if (attachments.length === 0) {
-    return ses.send(
-      new SendEmailCommand({
-        Source: MAIL_FROM_EMAIL,
-        ReplyToAddresses: [replyToAddress],
-        Destination: { ToAddresses: [to] },
-        Message: {
-          Subject: { Data: subject },
-          Body: {
-            Text: { Data: text },
-            ...(html ? { Html: { Data: html } } : {}),
-          },
-        },
-      }),
-    );
+  if (attachments.length > 0) {
+    console.info('Sending SES raw email with attachments', {
+      to,
+      attachmentCount: attachments.length,
+      attachmentBytes: attachments.reduce(
+        (sum, item) => sum + (item.content?.length || 0),
+        0,
+      ),
+    });
   }
 
-  console.info('Sending SES raw email with attachments', {
+  return sendSesEmail({
+    ses,
     to,
-    attachmentCount: attachments.length,
-    attachmentBytes: attachments.reduce(
-      (sum, item) => sum + (item.content?.length || 0),
-      0,
-    ),
+    subject,
+    text,
+    html,
+    attachments,
+    replyTo: replyTo || REPLY_TO_EMAIL,
+    mailFromEmail: MAIL_FROM_EMAIL,
+    configurationSetName: SES_CONFIGURATION_SET,
+    listUnsubscribeUrl,
+    tags: {
+      environment: APP_ENV,
+      ...tags,
+    },
   });
-
-  return ses.send(
-    new SendRawEmailCommand({
-      Source: MAIL_FROM_EMAIL,
-      Destinations: [to],
-      RawMessage: {
-        Data: buildRawMimeEmail({
-          to,
-          subject,
-          text,
-          html,
-          attachments,
-          replyTo: replyToAddress,
-        }),
-      },
-    }),
-  );
 };
 
 /**
@@ -643,6 +597,11 @@ const requestSampleChapter = async (event) => {
       subject: 'Your Modern Java chapter preview is ready',
       text: sampleText,
       html: sampleHtml,
+      tags: {
+        emailType: 'transactional',
+        funnel: 'sample',
+        sequenceDay: '0',
+      },
     });
   } catch (error) {
     if (
@@ -658,16 +617,27 @@ const requestSampleChapter = async (event) => {
     throw error;
   }
 
+  const consentedNow =
+    existing.Item?.marketingConsent === true || marketingConsent;
+
   await dynamo.send(
     new PutCommand({
       TableName: SAMPLE_REQUESTS_TABLE,
       Item: {
+        ...existing.Item,
         email,
         firstRequestedAt: existing.Item?.firstRequestedAt || now,
         lastRequestedAt: now,
         requestCount: Number(existing.Item?.requestCount || 0) + 1,
-        marketingConsent:
-          existing.Item?.marketingConsent === true || marketingConsent,
+        marketingConsent: consentedNow,
+        marketingConsentStatus: consentedNow
+          ? MARKETING_CONSENT.CONSENTED
+          : existing.Item?.marketingConsentStatus ||
+            (existing.Item?.marketingConsent === false
+              ? MARKETING_CONSENT.WITHDRAWN
+              : null),
+        emailDeliveryStatus:
+          existing.Item?.emailDeliveryStatus || EMAIL_DELIVERY.ACTIVE,
         marketingConsentAt: marketingConsent
           ? now
           : existing.Item?.marketingConsentAt || null,
@@ -681,6 +651,7 @@ const requestSampleChapter = async (event) => {
           ? 'sample-chapter-form'
           : existing.Item?.marketingConsentSource || null,
         source: 'sample-chapter-form',
+        ...(marketingConsent ? { marketingUnsubscribedAt: undefined } : {}),
       },
     }),
   );
@@ -731,27 +702,35 @@ const upsertMarketingPreference = async ({
         Key: { email },
         UpdateExpression:
           'SET marketingConsent = :consented, ' +
+          'marketingConsentStatus = :consentStatus, ' +
           'marketingConsentAt = if_not_exists(marketingConsentAt, :now), ' +
           'marketingConsentUpdatedAt = :now, consentVersion = :version, ' +
-          'marketingConsentSource = :source ' +
+          'marketingConsentSource = :source, ' +
+          'emailDeliveryStatus = if_not_exists(emailDeliveryStatus, :deliveryActive) ' +
           'REMOVE marketingUnsubscribedAt',
-        ExpressionAttributeValues: values,
+        ExpressionAttributeValues: {
+          ...values,
+          ':consentStatus': MARKETING_CONSENT.CONSENTED,
+          ':deliveryActive': EMAIL_DELIVERY.ACTIVE,
+        },
       }),
     );
     return;
   }
 
+  const unsubscribeUpdate = buildUnsubscribeUpdate({
+    now,
+    source: String(source || 'unsubscribe-page'),
+  });
   await dynamo.send(
     new UpdateCommand({
       TableName: SAMPLE_REQUESTS_TABLE,
       Key: { email },
-      UpdateExpression:
-        'SET marketingConsent = :consented, ' +
-        'marketingConsentUpdatedAt = :now, ' +
-        'marketingUnsubscribedAt = :now, ' +
-        'consentVersion = :version, ' +
-        'marketingConsentSource = :source',
-      ExpressionAttributeValues: values,
+      UpdateExpression: `${unsubscribeUpdate.UpdateExpression}, consentVersion = :version`,
+      ExpressionAttributeValues: {
+        ...unsubscribeUpdate.ExpressionAttributeValues,
+        ':version': String(consentVersion || 'unknown'),
+      },
     }),
   );
 };
@@ -832,6 +811,12 @@ const recordMarketingConsent = async (event) => {
         subject: welcome.subject,
         text: welcome.text,
         html: welcome.html,
+        listUnsubscribeUrl: buildListUnsubscribeUrlForEmail(email, event),
+        tags: {
+          emailType: 'nurture',
+          funnel: 'reader-list',
+          sequenceDay: '0',
+        },
       });
     } catch (error) {
       console.error('Classpath Reader List welcome email failed', {
@@ -906,6 +891,81 @@ const unsubscribeMarketing = async (event) => {
     message:
       'You have been unsubscribed from optional marketing emails. Purchase and chapter preview delivery messages are unaffected.',
   });
+};
+
+/**
+ * RFC 8058 one-click unsubscribe. Mutates only on POST.
+ * GET must not unsubscribe (link scanners).
+ */
+const oneClickUnsubscribe = async (event) => {
+  const method = event.requestContext?.http?.method || 'GET';
+  const token = decodeURIComponent(
+    String(event.pathParameters?.token || '').trim(),
+  );
+
+  if (method === 'GET') {
+    return {
+      statusCode: 200,
+      headers: {
+        'content-type': 'text/plain; charset=utf-8',
+        'cache-control': 'no-store',
+      },
+      body: 'To unsubscribe, use the Unsubscribe button in your email client, or visit the website unsubscribe page.',
+    };
+  }
+
+  if (method !== 'POST') {
+    return response(405, { message: 'Method not allowed' });
+  }
+
+  if (!SAMPLE_REQUESTS_TABLE || !UNSUBSCRIBE_TOKEN_SECRET) {
+    return response(503, {
+      message: 'Email preferences are not configured yet. Please try again later.',
+    });
+  }
+
+  const verified = verifyUnsubscribeToken(token, {
+    secret: UNSUBSCRIBE_TOKEN_SECRET,
+  });
+  // Always 200 for invalid tokens to avoid leaking validity to scanners.
+  if (!verified?.email) {
+    return {
+      statusCode: 200,
+      headers: {
+        'content-type': 'text/plain; charset=utf-8',
+        'cache-control': 'no-store',
+      },
+      body: 'OK',
+    };
+  }
+
+  const unsubscribeUpdate = buildUnsubscribeUpdate({
+    source: 'rfc8058-one-click',
+  });
+  try {
+    await dynamo.send(
+      new UpdateCommand({
+        TableName: SAMPLE_REQUESTS_TABLE,
+        Key: { email: verified.email },
+        ...unsubscribeUpdate,
+      }),
+    );
+  } catch (error) {
+    // Idempotent even when the lead row does not exist yet.
+    console.error('One-click unsubscribe update failed', {
+      email: verified.email,
+      error,
+    });
+  }
+
+  return {
+    statusCode: 200,
+    headers: {
+      'content-type': 'text/plain; charset=utf-8',
+      'cache-control': 'no-store',
+    },
+    body: 'OK',
+  };
 };
 
 const submitContactMessage = async (event) => {
@@ -1764,6 +1824,16 @@ exports.handler = async (event) => {
     }
     if (method === 'POST' && path === '/marketing-consents/unsubscribe') {
       return await unsubscribeMarketing(event);
+    }
+    if (
+      (method === 'POST' || method === 'GET') &&
+      path?.startsWith('/marketing-consents/one-click/')
+    ) {
+      const token = path.slice('/marketing-consents/one-click/'.length);
+      return await oneClickUnsubscribe({
+        ...event,
+        pathParameters: { ...(event.pathParameters || {}), token },
+      });
     }
     if (method === 'POST' && path === '/marketing-consents') {
       return await recordMarketingConsent(event);

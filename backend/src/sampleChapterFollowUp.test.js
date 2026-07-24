@@ -76,6 +76,7 @@ describe('isEligibleForSampleChapterFollowUp', () => {
   const base = {
     email: 'reader@example.com',
     lastRequestedAt: '2026-07-20T12:00:00.000Z',
+    marketingConsent: true,
   };
 
   it('requires age, no prior send, and no purchase', () => {
@@ -100,7 +101,7 @@ describe('isEligibleForSampleChapterFollowUp', () => {
     );
   });
 
-  it('skips unsubscribed or withdrawn marketing consent', () => {
+  it('skips unsubscribed, withdrawn consent, or non-active delivery', () => {
     assert.equal(
       isEligibleForSampleChapterFollowUp(
         { ...base, marketingUnsubscribedAt: '2026-07-21T12:00:00.000Z' },
@@ -111,6 +112,13 @@ describe('isEligibleForSampleChapterFollowUp', () => {
     assert.equal(
       isEligibleForSampleChapterFollowUp(
         { ...base, marketingConsent: false },
+        { now },
+      ),
+      false,
+    );
+    assert.equal(
+      isEligibleForSampleChapterFollowUp(
+        { ...base, emailDeliveryStatus: 'HARD_BOUNCED' },
         { now },
       ),
       false,
@@ -129,6 +137,7 @@ describe('isEligibleForSampleChapterFollowUp', () => {
       isEligibleForSampleChapterFollowUp(
         {
           email: 'reader@example.com',
+          marketingConsent: true,
           firstRequestedAt: '2026-07-01T12:00:00.000Z',
           lastRequestedAt: '2026-07-21T12:00:00.000Z',
         },
@@ -145,6 +154,7 @@ describe('isEligibleForSampleEducationEmail', () => {
     email: 'reader@example.com',
     lastRequestedAt: '2026-07-14T12:00:00.000Z',
     sampleFollowUpEmailSentAt: '2026-07-18T12:00:00.000Z',
+    marketingConsent: true,
   };
 
   it('requires day-4 send, age, and no prior education send', () => {
@@ -184,6 +194,7 @@ describe('isEligibleForSampleReminderEmail', () => {
     lastRequestedAt: '2026-07-06T12:00:00.000Z',
     sampleFollowUpEmailSentAt: '2026-07-10T12:00:00.000Z',
     sampleEducationEmailSentAt: '2026-07-16T12:00:00.000Z',
+    marketingConsent: true,
   };
 
   it('requires day-10 send, age, and no prior reminder', () => {

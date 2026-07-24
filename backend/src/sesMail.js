@@ -1,0 +1,197 @@
+/**
+ * Shared SES send helper: configuration set, optional RFC 8058 headers, tags.
+ */
+const { randomUUID } = require('node:crypto');
+const { SESClient, SendEmailCommand, SendRawEmailCommand } = require('@aws-sdk/client-ses');
+
+const DEFAULT_MAIL_FROM_EMAIL = 'no-reply@classpath.in';
+const DEFAULT_REPLY_TO = 'pradeep@classpath.in';
+const DEFAULT_CONFIG_SET = 'classpath-email-prod';
+const DISPLAY_NAME = 'Pradeep Kumar L | Classpath';
+
+function formatMailFrom(mailFromEmail = DEFAULT_MAIL_FROM_EMAIL) {
+  return `"${DISPLAY_NAME}" <${mailFromEmail}>`;
+}
+
+function encodeSubject(subject) {
+  return `=?UTF-8?B?${Buffer.from(String(subject), 'utf8').toString('base64')}?=`;
+}
+
+function toBase64Lines(value) {
+  return Buffer.from(String(value), 'utf8')
+    .toString('base64')
+    .replace(/(.{76})/g, '$1\r\n');
+}
+
+function normalizeTags(tags = {}) {
+  return Object.entries(tags)
+    .filter(([, value]) => value !== undefined && value !== null && value !== '')
+    .map(([Name, Value]) => ({
+      Name: String(Name).slice(0, 256),
+      Value: String(Value).slice(0, 256),
+    }));
+}
+
+function buildRawMimeEmail({
+  mailFrom,
+  to,
+  subject,
+  text,
+  html,
+  attachments = [],
+  replyTo,
+  listUnsubscribeUrl,
+}) {
+  const mixedBoundary = `Mixed_${randomUUID().replace(/-/g, '')}`;
+  const altBoundary = `Alt_${randomUUID().replace(/-/g, '')}`;
+  const chunks = [
+    `From: ${mailFrom}`,
+    `To: ${to}`,
+    `Reply-To: ${replyTo}`,
+    `Subject: ${encodeSubject(subject)}`,
+  ];
+
+  if (listUnsubscribeUrl) {
+    chunks.push(
+      `List-Unsubscribe: <${listUnsubscribeUrl}>`,
+      'List-Unsubscribe-Post: List-Unsubscribe=One-Click',
+    );
+  }
+
+  chunks.push(
+    'MIME-Version: 1.0',
+    `Content-Type: multipart/mixed; boundary="${mixedBoundary}"`,
+    '',
+    `--${mixedBoundary}`,
+    `Content-Type: multipart/alternative; boundary="${altBoundary}"`,
+    '',
+    `--${altBoundary}`,
+    'Content-Type: text/plain; charset=UTF-8',
+    'Content-Transfer-Encoding: base64',
+    '',
+    toBase64Lines(text),
+    '',
+  );
+
+  if (html) {
+    chunks.push(
+      `--${altBoundary}`,
+      'Content-Type: text/html; charset=UTF-8',
+      'Content-Transfer-Encoding: base64',
+      '',
+      toBase64Lines(html),
+      '',
+    );
+  }
+
+  chunks.push(`--${altBoundary}--`, '');
+
+  for (const attachment of attachments) {
+    const filename = String(attachment.filename || 'attachment.bin').replace(
+      /["\r\n]/g,
+      '_',
+    );
+    const contentType = attachment.contentType || 'application/octet-stream';
+    const content = Buffer.isBuffer(attachment.content)
+      ? attachment.content
+      : Buffer.from(attachment.content || '');
+    chunks.push(
+      `--${mixedBoundary}`,
+      `Content-Type: ${contentType}; name="${filename}"`,
+      'Content-Transfer-Encoding: base64',
+      `Content-Disposition: attachment; filename="${filename}"`,
+      '',
+      content.toString('base64').replace(/(.{76})/g, '$1\r\n'),
+      '',
+    );
+  }
+
+  chunks.push(`--${mixedBoundary}--`, '');
+  return Buffer.from(chunks.join('\r\n'), 'utf8');
+}
+
+/**
+ * @param {object} options
+ * @param {import('@aws-sdk/client-ses').SESClient} [options.ses]
+ * @param {string} options.to
+ * @param {string} options.subject
+ * @param {string} options.text
+ * @param {string} [options.html]
+ * @param {Array} [options.attachments]
+ * @param {string} [options.replyTo]
+ * @param {string} [options.mailFromEmail]
+ * @param {string} [options.configurationSetName]
+ * @param {string} [options.listUnsubscribeUrl] RFC 8058 one-click URL
+ * @param {Record<string, string>} [options.tags]
+ */
+async function sendEmail({
+  ses,
+  to,
+  subject,
+  text,
+  html,
+  attachments = [],
+  replyTo = process.env.REPLY_TO_EMAIL || DEFAULT_REPLY_TO,
+  mailFromEmail = process.env.MAIL_FROM_EMAIL || DEFAULT_MAIL_FROM_EMAIL,
+  configurationSetName = process.env.SES_CONFIGURATION_SET || DEFAULT_CONFIG_SET,
+  listUnsubscribeUrl,
+  tags = {},
+}) {
+  const client =
+    ses ||
+    new SESClient({ region: process.env.SES_REGION || 'us-east-1' });
+  const mailFrom = formatMailFrom(mailFromEmail);
+  const replyToAddress = String(replyTo || DEFAULT_REPLY_TO).trim() || DEFAULT_REPLY_TO;
+  const emailTags = normalizeTags(tags);
+  const configSet = String(configurationSetName || '').trim();
+  const needsRaw =
+    attachments.length > 0 || Boolean(String(listUnsubscribeUrl || '').trim());
+
+  if (!needsRaw) {
+    return client.send(
+      new SendEmailCommand({
+        Source: mailFrom,
+        ReplyToAddresses: [replyToAddress],
+        Destination: { ToAddresses: [to] },
+        Message: {
+          Subject: { Data: subject },
+          Body: {
+            Text: { Data: text },
+            ...(html ? { Html: { Data: html } } : {}),
+          },
+        },
+        ...(configSet ? { ConfigurationSetName: configSet } : {}),
+        ...(emailTags.length ? { Tags: emailTags } : {}),
+      }),
+    );
+  }
+
+  return client.send(
+    new SendRawEmailCommand({
+      Source: mailFrom,
+      Destinations: [to],
+      RawMessage: {
+        Data: buildRawMimeEmail({
+          mailFrom,
+          to,
+          subject,
+          text,
+          html,
+          attachments,
+          replyTo: replyToAddress,
+          listUnsubscribeUrl: String(listUnsubscribeUrl || '').trim() || undefined,
+        }),
+      },
+      ...(configSet ? { ConfigurationSetName: configSet } : {}),
+      ...(emailTags.length ? { Tags: emailTags } : {}),
+    }),
+  );
+}
+
+module.exports = {
+  DEFAULT_CONFIG_SET,
+  DISPLAY_NAME,
+  formatMailFrom,
+  buildRawMimeEmail,
+  sendEmail,
+};

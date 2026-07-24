@@ -23,6 +23,7 @@ const {
   emailClosing,
   emailMutedNote,
 } = require('./emailLayout');
+const { isMarketingSendAllowed } = require('./emailDelivery');
 
 const SAMPLE_FOLLOWUP_DAYS = 4;
 const SAMPLE_EDUCATION_DAYS = 10;
@@ -40,10 +41,7 @@ function normalizeAmazonUrl(amazonUrl) {
 }
 
 function hasMarketingSuppression(item) {
-  if (!item) return true;
-  if (item.marketingUnsubscribedAt) return true;
-  if (item.marketingConsent === false) return true;
-  return false;
+  return !isMarketingSendAllowed(item);
 }
 
 function sampleRequestedAtMs(item) {

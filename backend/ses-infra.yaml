@@ -1,0 +1,163 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: SES configuration set, event pipeline, and reputation alarms (us-east-1)
+
+Parameters:
+  AppEnv:
+    Type: String
+    AllowedValues: [dev, prod]
+  SampleRequestsTableName:
+    Type: String
+    Description: Leads table name from the ap-south-1 API stack
+  SampleRequestsTableRegion:
+    Type: String
+    Default: ap-south-1
+  ConfigurationSetName:
+    Type: String
+    Default: classpath-email-prod
+    Description: Per-environment SES configuration set name
+  AlarmEmail:
+    Type: String
+    Default: pradeep@classpath.in
+
+Resources:
+  EmailConfigurationSet:
+    Type: AWS::SES::ConfigurationSet
+    Properties:
+      Name: !Ref ConfigurationSetName
+      ReputationOptions:
+        ReputationMetricsEnabled: true
+      SendingOptions:
+        SendingEnabled: true
+
+  EmailEventBridgeDestination:
+    Type: AWS::SES::ConfigurationSetEventDestination
+    Properties:
+      ConfigurationSetName: !Ref EmailConfigurationSet
+      EventDestination:
+        Name: !Sub '${ConfigurationSetName}-eventbridge'
+        Enabled: true
+        MatchingEventTypes:
+          - bounce
+          - complaint
+          - delivery
+          - reject
+          - deliveryDelay
+          - renderingFailure
+        EventBridgeDestination:
+          EventBusArn: !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:event-bus/default
+
+  SesEventsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/sesEventsHandler.handler
+      Runtime: nodejs24.x
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          SAMPLE_REQUESTS_TABLE: !Ref SampleRequestsTableName
+          LEADS_TABLE_REGION: !Ref SampleRequestsTableRegion
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:UpdateItem
+                - dynamodb:GetItem
+              Resource: !Sub arn:aws:dynamodb:${SampleRequestsTableRegion}:${AWS::AccountId}:table/${SampleRequestsTableName}
+      Events:
+        SesEmailEvents:
+          Type: EventBridgeRule
+          Properties:
+            EventBusName: default
+            Pattern:
+              source:
+                - aws.ses
+              detail-type:
+                - Email Bounce
+                - Email Complaint
+                - Email Delivery
+                - Email Reject
+                - Email Delivery Delay
+                - Email Rendering Failure
+
+  AlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub '${AWS::StackName}-ses-reputation'
+      Subscription:
+        - Endpoint: !Ref AlarmEmail
+          Protocol: email
+
+  BounceRateCriticalAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-ses-bounce-critical'
+      AlarmDescription: SES hard bounce rate at or above AWS recommended 5% threshold
+      Namespace: AWS/SES
+      MetricName: Reputation.BounceRate
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 0.05
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  ComplaintRateCriticalAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-ses-complaint-critical'
+      AlarmDescription: SES complaint rate at or above AWS recommended 0.1% threshold
+      Namespace: AWS/SES
+      MetricName: Reputation.ComplaintRate
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 0.001
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  BounceRateWarningAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-ses-bounce-warning'
+      AlarmDescription: Early warning when SES bounce rate reaches 2%
+      Namespace: AWS/SES
+      MetricName: Reputation.BounceRate
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 0.02
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  ComplaintRateWarningAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-ses-complaint-warning'
+      AlarmDescription: Early warning when SES complaint rate reaches 0.05%
+      Namespace: AWS/SES
+      MetricName: Reputation.ComplaintRate
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 0.0005
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+Outputs:
+  ConfigurationSetName:
+    Value: !Ref EmailConfigurationSet
+  SesEventsFunctionArn:
+    Value: !GetAtt SesEventsFunction.Arn
+  AlarmTopicArn:
+    Value: !Ref AlarmTopic

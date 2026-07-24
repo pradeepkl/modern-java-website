@@ -6,9 +6,10 @@
 const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
 
 const TO = process.argv[2] || 'pradeep.kumar44@gmail.com';
-const MAIL_FROM = 'no-reply@classpath.in';
+const MAIL_FROM = '"Pradeep Kumar L | Classpath" <no-reply@classpath.in>';
 const REPLY_TO = 'pradeep@classpath.in';
 const SITE_URL = 'https://modern-java.classpath.in';
+const CONFIG_SET = process.env.SES_CONFIGURATION_SET || 'classpath-email';
 const ORDER_ID = 'MJ-D-PREVIEW01';
 const INVOICE_NUMBER = 'INV-26-27-18';
 const PDF_URL = `${SITE_URL}/#formats`;
@@ -129,6 +130,7 @@ const html = `
       Source: MAIL_FROM,
       ReplyToAddresses: [REPLY_TO],
       Destination: { ToAddresses: [TO] },
+      ConfigurationSetName: CONFIG_SET,
       Message: {
         Subject: {
           Data: '[Preview] Your Modern Java digital edition is ready',
