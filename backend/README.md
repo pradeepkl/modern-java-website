@@ -88,7 +88,7 @@ and set the deployed API URL.
 
 ### Cloudflare Turnstile (bot protection)
 
-Sample chapter and DRM-free digital checkout forms use Turnstile.
+Sample chapter, DRM-free digital checkout, and paperback waitlist forms use Turnstile.
 
 1. Create a widget at [Cloudflare Turnstile](https://dash.cloudflare.com/?to=/:account/turnstile)
    with your production (and localhost) hostnames.
@@ -97,8 +97,8 @@ Sample chapter and DRM-free digital checkout forms use Turnstile.
    redeploy the API (`npm run deploy`).
 
 When either key is unset, captcha is skipped so local development still works.
-Once the secret is deployed, the API rejects sample and digital requests that
-lack a valid token.
+Once the secret is deployed, the API rejects sample, digital, and waitlist
+requests that lack a valid token.
 
 To test DRM-free delivery on localhost without Razorpay:
 
@@ -165,6 +165,25 @@ behaves as before.
   + ePub bundle. The normal verification endpoint emails time-limited
   CloudFront signed download links after payment (and creates a Zoho Invoice
   when configured).
+- `POST /paperback-waitlist` records a unique consented waitlist entry
+  (DynamoDB `PaperbackWaitlistTable`, email as primary key). Duplicate emails
+  update name/city/promotional consent without creating a second row or
+  resending confirmation email.
+
+### Paperback waitlist demand export
+
+Protected CLI (AWS credentials required; not a public API):
+
+```bash
+# Print totals, 7/30-day counts, city and UTM distributions
+PAPERBACK_WAITLIST_TABLE=<table-name> node scripts/export-paperback-waitlist.js
+
+# Also write CSV
+PAPERBACK_WAITLIST_TABLE=<table-name> node scripts/export-paperback-waitlist.js --csv ./waitlist.csv
+```
+
+Table name is the CloudFormation physical ID for `PaperbackWaitlistTable`
+(from `aws cloudformation describe-stack-resources` / console).
 
 ### CloudFront digital downloads
 

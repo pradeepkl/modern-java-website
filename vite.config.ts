@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
@@ -8,5 +8,11 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: false,
+  },
+  test: {
+    environment: 'jsdom',
+    globals: false,
+    css: true,
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
   },
 });

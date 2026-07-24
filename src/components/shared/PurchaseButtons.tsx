@@ -1,9 +1,12 @@
 import { useState } from 'react';
-import { Download, ShoppingCart } from 'lucide-react';
+import { Bell, Download, ShoppingCart } from 'lucide-react';
+import { getPaperbackMode } from '../../config/features';
 import { book } from '../../data/book';
+import { paperbackWaitlistCopy } from '../../data/paperbackWaitlistCopy';
 import { track, trackCtaClick } from '../../lib/analytics';
 import { DigitalOrderDialog } from '../FormatsSection/DigitalOrderDialog';
 import { PaperbackOrderDialog } from '../FormatsSection/PaperbackOrderDialog';
+import { PaperbackWaitlistDialog } from '../FormatsSection/PaperbackWaitlistDialog';
 import { AmazonConsentLink } from './AmazonConsentLink';
 import { BrandButtonLogo } from './BrandButtonLogo';
 import './shared.css';
@@ -25,8 +28,10 @@ export function PurchaseButtons({
 }: PurchaseButtonsProps) {
   const [orderFormOpen, setOrderFormOpen] = useState(false);
   const [digitalOrderFormOpen, setDigitalOrderFormOpen] = useState(false);
+  const [waitlistOpen, setWaitlistOpen] = useState(false);
   const sizeClass = size === 'large' ? 'button-large' : '';
   const layoutClass = layout === 'stacked' ? 'purchase-buttons--stacked' : '';
+  const paperbackMode = getPaperbackMode();
 
   if (linkToFormats) {
     return (
@@ -49,16 +54,24 @@ export function PurchaseButtons({
             PDF + ePub
           </a>
         ) : null}
-        <a
-          href="#formats"
-          className={`button button-primary ${sizeClass}`}
-          onClick={() =>
-            trackCtaClick('formats_paperback', 'purchase_buttons')
-          }
-        >
-          <ShoppingCart size={20} strokeWidth={2} aria-hidden="true" />
-          Paperback
-        </a>
+        {paperbackMode !== 'unavailable' ? (
+          <a
+            href="#formats"
+            className={`button button-primary ${sizeClass}`}
+            onClick={() =>
+              trackCtaClick('formats_paperback', 'purchase_buttons')
+            }
+          >
+            {paperbackMode === 'waitlist' ? (
+              <Bell size={20} strokeWidth={2} aria-hidden="true" />
+            ) : (
+              <ShoppingCart size={20} strokeWidth={2} aria-hidden="true" />
+            )}
+            {paperbackMode === 'waitlist'
+              ? paperbackWaitlistCopy.button
+              : 'Paperback'}
+          </a>
+        ) : null}
       </div>
     );
   }
@@ -89,22 +102,44 @@ export function PurchaseButtons({
           Buy PDF + ePub — ₹699
         </button>
       ) : null}
-      <button
-        type="button"
-        className={`button button-primary ${sizeClass}`}
-        onClick={() => {
-          track('format_cta_click', { format: 'paperback' });
-          track('checkout_open', { format: 'paperback' });
-          setOrderFormOpen(true);
-        }}
-        aria-label="Place an order for the Modern Java paperback"
-      >
-        <ShoppingCart size={20} strokeWidth={2} aria-hidden="true" />
-        Place paperback order — ₹899
-      </button>
+      {paperbackMode === 'sales' ? (
+        <button
+          type="button"
+          className={`button button-primary ${sizeClass}`}
+          onClick={() => {
+            track('format_cta_click', { format: 'paperback' });
+            track('checkout_open', { format: 'paperback' });
+            setOrderFormOpen(true);
+          }}
+          aria-label="Place an order for the Modern Java paperback"
+        >
+          <ShoppingCart size={20} strokeWidth={2} aria-hidden="true" />
+          Place paperback order — ₹899
+        </button>
+      ) : null}
+      {paperbackMode === 'waitlist' ? (
+        <button
+          type="button"
+          className={`button button-primary ${sizeClass}`}
+          onClick={() => {
+            track('paperback_waitlist_open', { location: 'purchase_buttons' });
+            setWaitlistOpen(true);
+          }}
+          aria-label="Join the Modern Java paperback waitlist"
+          data-testid="paperback-waitlist-button"
+        >
+          <Bell size={20} strokeWidth={2} aria-hidden="true" />
+          {paperbackWaitlistCopy.button}
+        </button>
+      ) : null}
+      {/* Keep purchase dialog mounted so the sales path always compiles. */}
       <PaperbackOrderDialog
         open={orderFormOpen}
         onClose={() => setOrderFormOpen(false)}
+      />
+      <PaperbackWaitlistDialog
+        open={waitlistOpen}
+        onClose={() => setWaitlistOpen(false)}
       />
       {includeDigital ? (
         <DigitalOrderDialog

@@ -16,10 +16,17 @@ fi
 REGION="${AWS_REGION:-${AWS_DEFAULT_REGION:-ap-south-1}}"
 APP_ID="${AMPLIFY_APP_ID:-dd9kgrhw8x8dv}"
 BRANCH="${AMPLIFY_BRANCH:-main}"
-ORDER_API_URL="${VITE_ORDER_API_URL:-https://vgtwwchwuh.execute-api.ap-south-1.amazonaws.com}"
+export VITE_ORDER_API_URL="${VITE_ORDER_API_URL:-https://vgtwwchwuh.execute-api.ap-south-1.amazonaws.com}"
 TURNSTILE_SITE_KEY="${VITE_TURNSTILE_SITE_KEY:-}"
 GA_MEASUREMENT_ID="${VITE_GA_MEASUREMENT_ID:-}"
 CLARITY_ID="${VITE_CLARITY_ID:-}"
+
+# Production defaults for paperback surface (build-time Vite flags).
+# Must be exported into the Vite process — undefined vars bake as false.
+# Override via shell env or .env.local before running this script.
+export VITE_PAPERBACK_SALES_ENABLED="${VITE_PAPERBACK_SALES_ENABLED:-false}"
+export VITE_PAPERBACK_WAITLIST_ENABLED="${VITE_PAPERBACK_WAITLIST_ENABLED:-true}"
+
 SITE_URL="${DEPLOY_SITE_URL:-https://modern-java.classpath.in}"
 ZIP_PATH="${ROOT_DIR}/.amplify-deploy.zip"
 POLL_SECONDS="${DEPLOY_POLL_SECONDS:-5}"
@@ -40,8 +47,13 @@ Environment (also loaded from .env.local when present):
   VITE_TURNSTILE_SITE_KEY   Cloudflare Turnstile site key (checkout + lead forms)
   VITE_GA_MEASUREMENT_ID    GA4 measurement ID (consent-gated analytics)
   VITE_CLARITY_ID           Microsoft Clarity project ID (optional)
+  VITE_PAPERBACK_SALES_ENABLED     Build-time flag (default: false)
+  VITE_PAPERBACK_WAITLIST_ENABLED  Build-time flag (default: true)
   DEPLOY_SITE_URL           Printed after success (default: https://modern-java.classpath.in)
   SKIP_BUILD=1              Reuse an existing dist/ without rebuilding
+
+Restore paperback ordering (requires rebuild + redeploy):
+  VITE_PAPERBACK_SALES_ENABLED=true VITE_PAPERBACK_WAITLIST_ENABLED=false npm run deploy
 EOF
 }
 
@@ -72,8 +84,14 @@ echo "==> Deploy target: Amplify app ${APP_ID} / branch ${BRANCH} (${REGION})"
 
 if [[ "${SKIP_BUILD:-0}" != "1" ]]; then
   echo "==> Building production bundle"
+  echo "    VITE_PAPERBACK_SALES_ENABLED=${VITE_PAPERBACK_SALES_ENABLED}"
+  echo "    VITE_PAPERBACK_WAITLIST_ENABLED=${VITE_PAPERBACK_WAITLIST_ENABLED}"
+  echo "    VITE_ORDER_API_URL=${VITE_ORDER_API_URL}"
+
   build_env=(
-    "VITE_ORDER_API_URL=${ORDER_API_URL}"
+    "VITE_ORDER_API_URL=${VITE_ORDER_API_URL}"
+    "VITE_PAPERBACK_SALES_ENABLED=${VITE_PAPERBACK_SALES_ENABLED}"
+    "VITE_PAPERBACK_WAITLIST_ENABLED=${VITE_PAPERBACK_WAITLIST_ENABLED}"
   )
   # Only set optional keys when present — empty values would override .env.local.
   if [[ -n "$TURNSTILE_SITE_KEY" ]]; then
@@ -95,9 +113,12 @@ if [[ "${SKIP_BUILD:-0}" != "1" ]]; then
     echo "    analytics: Clarity=${CLARITY_ID}"
   fi
 
+  # Forward flags into the Vite child process (npm scripts do not always inherit
+  # non-exported shell locals). env PREFIX=... is authoritative for this build.
   env "${build_env[@]}" npm run build
 else
   echo "==> Skipping build (SKIP_BUILD=1)"
+  echo "    WARNING: SKIP_BUILD reuses dist/; paperback flags are whatever was baked earlier."
 fi
 
 if [[ ! -d "$ROOT_DIR/dist" ]]; then

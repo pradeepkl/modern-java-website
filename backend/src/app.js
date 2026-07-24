@@ -19,6 +19,7 @@ const {
   getSignedUrl: getCloudFrontSignedUrl,
 } = require('@aws-sdk/cloudfront-signer');
 const { createAndSendInvoice } = require('./zohoInvoice');
+const { joinPaperbackWaitlist } = require('./paperbackWaitlist');
 
 const dynamo = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 // Domain identity is verified in us-east-1 (also where inbound MX points).
@@ -34,6 +35,7 @@ const normalizePem = (value) =>
 const {
   ORDERS_TABLE,
   SAMPLE_REQUESTS_TABLE,
+  PAPERBACK_WAITLIST_TABLE,
   DIGITAL_ASSETS_BUCKET,
   SAMPLE_PDF_KEY = 'sample/modern-java-preview.pdf',
   DIGITAL_PDF_KEY = 'digital/modern-java-drm-free_v1.0.pdf',
@@ -1473,6 +1475,20 @@ exports.handler = async (event) => {
     const path = event.rawPath;
 
     if (method === 'OPTIONS') return response(204, {});
+    if (method === 'POST' && path === '/paperback-waitlist') {
+      return await joinPaperbackWaitlist({
+        event,
+        parseBody,
+        response,
+        verifyTurnstileCaptcha,
+        dynamo,
+        PutCommand,
+        UpdateCommand,
+        tableName: PAPERBACK_WAITLIST_TABLE,
+        sendEmail,
+        notifyAdmin,
+      });
+    }
     if (method === 'POST' && path === '/sample-requests') {
       return await requestSampleChapter(event);
     }
@@ -1499,7 +1515,9 @@ exports.handler = async (event) => {
     console.error(error);
     const isValidationError =
       error instanceof SyntaxError ||
-      /required|invalid|quantity|captcha/i.test(error.message || '');
+      /required|invalid|quantity|captcha|please enter|please accept|consent/i.test(
+        error.message || '',
+      );
     return response(isValidationError ? 400 : 500, {
       message: isValidationError
         ? error.message

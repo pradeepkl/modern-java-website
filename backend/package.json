@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "test": "node --test",
+    "export:waitlist": "node scripts/export-paperback-waitlist.js",
     "build": "sam build",
     "deploy": "./scripts/deploy-api.sh",
     "deploy:guided": "sam deploy --guided",

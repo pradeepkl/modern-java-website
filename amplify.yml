@@ -6,7 +6,14 @@ frontend:
         - npm ci
     build:
       commands:
-        - npm run build
+        # Amplify Hosting CI (if ever Git-connected). Manual zip deploys use
+        # scripts/deploy-amplify.sh instead; keep defaults aligned.
+        - |
+          export VITE_PAPERBACK_SALES_ENABLED="${VITE_PAPERBACK_SALES_ENABLED:-false}"
+          export VITE_PAPERBACK_WAITLIST_ENABLED="${VITE_PAPERBACK_WAITLIST_ENABLED:-true}"
+          echo "VITE_PAPERBACK_SALES_ENABLED=$VITE_PAPERBACK_SALES_ENABLED"
+          echo "VITE_PAPERBACK_WAITLIST_ENABLED=$VITE_PAPERBACK_WAITLIST_ENABLED"
+          npm run build
   artifacts:
     baseDirectory: dist
     files:

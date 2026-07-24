@@ -11,6 +11,8 @@ Set these in `.env.local` (local) and they are loaded automatically by
 |----------|---------|---------|
 | `VITE_GA_MEASUREMENT_ID` | `G-XXXXXXXXXX` | GA4 measurement ID |
 | `VITE_CLARITY_ID` | `abcdefghij` | Microsoft Clarity project ID (optional) |
+| `VITE_PAPERBACK_SALES_ENABLED` | `false` | Build-time flag (rebuild + redeploy to change) |
+| `VITE_PAPERBACK_WAITLIST_ENABLED` | `true` | Build-time flag (rebuild + redeploy to change) |
 
 You can also export them in the shell before deploy; non-empty values are baked
 into the Vite bundle. Empty values are skipped so they do not wipe `.env.local`.
@@ -24,6 +26,7 @@ Admin → **Admin** → **Events** (or **Key events**):
 | Event name | When it fires | Recommended |
 |------------|---------------|-------------|
 | `sample_form_success` | Sample chapter email accepted by API | Key event (lead) |
+| `paperback_waitlist_success` | Paperback waitlist registration accepted | Key event (demand) |
 | `purchase` | Razorpay (or bypass) payment verified | Key event (revenue) |
 | `amazon_exit` | Visitor leaves to Amazon Kindle | Key event (assisted) |
 
@@ -31,8 +34,25 @@ Also useful for funnels (do not need to be key events):
 
 - `cta_click` → `section_view` (`formats`) → `format_cta_click` → `checkout_open` → `checkout_submit` → `checkout_payment_start` → `purchase`
 - `sample_form_start` → `sample_form_submit` → `sample_form_success`
+- `paperback_waitlist_card_view` → `paperback_waitlist_open` → `paperback_waitlist_submit` → `paperback_waitlist_success`
 - `amazon_consent_shown` → `amazon_consent_submit` / skip → `amazon_exit`
-- `checkout_abandon`, `checkout_fail`, `form_field_abandon`, `scroll_depth`
+- `checkout_abandon`, `checkout_fail`, `form_field_abandon`, `scroll_depth`, `paperback_waitlist_error`
+
+### Paperback waitlist demand metrics
+
+Primary demand number: **unique confirmed waitlist records** (DynamoDB), not button clicks.
+
+| Metric | How to measure |
+|--------|----------------|
+| Paperback card views | `paperback_waitlist_card_view` |
+| Notify Me clicks / form opens | `paperback_waitlist_open` |
+| Waitlist submissions | `paperback_waitlist_submit` |
+| Unique successful registrations | DynamoDB unique emails / export script |
+| Card conversion rate | unique registrations / card views |
+| Form conversion rate | unique registrations / form opens |
+| Registrations by source / city / week | CLI export (`backend/scripts/export-paperback-waitlist.js`) |
+
+`paperback_waitlist_success` parameters: `registration_status` (`created` \| `already_registered`), `source`. Never send name, email, or city to GA.
 
 ### Purchase parameters
 
@@ -57,6 +77,8 @@ Also useful for funnels (do not need to be key events):
 ## Clarity
 
 With `VITE_CLARITY_ID` set and consent granted, Clarity provides heatmaps and session replay for hero, `#formats`, and checkout dialogs. Use it to diagnose high `checkout_abandon` rates.
+
+Waitlist form inputs use `data-clarity-mask="true"` so name, email, and city are not readable in recordings. Modal open/submit/success interactions remain visible via `data-testid` hooks.
 
 ## Privacy
 

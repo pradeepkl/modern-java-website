@@ -78,6 +78,26 @@ Paperback checkout uses the AWS SAM service in `backend/`. Follow
 `backend/README.md` to deploy it, then set `VITE_ORDER_API_URL` in the website
 environment to the deployed API URL.
 
+### Paperback waitlist (build-time flags)
+
+Vite feature flags control whether the formats card shows purchase, waitlist, or
+unavailable. Changing them requires a **frontend rebuild and Amplify redeploy**.
+
+Production Amplify deploys default to:
+
+```env
+VITE_PAPERBACK_SALES_ENABLED=false
+VITE_PAPERBACK_WAITLIST_ENABLED=true
+```
+
+Restore paperback ordering:
+
+```bash
+VITE_PAPERBACK_SALES_ENABLED=true VITE_PAPERBACK_WAITLIST_ENABLED=false npm run deploy
+```
+
+Existing Razorpay/order APIs remain deployed; only the frontend surface switches.
+
 The free sample chapter PDF lives at `assets/books/modern-java-preview.pdf`.
 After the backend stack is deployed, upload it to the private digital-assets
 bucket with:
@@ -142,6 +162,8 @@ Defaults (overridable via env):
 | `VITE_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key (sample + digital checkout) |
 | `VITE_GA_MEASUREMENT_ID` | GA4 measurement ID (optional; consent-gated; loaded from `.env.local` on deploy) |
 | `VITE_CLARITY_ID` | Microsoft Clarity project ID (optional; consent-gated) |
+| `VITE_PAPERBACK_SALES_ENABLED` | Build-time flag (default `false` on deploy) |
+| `VITE_PAPERBACK_WAITLIST_ENABLED` | Build-time flag (default `true` on deploy) |
 | `DEPLOY_SITE_URL` | `https://modern-java.classpath.in` |
 
 Analytics setup, conversion events, and GA4 key-event configuration are documented in [`docs/ANALYTICS.md`](./docs/ANALYTICS.md).

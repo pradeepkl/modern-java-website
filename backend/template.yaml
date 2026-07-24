@@ -104,6 +104,7 @@ Globals:
       Variables:
         ORDERS_TABLE: !Ref OrdersTable
         SAMPLE_REQUESTS_TABLE: !Ref SampleRequestsTable
+        PAPERBACK_WAITLIST_TABLE: !Ref PaperbackWaitlistTable
         DIGITAL_ASSETS_BUCKET: !Ref DigitalAssetsBucket
         SAMPLE_PDF_KEY: !Ref SamplePdfKey
         DIGITAL_PDF_KEY: !Ref DigitalPdfKey
@@ -157,6 +158,8 @@ Resources:
             TableName: !Ref OrdersTable
         - DynamoDBCrudPolicy:
             TableName: !Ref SampleRequestsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PaperbackWaitlistTable
         - S3ReadPolicy:
             BucketName: !Ref DigitalAssetsBucket
         - Statement:
@@ -177,6 +180,12 @@ Resources:
           Properties:
             ApiId: !Ref OrderApi
             Path: /orders
+            Method: POST
+        JoinPaperbackWaitlist:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref OrderApi
+            Path: /paperback-waitlist
             Method: POST
         RequestSampleChapter:
           Type: HttpApi
@@ -247,6 +256,32 @@ Resources:
       KeySchema:
         - AttributeName: email
           KeyType: HASH
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  PaperbackWaitlistTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: email
+          AttributeType: S
+        - AttributeName: status
+          AttributeType: S
+        - AttributeName: createdAt
+          AttributeType: S
+      KeySchema:
+        - AttributeName: email
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: StatusCreatedAtIndex
+          KeySchema:
+            - AttributeName: status
+              KeyType: HASH
+            - AttributeName: createdAt
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
 
