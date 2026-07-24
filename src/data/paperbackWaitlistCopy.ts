@@ -1,30 +1,22 @@
-import type { FormatFeature } from './formats';
-
 /**
  * Waitlist-only copy. Does not replace purchase-card content in formats.ts.
  * When sales are re-enabled, PaperbackPurchaseCard continues to use formats.ts.
+ *
+ * Keep claims conservative until printer, paper, color, price, and timeline are final.
  */
 export const paperbackWaitlistCopy = {
-  badge: 'PAPERBACK',
-  headline: 'High-quality print edition',
-  subtitle: 'Premium print edition with rich-color diagrams',
-  features: [
-    { text: 'Includes DRM-free PDF + ePub', tone: 'upgrade' },
-    {
-      text: 'Includes access to future revised editions',
-      tone: 'upgrade',
-    },
-    { text: 'Premium print and paper' },
-    { text: 'Rich-color architecture and flow diagrams' },
-    { text: 'Deep reading without screen fatigue' },
-  ] as const satisfies readonly FormatFeature[],
-  status: 'Coming Soon',
-  statusSupport:
-    'Join the waitlist and be the first to know when the paperback becomes available.',
-  button: 'Notify Me',
+  sectionEyebrow: 'Paperback Edition',
+  sectionHeading: 'Help shape the first print run',
+  sectionLead: 'Many readers prefer technical books on paper.',
+  sectionBody:
+    "As an independent publisher, we're using reader interest to plan the initial paperback production. Joining the waitlist helps us estimate demand and ensures you're among the first to know when ordering opens.",
+  /** Optional social proof, e.g. "83 readers have already joined the waitlist." */
+  socialProof: '',
+  button: 'Join the Waitlist',
+  buttonNote: 'No payment required.',
   modalTitle: 'Join the Paperback Waitlist',
   modalDescription:
-    'Be the first to know when the premium paperback edition becomes available.',
+    "We're preparing a professionally printed paperback edition. Join the waitlist to be notified when it's ready.",
   disclaimer:
     'No payment required. We will email you when the paperback becomes available.',
   submit: 'Join the Waitlist',

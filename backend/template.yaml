@@ -187,6 +187,12 @@ Resources:
             ApiId: !Ref OrderApi
             Path: /paperback-waitlist
             Method: POST
+        SubmitContact:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref OrderApi
+            Path: /contact
+            Method: POST
         RequestSampleChapter:
           Type: HttpApi
           Properties:

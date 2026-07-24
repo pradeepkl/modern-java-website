@@ -1,6 +1,7 @@
 import {
   BookOpen,
   Code2,
+  Download,
   Image,
   Layers,
   Puzzle,
@@ -10,6 +11,7 @@ import {
   Terminal,
   Users,
 } from 'lucide-react';
+import { getPaperbackMode } from '../../config/features';
 import { assets } from '../../data/assets';
 import {
   guideAvailability,
@@ -36,7 +38,11 @@ const valueIcons = {
   users: Users,
 } as const;
 
-function AvailabilityIcon({ type }: { type: 'amazon' | 'book' }) {
+function AvailabilityIcon({
+  type,
+}: {
+  type: 'amazon' | 'book' | 'download';
+}) {
   if (type === 'amazon') {
     return (
       <span
@@ -48,10 +54,18 @@ function AvailabilityIcon({ type }: { type: 'amazon' | 'book' }) {
     );
   }
 
+  if (type === 'download') {
+    return <Download size={22} strokeWidth={1.75} aria-hidden="true" />;
+  }
+
   return <BookOpen size={26} strokeWidth={1.75} aria-hidden="true" />;
 }
 
 export function GuideSection() {
+  const availabilityItems = guideAvailability.filter(
+    (item) => item.id !== 'paperback' || getPaperbackMode() === 'sales',
+  );
+
   return (
     <section
       id="about-the-book"
@@ -84,7 +98,7 @@ export function GuideSection() {
             <div className="guide-availability" aria-label="Available in">
               <p className="guide-availability__label">Available in</p>
               <ul className="guide-availability__list">
-                {guideAvailability.map((item) => (
+                {availabilityItems.map((item) => (
                   <li key={item.id} title={item.label}>
                     <span className="guide-availability__icon">
                       <AvailabilityIcon type={item.icon} />

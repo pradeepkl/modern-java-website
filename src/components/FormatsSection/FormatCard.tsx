@@ -8,8 +8,6 @@ import { BrandButtonLogo } from '../shared/BrandButtonLogo';
 import { DigitalOrderDialog } from './DigitalOrderDialog';
 import { FormatCardShell } from './FormatCardShell';
 import { PaperbackPurchaseCard } from './PaperbackPurchaseCard';
-import { PaperbackUnavailableCard } from './PaperbackUnavailableCard';
-import { PaperbackWaitlistCard } from './PaperbackWaitlistCard';
 import './FormatCard.css';
 
 interface FormatCardProps {
@@ -17,16 +15,13 @@ interface FormatCardProps {
 }
 
 export function FormatCard({ format }: FormatCardProps) {
-  const paperbackMode = getPaperbackMode();
-
+  // Waitlist mode renders paperback in PaperbackWaitlistSection, not the grid.
+  // Unavailable mode omits paperback from FormatsSection entirely.
   if (format.id === 'paperback') {
-    if (paperbackMode === 'sales') {
+    if (getPaperbackMode() === 'sales') {
       return <PaperbackPurchaseCard format={format} />;
     }
-    if (paperbackMode === 'waitlist') {
-      return <PaperbackWaitlistCard format={format} />;
-    }
-    return <PaperbackUnavailableCard format={format} />;
+    return null;
   }
 
   return <StandardFormatCard format={format} />;
@@ -80,39 +75,44 @@ function StandardFormatCard({ format }: FormatCardProps) {
         subtitle={format.subtitle}
         features={format.features}
       >
-        <div className="format-card__pricing">
-          <div className="format-card__price-row">
-            <span className="format-card__list-price">{format.listPrice}</span>
-            <p className="format-card__price">{format.price}</p>
-            <span className="format-card__discount">{format.discountLabel}</span>
+        <div className="format-card__footer">
+          <div className="format-card__pricing">
+            <div className="format-card__price-row">
+              <span className="format-card__list-price">{format.listPrice}</span>
+              <p className="format-card__price">{format.price}</p>
+              <span className="format-card__discount">{format.discountLabel}</span>
+            </div>
+            <div className="format-card__version-slot">
+              {format.versionLabel ? (
+                <span className="format-card__version">{format.versionLabel}</span>
+              ) : null}
+            </div>
+            <p className="format-card__availability">{format.availability}</p>
           </div>
-          {format.versionLabel ? (
-            <span className="format-card__version">{format.versionLabel}</span>
-          ) : null}
-          <p className="format-card__availability">{format.availability}</p>
-        </div>
 
-        {isDirectDigital ? (
-          <button
-            type="button"
-            className={`${ctaClass} format-card__cta`}
-            onClick={openCheckout}
-          >
-            <Download size={18} strokeWidth={2} aria-hidden="true" />
-            {format.ctaLabel}
-          </button>
-        ) : format.ctaUrl ? (
-          <AmazonConsentLink
-            href={format.ctaUrl}
-            className={`${ctaClass} format-card__cta`}
-            onIntent={() =>
-              track('format_cta_click', { format: format.id })
-            }
-          >
-            <BrandButtonLogo brand="amazon" />
-            {format.ctaLabel}
-          </AmazonConsentLink>
-        ) : null}
+          {isDirectDigital ? (
+            <button
+              type="button"
+              className={`${ctaClass} format-card__cta`}
+              onClick={openCheckout}
+            >
+              <Download size={18} strokeWidth={2} aria-hidden="true" />
+              {format.ctaLabel}
+            </button>
+          ) : format.ctaUrl ? (
+            <AmazonConsentLink
+              href={format.ctaUrl}
+              className={`${ctaClass} format-card__cta`}
+              buttonLocation="format_card"
+              onIntent={() =>
+                track('format_cta_click', { format: format.id })
+              }
+            >
+              <BrandButtonLogo brand="amazon" />
+              {format.ctaLabel}
+            </AmazonConsentLink>
+          ) : null}
+        </div>
       </FormatCardShell>
 
       {isDirectDigital ? (

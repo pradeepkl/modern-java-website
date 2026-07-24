@@ -51,6 +51,11 @@
   margin-bottom: 20px;
 }
 
+.formats-grid--available {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 760px;
+}
+
 .formats-bulk {
   margin: 22px 0 0;
   text-align: center;

@@ -32,6 +32,11 @@ function PrivacyPolicy() {
           occasional book updates.
         </p>
         <p>
+          When you send a message through the contact form, we collect your
+          name, email address, subject, and message so we can reply. Contact
+          messages are emailed to admin@classpath.in.
+        </p>
+        <p>
           When you request a sample chapter, we collect your email address and
           record whether you separately chose to receive occasional updates.
           Before visiting Amazon, you may also optionally share your email
@@ -47,8 +52,9 @@ function PrivacyPolicy() {
       <section>
         <h2>Bot protection (Cloudflare Turnstile)</h2>
         <p>
-          Sample-chapter requests, Amazon email signup, and paperback and direct
-          digital checkout use Cloudflare Turnstile to reduce automated abuse.
+          Sample-chapter requests, Amazon email signup, the contact form, and
+          paperback and direct digital checkout use Cloudflare Turnstile to
+          reduce automated abuse.
           When you submit those forms, a short-lived verification token is
           generated in your browser and checked by our servers with Cloudflare.
           Cloudflare may process technical data such as your IP address, browser

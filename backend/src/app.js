@@ -20,6 +20,17 @@ const {
 } = require('@aws-sdk/cloudfront-signer');
 const { createAndSendInvoice } = require('./zohoInvoice');
 const { joinPaperbackWaitlist } = require('./paperbackWaitlist');
+const {
+  CREATED_MESSAGE: MARKETING_CREATED_MESSAGE,
+  ALREADY_ON_LIST_MESSAGE,
+  AMAZON_EXIT_SOURCE,
+  isConditionalCheckFailed: isMarketingConditionalCheckFailed,
+  resolveMarketingSource,
+  normalizeAttribution,
+  buildFirstOptInUpdate,
+  buildExistingSubscriberUpdate,
+  buildWelcomeEmail,
+} = require('./marketingConsent');
 
 const dynamo = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 // Domain identity is verified in us-east-1 (also where inbound MX points).
@@ -120,13 +131,14 @@ const buildRawMimeEmail = ({
   text,
   html,
   attachments = [],
+  replyTo,
 }) => {
   const mixedBoundary = `Mixed_${randomUUID().replace(/-/g, '')}`;
   const altBoundary = `Alt_${randomUUID().replace(/-/g, '')}`;
   const chunks = [
     `From: ${MAIL_FROM_EMAIL}`,
     `To: ${to}`,
-    `Reply-To: ${REPLY_TO_EMAIL}`,
+    `Reply-To: ${replyTo || REPLY_TO_EMAIL}`,
     `Subject: ${encodeSubject(subject)}`,
     'MIME-Version: 1.0',
     `Content-Type: multipart/mixed; boundary="${mixedBoundary}"`,
@@ -179,12 +191,21 @@ const buildRawMimeEmail = ({
   return Buffer.from(chunks.join('\r\n'), 'utf8');
 };
 
-const sendEmail = async ({ to, subject, text, html, attachments = [] }) => {
+const sendEmail = async ({
+  to,
+  subject,
+  text,
+  html,
+  attachments = [],
+  replyTo,
+}) => {
+  const replyToAddress = String(replyTo || REPLY_TO_EMAIL).trim() || REPLY_TO_EMAIL;
+
   if (attachments.length === 0) {
     return ses.send(
       new SendEmailCommand({
         Source: MAIL_FROM_EMAIL,
-        ReplyToAddresses: [REPLY_TO_EMAIL],
+        ReplyToAddresses: [replyToAddress],
         Destination: { ToAddresses: [to] },
         Message: {
           Subject: { Data: subject },
@@ -211,7 +232,14 @@ const sendEmail = async ({ to, subject, text, html, attachments = [] }) => {
       Source: MAIL_FROM_EMAIL,
       Destinations: [to],
       RawMessage: {
-        Data: buildRawMimeEmail({ to, subject, text, html, attachments }),
+        Data: buildRawMimeEmail({
+          to,
+          subject,
+          text,
+          html,
+          attachments,
+          replyTo: replyToAddress,
+        }),
       },
     }),
   );
@@ -282,6 +310,8 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_PATTERN = /^\d{10}$/;
 const PIN_PATTERN = /^\d{6}$/;
 const SAMPLE_REQUEST_COOLDOWN_MS = 60 * 1000;
+const CONTACT_TO_EMAIL = 'admin@classpath.in';
+const CONTACT_MESSAGE_MAX_LENGTH = 5000;
 
 const response = (statusCode, body) => ({
   statusCode,
@@ -718,24 +748,97 @@ const recordMarketingConsent = async (event) => {
     });
   }
 
-  await upsertMarketingPreference({
-    email,
-    consented: true,
-    source: 'amazon-pre-navigation',
+  const now = new Date().toISOString();
+  const source = resolveMarketingSource(json.source || AMAZON_EXIT_SOURCE);
+  const attribution = normalizeAttribution(json);
+  const firstOptIn = buildFirstOptInUpdate({
+    source,
     consentVersion: json.consentVersion,
+    attribution,
+    now,
   });
 
-  await notifyAdmin({
-    subject: `Marketing opt-in — ${email}`,
-    lines: [
-      'Event: marketing_opt_in',
-      `Email: ${email}`,
-      'Source: amazon-pre-navigation',
-      `Consent version: ${String(json.consentVersion || 'unknown')}`,
-    ],
-  });
+  let registrationStatus = 'created';
 
-  return response(200, { message: 'Your email preferences have been saved.' });
+  try {
+    // Atomic: only one concurrent request can establish the first valid opt-in.
+    await dynamo.send(
+      new UpdateCommand({
+        TableName: SAMPLE_REQUESTS_TABLE,
+        Key: { email },
+        ...firstOptIn,
+      }),
+    );
+  } catch (error) {
+    if (!isMarketingConditionalCheckFailed(error)) {
+      throw error;
+    }
+
+    registrationStatus = 'already_registered';
+    const existingUpdate = buildExistingSubscriberUpdate({
+      attribution,
+      now,
+    });
+    try {
+      await dynamo.send(
+        new UpdateCommand({
+          TableName: SAMPLE_REQUESTS_TABLE,
+          Key: { email },
+          ...existingUpdate,
+        }),
+      );
+    } catch (existingError) {
+      // Row may have flipped between checks; still treat as already registered.
+      if (!isMarketingConditionalCheckFailed(existingError)) {
+        throw existingError;
+      }
+    }
+  }
+
+  if (registrationStatus === 'created') {
+    try {
+      const welcome = buildWelcomeEmail({ siteUrl: SITE_URL });
+      await sendEmail({
+        to: email,
+        subject: welcome.subject,
+        text: welcome.text,
+      });
+    } catch (error) {
+      console.error('Classpath Reader List welcome email failed', {
+        email,
+        error,
+      });
+      await notifyAdmin({
+        subject: `Reader list welcome email failed — ${email}`,
+        lines: [
+          'Event: marketing_welcome_email_failed',
+          `Email: ${email}`,
+          `Source: ${source}`,
+          `Error: ${error?.message || String(error)}`,
+        ],
+      });
+    }
+
+    await notifyAdmin({
+      subject: `Marketing opt-in — ${email}`,
+      lines: [
+        'Event: marketing_opt_in',
+        `Email: ${email}`,
+        `Source: ${source}`,
+        `Consent version: ${String(json.consentVersion || 'unknown')}`,
+        'Registration status: created',
+      ],
+    });
+  }
+
+  return response(200, {
+    success: true,
+    status: registrationStatus,
+    message:
+      registrationStatus === 'created'
+        ? MARKETING_CREATED_MESSAGE
+        : ALREADY_ON_LIST_MESSAGE,
+  });
 };
 
 const unsubscribeMarketing = async (event) => {
@@ -771,6 +874,66 @@ const unsubscribeMarketing = async (event) => {
   return response(200, {
     message:
       'You have been unsubscribed from optional marketing emails. Purchase and sample delivery messages are unaffected.',
+  });
+};
+
+const submitContactMessage = async (event) => {
+  const { json } = parseBody(event);
+  const name = String(json.name || '').trim();
+  const email = String(json.email || '').trim().toLowerCase();
+  const subject = String(json.subject || '').trim();
+  const message = String(json.message || '').trim();
+
+  if (!name) throw new Error('Please enter your name.');
+  if (!EMAIL_PATTERN.test(email)) throw new Error('Invalid email address');
+  if (!subject) throw new Error('Please enter a subject.');
+  if (!message) throw new Error('Please enter a message.');
+  if (subject.length > 200) {
+    throw new Error('Subject must be 200 characters or fewer.');
+  }
+  if (message.length > CONTACT_MESSAGE_MAX_LENGTH) {
+    throw new Error('Message must be 5000 characters or fewer.');
+  }
+
+  await verifyTurnstileCaptcha(event, json.captchaToken);
+
+  const text = [
+    'New website contact form message',
+    '',
+    `Name: ${name}`,
+    `Email: ${email}`,
+    `Subject: ${subject}`,
+    '',
+    message,
+    '',
+    `Sent: ${new Date().toISOString()}`,
+    `Site: ${SITE_URL}/contact`,
+  ].join('\n');
+
+  try {
+    await sendEmail({
+      to: CONTACT_TO_EMAIL,
+      subject: `[Modern Java contact] ${subject}`,
+      text,
+      replyTo: email,
+    });
+  } catch (error) {
+    console.error('Contact form email failed', { email, error });
+    if (
+      error?.name === 'MessageRejected' ||
+      /not verified|sandbox/i.test(error?.message || '')
+    ) {
+      return response(503, {
+        message:
+          'Email delivery is temporarily unavailable. Please try again later, or write to admin@classpath.in.',
+      });
+    }
+    throw error;
+  }
+
+  return response(200, {
+    message:
+      'Thank you. Your message has been sent. We will reply by email.',
   });
 };
 
@@ -1488,6 +1651,9 @@ exports.handler = async (event) => {
         sendEmail,
         notifyAdmin,
       });
+    }
+    if (method === 'POST' && path === '/contact') {
+      return await submitContactMessage(event);
     }
     if (method === 'POST' && path === '/sample-requests') {
       return await requestSampleChapter(event);

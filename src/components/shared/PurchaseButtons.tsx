@@ -82,6 +82,7 @@ export function PurchaseButtons({
         href={book.amazonUrl}
         className={`button button-amazon ${sizeClass}`}
         ariaLabel="Buy Modern Java: The Mindset Shift on Amazon"
+        buttonLocation="purchase_buttons"
         onIntent={() => track('format_cta_click', { format: 'kindle' })}
       >
         <BrandButtonLogo brand="amazon" />
@@ -140,6 +141,7 @@ export function PurchaseButtons({
       <PaperbackWaitlistDialog
         open={waitlistOpen}
         onClose={() => setWaitlistOpen(false)}
+        source="purchase_buttons"
       />
       {includeDigital ? (
         <DigitalOrderDialog

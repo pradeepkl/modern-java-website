@@ -88,7 +88,8 @@ and set the deployed API URL.
 
 ### Cloudflare Turnstile (bot protection)
 
-Sample chapter, DRM-free digital checkout, and paperback waitlist forms use Turnstile.
+Sample chapter, DRM-free digital checkout, paperback waitlist, contact, and
+pre-Amazon reader-list forms use Turnstile.
 
 1. Create a widget at [Cloudflare Turnstile](https://dash.cloudflare.com/?to=/:account/turnstile)
    with your production (and localhost) hostnames.
@@ -161,6 +162,17 @@ behaves as before.
   payments.
 - `POST /sample-requests` records optional marketing consent and emails a
   time-limited CloudFront signed download link for the sample chapter PDF.
+- `POST /marketing-consents` records Classpath Reader List / marketing opt-in
+  on `SampleRequestsTable` (email PK). First valid opt-in is atomic
+  (`marketingConsent` missing or false → true); only that write sends the
+  welcome email. Duplicates return `already_registered` without a second
+  welcome. New Amazon exit-modal signups use `marketingConsentSource =
+  amazon_exit_modal` and `sourceVersion = "2"`; historical
+  `amazon-pre-navigation` rows are not rewritten.
+- `POST /marketing-consents/unsubscribe` opts the address out of marketing
+  mail (no Turnstile; same success message whether or not the email existed).
+- `POST /contact` accepts a Turnstile-protected contact form submission and
+  emails `admin@classpath.in` (Reply-To set to the visitor address).
 - `POST /digital-orders` creates a Razorpay order for the DRM-free PDF
   + ePub bundle. The normal verification endpoint emails time-limited
   CloudFront signed download links after payment (and creates a Zoho Invoice

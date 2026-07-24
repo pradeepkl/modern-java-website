@@ -53,26 +53,30 @@ export function PaperbackPurchaseCard({ format }: PaperbackPurchaseCardProps) {
         subtitle={format.subtitle}
         features={format.features}
       >
-        <div className="format-card__pricing">
-          <div className="format-card__price-row">
-            <span className="format-card__list-price">{format.listPrice}</span>
-            <p className="format-card__price">{format.price}</p>
-            <span className="format-card__discount">{format.discountLabel}</span>
+        <div className="format-card__footer">
+          <div className="format-card__pricing">
+            <div className="format-card__price-row">
+              <span className="format-card__list-price">{format.listPrice}</span>
+              <p className="format-card__price">{format.price}</p>
+              <span className="format-card__discount">{format.discountLabel}</span>
+            </div>
+            <div className="format-card__version-slot">
+              {format.versionLabel ? (
+                <span className="format-card__version">{format.versionLabel}</span>
+              ) : null}
+            </div>
+            <p className="format-card__availability">{format.availability}</p>
           </div>
-          {format.versionLabel ? (
-            <span className="format-card__version">{format.versionLabel}</span>
-          ) : null}
-          <p className="format-card__availability">{format.availability}</p>
-        </div>
 
-        <button
-          type="button"
-          className="button button-primary format-card__cta"
-          onClick={openCheckout}
-        >
-          <ShoppingCart size={18} strokeWidth={2} aria-hidden="true" />
-          {format.ctaLabel}
-        </button>
+          <button
+            type="button"
+            className="button button-primary format-card__cta"
+            onClick={openCheckout}
+          >
+            <ShoppingCart size={18} strokeWidth={2} aria-hidden="true" />
+            {format.ctaLabel}
+          </button>
+        </div>
       </FormatCardShell>
 
       <PaperbackOrderDialog

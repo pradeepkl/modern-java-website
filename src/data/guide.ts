@@ -21,6 +21,7 @@ export const guideIntro = {
 
 export const guideAvailability = [
   { id: 'kindle', label: 'Kindle', icon: 'amazon' as const },
+  { id: 'digital', label: 'PDF + ePub', icon: 'download' as const },
   { id: 'paperback', label: 'Paperback', icon: 'book' as const },
 ] as const;
 

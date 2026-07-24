@@ -87,9 +87,10 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin: 0 0 20px;
+  margin: 0;
   padding: 0;
   list-style: none;
+  flex: 1 1 auto;
 }
 
 .format-card__features li {
@@ -132,8 +133,17 @@
   color: #0f6b5c;
 }
 
+/* Keep price + CTA locked together at the bottom across equal-height cards. */
+.format-card__footer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: auto;
+  padding-top: 20px;
+}
+
 .format-card__pricing {
-  margin: auto 0 16px;
+  margin: 0;
   text-align: center;
 }
 
@@ -142,7 +152,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  margin-bottom: 5px;
+  margin-bottom: 6px;
 }
 
 .format-card__list-price {
@@ -172,9 +182,16 @@
   white-space: nowrap;
 }
 
+.format-card__version-slot {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 1.55rem;
+  margin-bottom: 6px;
+}
+
 .format-card__version {
   display: inline-flex;
-  margin: 0 0 6px;
   padding: 4px 10px;
   color: #0f6b5c;
   background: #d8f3ee;

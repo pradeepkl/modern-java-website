@@ -34,23 +34,29 @@ export function Footer() {
         </div>
       </div>
 
-      <div className="site-footer__bottom page-container">
-        <div className="site-footer__legal">
-          <a href="/privacy-policy" className="site-footer__legal-link">
-            Privacy Policy
-          </a>
-          <span aria-hidden="true">·</span>
-          <a href="/terms-of-use" className="site-footer__legal-link">
-            Terms of Use
-          </a>
-          <span aria-hidden="true">·</span>
-          <a href="/unsubscribe" className="site-footer__legal-link">
-            Unsubscribe
-          </a>
+      <div className="site-footer__bottom">
+        <div className="site-footer__bottom-inner page-container">
+          <div className="site-footer__legal">
+            <a href="/privacy-policy" className="site-footer__legal-link">
+              Privacy Policy
+            </a>
+            <span aria-hidden="true">·</span>
+            <a href="/terms-of-use" className="site-footer__legal-link">
+              Terms of Use
+            </a>
+            <span aria-hidden="true">·</span>
+            <a href="/unsubscribe" className="site-footer__legal-link">
+              Unsubscribe
+            </a>
+            <span aria-hidden="true">·</span>
+            <a href="/contact" className="site-footer__legal-link">
+              Contact
+            </a>
+          </div>
+          <p className="site-footer__copyright">
+            © {book.copyrightYear} {book.author}. All rights reserved.
+          </p>
         </div>
-        <p className="site-footer__copyright">
-          © {book.copyrightYear} {book.author}. All rights reserved.
-        </p>
       </div>
     </footer>
   );

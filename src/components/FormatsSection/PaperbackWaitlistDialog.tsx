@@ -32,6 +32,8 @@ import './PaperbackWaitlistDialog.css';
 interface PaperbackWaitlistDialogProps {
   open: boolean;
   onClose: () => void;
+  /** Analytics source for open/submit/success events. */
+  source?: string;
 }
 
 type SuccessStatus = 'created' | 'already_registered';
@@ -57,6 +59,7 @@ function getFocusableElements(container: HTMLElement): HTMLElement[] {
 export function PaperbackWaitlistDialog({
   open,
   onClose,
+  source = 'waitlist_section',
 }: PaperbackWaitlistDialogProps) {
   const [values, setValues] =
     useState<PaperbackWaitlistFormValues>(INITIAL_VALUES);
@@ -166,7 +169,7 @@ export function PaperbackWaitlistDialog({
       city: normalized.city || undefined,
       paperbackConsent: true,
       promotionalConsent: normalized.promotionalConsent,
-      source: 'pricing_card',
+      source,
       landingPage:
         typeof window !== 'undefined' ? window.location.href : undefined,
       referrer:
@@ -219,7 +222,7 @@ export function PaperbackWaitlistDialog({
       setSuccessStatus(registrationStatus);
       track('paperback_waitlist_success', {
         registration_status: registrationStatus,
-        source: 'pricing_card',
+        source,
       });
       setProcessing(false);
     } catch {

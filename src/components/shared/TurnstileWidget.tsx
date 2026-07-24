@@ -17,8 +17,12 @@ export interface TurnstileWidgetHandle {
   reset: () => void;
 }
 
+export type TurnstileErrorReason = 'load' | 'widget';
+
 interface TurnstileWidgetProps {
   onTokenChange: (token: string | null) => void;
+  /** Fired when the script fails to load or Cloudflare reports a widget error. */
+  onError?: (reason: TurnstileErrorReason) => void;
   theme?: 'light' | 'dark' | 'auto';
   className?: string;
   /** Prefer flexible on wide viewports; auto uses compact below 480px. */
@@ -36,13 +40,21 @@ export const TurnstileWidget = forwardRef<
   TurnstileWidgetHandle,
   TurnstileWidgetProps
 >(function TurnstileWidget(
-  { onTokenChange, theme = 'auto', className = '', size = 'auto' },
+  {
+    onTokenChange,
+    onError,
+    theme = 'auto',
+    className = '',
+    size = 'auto',
+  },
   ref,
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
   const onTokenChangeRef = useRef(onTokenChange);
+  const onErrorRef = useRef(onError);
   onTokenChangeRef.current = onTokenChange;
+  onErrorRef.current = onError;
   const [resolvedSize, setResolvedSize] = useState<
     NonNullable<TurnstileRenderOptions['size']>
   >(() => (size === 'auto' ? initialAutoSize() : size));
@@ -92,10 +104,14 @@ export const TurnstileWidget = forwardRef<
           size: resolvedSize,
           callback: (token) => onTokenChangeRef.current(token),
           'expired-callback': () => onTokenChangeRef.current(null),
-          'error-callback': () => onTokenChangeRef.current(null),
+          'error-callback': () => {
+            onTokenChangeRef.current(null);
+            onErrorRef.current?.('widget');
+          },
         });
       } catch {
         onTokenChangeRef.current(null);
+        onErrorRef.current?.('load');
       }
     };
 

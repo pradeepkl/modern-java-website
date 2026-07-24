@@ -35,8 +35,27 @@ Also useful for funnels (do not need to be key events):
 - `cta_click` → `section_view` (`formats`) → `format_cta_click` → `checkout_open` → `checkout_submit` → `checkout_payment_start` → `purchase`
 - `sample_form_start` → `sample_form_submit` → `sample_form_success`
 - `paperback_waitlist_card_view` → `paperback_waitlist_open` → `paperback_waitlist_submit` → `paperback_waitlist_success`
-- `amazon_consent_shown` → `amazon_consent_submit` / skip → `amazon_exit`
-- `checkout_abandon`, `checkout_fail`, `form_field_abandon`, `scroll_depth`, `paperback_waitlist_error`
+- `amazon_exit_modal_open` → `amazon_exit_email_submit` / `amazon_exit_continue_without_email` → `amazon_exit_email_success` → `amazon_exit_continue_after_signup` → `amazon_exit` (navigation)
+- `amazon_exit_email_error`, `amazon_exit_turnstile_error`, `checkout_abandon`, `checkout_fail`, `form_field_abandon`, `scroll_depth`, `paperback_waitlist_error`
+
+### Amazon exit modal (Classpath Reader List)
+
+Pre-Amazon modal events never include email or other PII. Parameters may include `source` (`amazon_exit_modal`), `button_location`, `registration_status`, `error_type`, and session UTMs.
+
+| Event | When |
+|-------|------|
+| `amazon_exit_modal_open` | Modal opens after Buy on Amazon |
+| `amazon_exit_email_submit` | Join form submitted |
+| `amazon_exit_email_success` | API accepted signup (`registration_status`: `created` \| `already_registered`) |
+| `amazon_exit_email_error` | Validation or API failure |
+| `amazon_exit_continue_without_email` | Visitor chose Continue without joining |
+| `amazon_exit_continue_after_signup` | Visitor continued to Amazon after signup success |
+| `amazon_exit_turnstile_error` | Turnstile script/widget failure |
+| `amazon_exit` | Actual navigation to Amazon (keep as GA4 key event) |
+
+**Reporting cutover (marketing consent source):** New Amazon-modal opt-ins store `marketingConsentSource = amazon_exit_modal` with `sourceVersion = "2"`. Historical rows may still show `amazon-pre-navigation` and are **not** rewritten. When reporting, treat both sources as Amazon-modal signups and split by `sourceVersion` / date if needed.
+
+Reader-list offers are independent of Amazon reviews. The modal never asks for review URLs, screenshots, or other proof.
 
 ### Paperback waitlist demand metrics
 
@@ -78,7 +97,7 @@ Primary demand number: **unique confirmed waitlist records** (DynamoDB), not but
 
 With `VITE_CLARITY_ID` set and consent granted, Clarity provides heatmaps and session replay for hero, `#formats`, and checkout dialogs. Use it to diagnose high `checkout_abandon` rates.
 
-Waitlist form inputs use `data-clarity-mask="true"` so name, email, and city are not readable in recordings. Modal open/submit/success interactions remain visible via `data-testid` hooks.
+Waitlist form inputs use `data-clarity-mask="true"` so name, email, and city are not readable in recordings. The pre-Amazon reader-list modal masks its email field the same way. Modal open/submit/success interactions remain visible via `data-testid` hooks.
 
 ## Privacy
 
