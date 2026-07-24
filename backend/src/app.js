@@ -795,6 +795,8 @@ const recordMarketingConsent = async (event) => {
     }
   }
 
+  // Consent is already persisted. Welcome mail is best-effort and must never
+  // undo the subscription or delay Amazon navigation on SES failure.
   if (registrationStatus === 'created') {
     try {
       const welcome = buildWelcomeEmail({ siteUrl: SITE_URL });
@@ -834,6 +836,7 @@ const recordMarketingConsent = async (event) => {
   return response(200, {
     success: true,
     status: registrationStatus,
+    registration_status: registrationStatus,
     message:
       registrationStatus === 'created'
         ? MARKETING_CREATED_MESSAGE

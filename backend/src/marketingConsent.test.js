@@ -68,15 +68,28 @@ describe('buildExistingSubscriberUpdate', () => {
 });
 
 describe('buildWelcomeEmail', () => {
-  it('includes the explicit benefits-not-dependent-on-review sentence', () => {
+  it('includes benefits, independent review wording, and unsubscribe link', () => {
     const email = buildWelcomeEmail({
       siteUrl: 'https://modern-java.classpath.in',
     });
     assert.equal(email.subject, 'Welcome to the Classpath Reader List');
+    assert.equal(
+      email.unsubscribeUrl,
+      'https://modern-java.classpath.in/unsubscribe',
+    );
+    assert.match(email.text, /early access to upcoming books/);
+    assert.match(email.text, /reader-only launch offers/);
+    assert.match(email.text, /Modern Java updates and practical articles/);
+    assert.match(email.text, /paperback availability updates/);
     assert.match(
       email.text,
       /Your reader-list benefits are not dependent on leaving a review/,
     );
+    assert.match(
+      email.text,
+      /You can unsubscribe at any time using the link below/,
+    );
+    assert.match(email.text, /https:\/\/modern-java\.classpath\.in\/unsubscribe/);
     assert.doesNotMatch(email.text, /after purchasing|review url|screenshot/i);
   });
 });

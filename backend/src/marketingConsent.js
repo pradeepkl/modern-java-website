@@ -159,16 +159,25 @@ function buildWelcomeEmail({ siteUrl }) {
     /\/$/,
     '',
   );
+  const unsubscribeUrl = `${site}/unsubscribe`;
   const text = [
     'Hi,',
     '',
     'Thank you for joining the Classpath Reader List.',
     '',
-    'You’ll receive updates about upcoming books, reader offers, paperback availability, and practical Java resources.',
+    'You’ll receive:',
     '',
-    'After you’ve had time to read Modern Java — The Mindset Shift, please consider leaving an honest review on Amazon. Reviews help other readers understand whether the book is useful for them.',
+    '- early access to upcoming books',
+    '- reader-only launch offers',
+    '- Modern Java updates and practical articles',
+    '- paperback availability updates',
+    '',
+    'After you’ve had time to read Modern Java — The Mindset Shift, please consider leaving an honest review on Amazon. Reader feedback helps other Java developers decide whether the book is right for them.',
     '',
     'Your reader-list benefits are not dependent on leaving a review.',
+    '',
+    'You can unsubscribe at any time using the link below.',
+    unsubscribeUrl,
     '',
     'Regards,',
     'Pradeep Kumar L',
@@ -179,6 +188,7 @@ function buildWelcomeEmail({ siteUrl }) {
   return {
     subject: 'Welcome to the Classpath Reader List',
     text,
+    unsubscribeUrl,
   };
 }
 

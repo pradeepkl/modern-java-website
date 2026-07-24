@@ -165,10 +165,12 @@ behaves as before.
 - `POST /marketing-consents` records Classpath Reader List / marketing opt-in
   on `SampleRequestsTable` (email PK). First valid opt-in is atomic
   (`marketingConsent` missing or false → true); only that write sends the
-  welcome email. Duplicates return `already_registered` without a second
-  welcome. New Amazon exit-modal signups use `marketingConsentSource =
-  amazon_exit_modal` and `sourceVersion = "2"`; historical
-  `amazon-pre-navigation` rows are not rewritten.
+  transactional welcome email via SES. Duplicates return
+  `already_registered` / `registration_status: already_registered` without a
+  second welcome. SES failure is logged and does not undo consent or change
+  the success response. New Amazon exit-modal signups use
+  `marketingConsentSource = amazon_exit_modal` and `sourceVersion = "2"`;
+  historical `amazon-pre-navigation` rows are not rewritten.
 - `POST /marketing-consents/unsubscribe` opts the address out of marketing
   mail (no Turnstile; same success message whether or not the email existed).
 - `POST /contact` accepts a Turnstile-protected contact form submission and
