@@ -139,7 +139,6 @@ Globals:
         SES_REGION: !Ref SesRegion
         ALLOWED_ORIGIN: !Ref AllowedOrigin
         WEBSITE_URL: !Ref WebsiteUrl
-        PUBLIC_API_URL: !Sub https://${OrderApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}
         SES_CONFIGURATION_SET: !Ref SesConfigurationSetName
         UNSUBSCRIBE_TOKEN_SECRET: !Ref UnsubscribeTokenSecret
         ZOHO_CLIENT_ID: !Ref ZohoClientId
