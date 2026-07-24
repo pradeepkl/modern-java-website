@@ -1,13 +1,15 @@
 version = 0.1
 
+# Non-secret defaults only. Razorpay and other secrets come from
+# sam-secrets.env.dev / sam-secrets.env.prod via npm run deploy:dev|prod.
+# Stack names are set by the deploy scripts:
+#   APP_ENV=dev  -> modern-java-dev
+#   APP_ENV=prod -> modern-java-prod
+
 [default.deploy.parameters]
-stack_name = "sam-app"
 resolve_s3 = true
-s3_prefix = "sam-app"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
-# Non-secret defaults only. Secrets (Zoho, bypass) come from sam-secrets.env via
-# `npm run deploy` / scripts/deploy-api.sh — do not put credentials here.
 parameter_overrides = "AdminEmail=\"pradeep@classpath.in\" AllowedOrigin=\"https://modern-java.classpath.in,http://localhost:5173\" MailFromEmail=\"no-reply@classpath.in\" ReplyToEmail=\"pradeep@classpath.in\" SesRegion=\"us-east-1\" WebsiteUrl=\"https://modern-java.classpath.in\" SamplePdfKey=\"sample/modern-java-preview.pdf\" DigitalPdfKey=\"digital/modern-java-drm-free_v1.0.pdf\" DigitalEpubKey=\"digital/modern-java-drm-free_v1.0.epub\""
 image_repositories = []
 

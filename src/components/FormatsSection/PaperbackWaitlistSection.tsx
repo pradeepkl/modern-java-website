@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { BookOpen } from 'lucide-react';
 import { getPaperbackMode } from '../../config/features';
+import { assets } from '../../data/assets';
 import { paperbackWaitlistCopy } from '../../data/paperbackWaitlistCopy';
 import { getUtmProps, track } from '../../lib/analytics';
 import { PaperbackWaitlistDialog } from './PaperbackWaitlistDialog';
@@ -71,45 +72,58 @@ export function PaperbackWaitlistSection() {
         data-testid="paperback-waitlist-section"
       >
         <div className="paperback-waitlist-section__inner page-container">
-          <p className="paperback-waitlist-section__eyebrow">
-            <BookOpen size={18} strokeWidth={1.75} aria-hidden="true" />
-            <span>{paperbackWaitlistCopy.sectionEyebrow}</span>
-          </p>
-
-          <h2
-            id="paperback-waitlist-heading"
-            className="paperback-waitlist-section__title"
-          >
-            {paperbackWaitlistCopy.sectionHeading}
-          </h2>
-
-          <p className="paperback-waitlist-section__lead">
-            {paperbackWaitlistCopy.sectionLead}
-          </p>
-
-          <p className="paperback-waitlist-section__body">
-            {paperbackWaitlistCopy.sectionBody}
-          </p>
-
-          {paperbackWaitlistCopy.socialProof ? (
-            <p className="paperback-waitlist-section__social-proof">
-              {paperbackWaitlistCopy.socialProof}
+          <div className="paperback-waitlist-section__copy">
+            <p className="paperback-waitlist-section__eyebrow">
+              <BookOpen size={18} strokeWidth={1.75} aria-hidden="true" />
+              <span>{paperbackWaitlistCopy.sectionEyebrow}</span>
             </p>
-          ) : null}
 
-          <button
-            ref={joinButtonRef}
-            type="button"
-            className="button button-primary paperback-waitlist-section__cta"
-            onClick={openWaitlist}
-            data-testid="paperback-waitlist-button"
-          >
-            {paperbackWaitlistCopy.button}
-          </button>
+            <h2
+              id="paperback-waitlist-heading"
+              className="paperback-waitlist-section__title"
+            >
+              {paperbackWaitlistCopy.sectionHeading}
+            </h2>
 
-          <p className="paperback-waitlist-section__note">
-            {paperbackWaitlistCopy.buttonNote}
-          </p>
+            <p className="paperback-waitlist-section__lead">
+              {paperbackWaitlistCopy.sectionLead}
+            </p>
+
+            <p className="paperback-waitlist-section__body">
+              {paperbackWaitlistCopy.sectionBody}
+            </p>
+
+            {paperbackWaitlistCopy.socialProof ? (
+              <p className="paperback-waitlist-section__social-proof">
+                {paperbackWaitlistCopy.socialProof}
+              </p>
+            ) : null}
+
+            <button
+              ref={joinButtonRef}
+              type="button"
+              className="button button-primary paperback-waitlist-section__cta"
+              onClick={openWaitlist}
+              data-testid="paperback-waitlist-button"
+            >
+              {paperbackWaitlistCopy.button}
+            </button>
+
+            <p className="paperback-waitlist-section__note">
+              {paperbackWaitlistCopy.buttonNote}
+            </p>
+          </div>
+
+          <div className="paperback-waitlist-section__visual">
+            <img
+              src={assets.hero.paperbackEdition}
+              alt="Modern Java: The Mindset Shift — paperback edition 3D mockup"
+              width={1200}
+              height={1200}
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
         </div>
       </section>
 

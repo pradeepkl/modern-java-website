@@ -75,8 +75,9 @@ Canonical, Open Graph, and Twitter meta tags should use the live site URL
 (`https://modern-java.classpath.in/`).
 
 Paperback checkout uses the AWS SAM service in `backend/`. Follow
-`backend/README.md` to deploy it, then set `VITE_ORDER_API_URL` in the website
-environment to the deployed API URL.
+`backend/README.md` to deploy **`modern-java-dev`** (test) or
+**`modern-java-prod`** (live), then set `VITE_ORDER_API_URL` in `.env.dev` or
+`.env.prod` to that stack’s API URL.
 
 ### Paperback waitlist (build-time flags)
 
@@ -121,50 +122,70 @@ Drop replacement files into the normalized paths (same filenames):
 
 No code changes are needed if filenames stay the same. For new filenames, update `src/data/assets.ts`.
 
-## Deployment on AWS Amplify
+## Deployment (dev vs prod)
+
+| APP_ENV | Amplify branch | Backend stack | Razorpay |
+|---------|----------------|---------------|----------|
+| `dev` (default) | `dev` | `modern-java-dev` | test mode |
+| `prod` | `main` | `modern-java-prod` | live mode |
+
+Create an Amplify branch named `dev` (in addition to `main`) before the first
+dev frontend deploy. Each frontend build must set `VITE_ORDER_API_URL` to the
+matching stack’s `OrderApiUrl`. **Never** put Razorpay secrets in frontend env
+files — the Order API returns the public Key ID.
 
 Production hosts at [https://modern-java.classpath.in](https://modern-java.classpath.in)
-on Amplify app `modern-java` (manual zip deploy to the `main` branch — the app is
-not Git-connected).
+on Amplify app `modern-java` (manual zip deploy — the app is not Git-connected).
 
-### One-command deploy
+### Deploy commands
 
 Requires the AWS CLI configured for account access in `ap-south-1`, plus
 `curl`, `zip`, and `python3`.
 
 ```bash
+# Frontend — defaults to APP_ENV=dev (Amplify branch "dev")
 npm run deploy
+npm run deploy:dev
+
+# Frontend — production (Amplify branch "main"); type PROD when prompted
+npm run deploy:prod
+
+# Backend API (from backend/)
+cd backend
+npm run deploy          # modern-java-dev + Razorpay test
+npm run deploy:prod     # modern-java-prod + Razorpay live; type PROD
 ```
 
-This script:
+Always pair the same `APP_ENV` for API and site. A mismatched frontend pointing
+at the wrong API would mix environments.
 
-1. Builds the site with `VITE_ORDER_API_URL`
-2. Zips `dist/`
-3. Creates an Amplify deployment, uploads the zip, and starts it
-4. Polls until the job succeeds or fails
+Copy `.env.example` to `.env.dev` / `.env.prod` (gitignored) and set
+`VITE_ORDER_API_URL` per stack. See `backend/README.md` for Razorpay secrets,
+webhooks, and credential rotation.
 
 ```bash
 # Rebuild skipped if dist/ is already current
-SKIP_BUILD=1 npm run deploy
+SKIP_BUILD=1 npm run deploy:dev
 
-# Override defaults when needed
-AMPLIFY_APP_ID=... AMPLIFY_BRANCH=main VITE_ORDER_API_URL=https://... npm run deploy
+# Validate frontend env without deploying
+APP_ENV=dev npm run validate:env
 ```
 
-Defaults (overridable via env):
+Defaults (overridable via env / `.env.<APP_ENV>`):
 
 | Variable | Default |
 |----------|---------|
+| `APP_ENV` | `dev` for `npm run deploy` |
 | `AMPLIFY_APP_ID` | `dd9kgrhw8x8dv` |
-| `AMPLIFY_BRANCH` | `main` |
+| `AMPLIFY_BRANCH` | `dev` when `APP_ENV=dev`, `main` when `APP_ENV=prod` |
 | `AWS_REGION` | `ap-south-1` |
-| `VITE_ORDER_API_URL` | Order API URL used by checkout |
-| `VITE_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key (sample + digital checkout) |
-| `VITE_GA_MEASUREMENT_ID` | GA4 measurement ID (optional; consent-gated; loaded from `.env.local` on deploy) |
-| `VITE_CLARITY_ID` | Microsoft Clarity project ID (optional; consent-gated) |
+| `VITE_ORDER_API_URL` | Order API URL for that environment (required) |
+| `VITE_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key |
+| `VITE_GA_MEASUREMENT_ID` | GA4 measurement ID (optional; consent-gated) |
+| `VITE_CLARITY_ID` | Microsoft Clarity project ID (optional) |
 | `VITE_PAPERBACK_SALES_ENABLED` | Build-time flag (default `false` on deploy) |
 | `VITE_PAPERBACK_WAITLIST_ENABLED` | Build-time flag (default `true` on deploy) |
-| `DEPLOY_SITE_URL` | `https://modern-java.classpath.in` |
+| `DEPLOY_SITE_URL` | Printed after success |
 
 Analytics setup, conversion events, and GA4 key-event configuration are documented in [`docs/ANALYTICS.md`](./docs/ANALYTICS.md).
 

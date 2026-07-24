@@ -12,6 +12,10 @@ dist
 dist-ssr
 .amplify-deploy.zip
 *.local
+.env
+.env.dev
+.env.prod
+.env.*.local
 .aws-sam
 dns-backup-*/
 dns-backup-*.json
@@ -31,8 +35,12 @@ dns-backup-*.json
 assets/books/modern-java-drm-free_v1.0.pdf
 assets/books/modern-java-drm-free_v1.0.epub
 
-# Backend deploy secrets (Zoho OAuth, bypass secret, etc. — do not commit)
+# Backend deploy secrets (Zoho OAuth, Razorpay, bypass — do not commit)
 backend/sam-secrets.env
+backend/sam-secrets.env.dev
+backend/sam-secrets.env.prod
+backend/sam-secrets.env.*
+!backend/sam-secrets.env.example
 backend/.cloudfront-keys/
 
 # Separate classpath.in site workspace (local only unless intentionally published)

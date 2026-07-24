@@ -12,6 +12,7 @@ export const assets = {
     circuitLeft: '/assets/hero/hero-circuit-left.svg',
     circuitRight: '/assets/hero/hero-circuit-right.svg',
     paperback: '/assets/hero/modern-java-3D.webp',
+    paperbackEdition: '/assets/hero/paperback-3D.webp',
   },
 
   topicIcons: {

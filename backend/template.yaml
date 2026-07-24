@@ -3,15 +3,24 @@ Transform: AWS::Serverless-2016-10-31
 Description: Modern Java ordering and sample chapter delivery API
 
 Parameters:
+  AppEnv:
+    Type: String
+    AllowedValues:
+      - dev
+      - prod
+    Description: Authoritative application environment (dev = Razorpay test, prod = Razorpay live)
   RazorpayKeyId:
     Type: String
     NoEcho: true
+    Description: Environment-specific Razorpay Key ID (rzp_test_ for dev, rzp_live_ for prod)
   RazorpayKeySecret:
     Type: String
     NoEcho: true
+    Description: Environment-specific Razorpay Key Secret for this stack only
   RazorpayWebhookSecret:
     Type: String
     NoEcho: true
+    Description: Environment-specific Razorpay webhook secret for this stack only
   AdminEmail:
     Type: String
     Default: pradeep@classpath.in
@@ -111,6 +120,7 @@ Globals:
         DIGITAL_EPUB_KEY: !Ref DigitalEpubKey
         DIGITAL_CHECKOUT_BYPASS_SECRET: !Ref DigitalCheckoutBypassSecret
         TURNSTILE_SECRET_KEY: !Ref TurnstileSecretKey
+        APP_ENV: !Ref AppEnv
         RAZORPAY_KEY_ID: !Ref RazorpayKeyId
         RAZORPAY_KEY_SECRET: !Ref RazorpayKeySecret
         RAZORPAY_WEBHOOK_SECRET: !Ref RazorpayWebhookSecret
@@ -402,11 +412,14 @@ Resources:
                 AWS:SourceArn: !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${DigitalAssetsDistribution}'
 
 Outputs:
+  AppEnvironment:
+    Description: APP_ENV for this stack (dev or prod)
+    Value: !Ref AppEnv
   OrderApiUrl:
-    Description: Set this value as VITE_ORDER_API_URL in the website
+    Description: Set this value as VITE_ORDER_API_URL in the matching frontend env (.env.dev or .env.prod)
     Value: !Sub https://${OrderApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}
   RazorpayWebhookUrl:
-    Description: Configure this endpoint in the Razorpay dashboard
+    Description: Configure this endpoint only in the matching Razorpay mode (test for dev, live for prod)
     Value: !Sub https://${OrderApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/webhooks/razorpay
   DigitalAssetsBucketName:
     Description: Upload sample and digital edition files to this private bucket

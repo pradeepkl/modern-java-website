@@ -26,10 +26,10 @@ function PrivacyPolicy() {
         </p>
         <p>
           When you buy the direct digital edition (PDF and ePub), we collect
-          your name, email address, city, and postal / PIN code so we can create
-          the order, verify payment, email secure download links, and support
-          the purchase. We also record whether you separately chose to receive
-          occasional book updates.
+          your name and email address so we can create the order, verify
+          payment, email secure download links, and support the purchase. We
+          also record whether you separately chose to receive occasional book
+          updates.
         </p>
         <p>
           When you send a message through the contact form, we collect your

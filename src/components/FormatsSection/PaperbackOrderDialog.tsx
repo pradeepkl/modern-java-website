@@ -173,7 +173,7 @@ export function PaperbackOrderDialog({
       });
 
       const razorpay = new window.Razorpay({
-        key: order.keyId,
+        key: order.razorpayKeyId || order.keyId,
         amount: order.amount,
         currency: order.currency,
         name: 'Modern Java — Paperback',

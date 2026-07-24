@@ -1,4 +1,4 @@
-const { createHmac, randomUUID, timingSafeEqual } = require('node:crypto');
+const { randomUUID, timingSafeEqual } = require('node:crypto');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const {
   DynamoDBDocumentClient,
@@ -31,6 +31,14 @@ const {
   buildExistingSubscriberUpdate,
   buildWelcomeEmail,
 } = require('./marketingConsent');
+const {
+  createRazorpayOrder,
+  verifyPaymentSignature,
+  verifyWebhookSignature,
+  publicOrderPaymentFields,
+  persistedPaymentFields,
+} = require('./razorpayClient');
+const { getRazorpayConfig } = require('./razorpayConfig');
 
 const dynamo = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 // Domain identity is verified in us-east-1 (also where inbound MX points).
@@ -51,9 +59,6 @@ const {
   SAMPLE_PDF_KEY = 'sample/modern-java-preview.pdf',
   DIGITAL_PDF_KEY = 'digital/modern-java-drm-free_v1.0.pdf',
   DIGITAL_EPUB_KEY = 'digital/modern-java-drm-free_v1.0.epub',
-  RAZORPAY_KEY_ID,
-  RAZORPAY_KEY_SECRET,
-  RAZORPAY_WEBHOOK_SECRET,
   ADMIN_EMAIL = 'pradeep@classpath.in',
   MAIL_FROM_EMAIL = 'no-reply@classpath.in',
   REPLY_TO_EMAIL = 'pradeep@classpath.in',
@@ -940,49 +945,21 @@ const submitContactMessage = async (event) => {
   });
 };
 
-const createRazorpayOrder = async ({ amount, receipt, notes }) => {
-  const authorization = Buffer.from(
-    `${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`,
-  ).toString('base64');
-  const result = await fetch('https://api.razorpay.com/v1/orders', {
-    method: 'POST',
-    headers: {
-      authorization: `Basic ${authorization}`,
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      amount,
-      currency: 'INR',
-      receipt,
-      notes,
-    }),
-  });
-
-  const payload = await result.json();
-  if (!result.ok) {
-    console.error('Razorpay order creation failed', payload);
-    throw new Error('Unable to initialize payment');
-  }
-  return payload;
-};
-
 const validateDigitalCustomer = (input) => {
   const name = String(input.name || '').trim();
   const email = String(input.email || '').trim().toLowerCase();
-  const city = String(input.city || '').trim();
-  const postalCode = String(input.postalCode || input.zipcode || '').trim();
 
   if (!name) throw new Error('Name is required');
   if (!EMAIL_PATTERN.test(email)) throw new Error('Invalid email address');
-  if (!city) throw new Error('City is required');
-  if (!PIN_PATTERN.test(postalCode)) throw new Error('Invalid postal code');
 
-  return { name, email, city, postalCode };
+  // Digital checkout collects only name + email. City/postal are not required
+  // for the UI or Zoho invoice (billing address may be country-only).
+  return { name, email };
 };
 
 const createDigitalOrder = async (event) => {
   const { json } = parseBody(event);
-  const { name, email, city, postalCode } = validateDigitalCustomer(json);
+  const { name, email } = validateDigitalCustomer(json);
 
   await verifyTurnstileCaptcha(event, json.captchaToken);
 
@@ -1021,7 +998,7 @@ const createDigitalOrder = async (event) => {
   const appOrderId = `MJ-D-${randomUUID().slice(0, 8).toUpperCase()}`;
   const now = new Date().toISOString();
   const marketingConsent = json.marketingConsent === true;
-  const customerFields = { name, email, city, postalCode };
+  const customerFields = { name, email };
 
   if (marketingConsent) {
     try {
@@ -1047,6 +1024,7 @@ const createDigitalOrder = async (event) => {
 
   if (skipPayment) {
     const paymentId = `bypass_${randomUUID().slice(0, 12)}`;
+    const paymentMeta = persistedPaymentFields(getRazorpayConfig());
     await dynamo.send(
       new PutCommand({
         TableName: ORDERS_TABLE,
@@ -1059,6 +1037,7 @@ const createDigitalOrder = async (event) => {
           currency: 'INR',
           status: 'paid',
           paymentId,
+          ...paymentMeta,
           revisionUpdates: true,
           marketingConsent,
           marketingConsentAt: marketingConsent ? now : null,
@@ -1096,11 +1075,12 @@ const createDigitalOrder = async (event) => {
     });
   }
 
+  const razorpayConfig = getRazorpayConfig();
   const razorpayOrder = await createRazorpayOrder({
     amount: DIGITAL_BUNDLE_PRICE_PAISE,
     receipt: appOrderId,
     notes: { appOrderId, productType: 'digital_bundle' },
-  });
+  }, razorpayConfig);
 
   await dynamo.send(
     new PutCommand({
@@ -1113,6 +1093,7 @@ const createDigitalOrder = async (event) => {
         amount: DIGITAL_BUNDLE_PRICE_PAISE,
         currency: 'INR',
         status: 'payment_pending',
+        ...persistedPaymentFields(razorpayConfig),
         revisionUpdates: true,
         marketingConsent,
         marketingConsentAt: marketingConsent ? now : null,
@@ -1131,7 +1112,7 @@ const createDigitalOrder = async (event) => {
     razorpayOrderId: razorpayOrder.id,
     amount: DIGITAL_BUNDLE_PRICE_PAISE,
     currency: 'INR',
-    keyId: RAZORPAY_KEY_ID,
+    ...publicOrderPaymentFields(razorpayConfig),
   });
 };
 
@@ -1380,8 +1361,8 @@ const createInvoiceForOrder = async (order) => {
   const invoice = await createAndSendInvoice({
     email: order.email,
     name: customerNameFromOrder(order),
-    city: order.city,
-    postalCode: order.postalCode,
+    city: isDigital ? undefined : order.city,
+    postalCode: isDigital ? undefined : order.postalCode,
     lineItems,
     referenceNumber: order.appOrderId,
     paymentId: order.paymentId,
@@ -1478,11 +1459,12 @@ const createOrder = async (event) => {
   const orderInput = validateOrder(json);
   const appOrderId = `MJ-${randomUUID().slice(0, 8).toUpperCase()}`;
   const amount = orderInput.quantity * PAPERBACK_PRICE_PAISE;
+  const razorpayConfig = getRazorpayConfig();
   const razorpayOrder = await createRazorpayOrder({
     amount,
     receipt: appOrderId,
     notes: { appOrderId },
-  });
+  }, razorpayConfig);
   const now = new Date().toISOString();
 
   await dynamo.send(
@@ -1495,6 +1477,7 @@ const createOrder = async (event) => {
         amount,
         currency: 'INR',
         status: 'payment_pending',
+        ...persistedPaymentFields(razorpayConfig),
         createdAt: now,
         updatedAt: now,
       },
@@ -1507,7 +1490,7 @@ const createOrder = async (event) => {
     razorpayOrderId: razorpayOrder.id,
     amount,
     currency: 'INR',
-    keyId: RAZORPAY_KEY_ID,
+    ...publicOrderPaymentFields(razorpayConfig),
   });
 };
 
@@ -1529,11 +1512,13 @@ const verifyOrder = async (event) => {
     return response(400, { message: 'Missing payment verification details' });
   }
 
-  const expectedSignature = createHmac('sha256', RAZORPAY_KEY_SECRET)
-    .update(`${razorpayOrderId}|${razorpayPaymentId}`)
-    .digest('hex');
-
-  if (!safeEqual(razorpaySignature, expectedSignature)) {
+  if (
+    !verifyPaymentSignature({
+      razorpayOrderId,
+      razorpayPaymentId,
+      razorpaySignature,
+    })
+  ) {
     return response(400, { message: 'Payment verification failed' });
   }
 
@@ -1585,11 +1570,8 @@ const processWebhook = async (event) => {
   const signature =
     event.headers?.['x-razorpay-signature'] ||
     event.headers?.['X-Razorpay-Signature'];
-  const expected = createHmac('sha256', RAZORPAY_WEBHOOK_SECRET)
-    .update(raw)
-    .digest('hex');
 
-  if (!safeEqual(signature, expected)) {
+  if (!verifyWebhookSignature({ rawBody: raw, signature })) {
     return response(400, { message: 'Invalid webhook signature' });
   }
 

@@ -9,7 +9,11 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "vitest run",
-    "deploy": "./scripts/deploy-amplify.sh"
+    "test:deploy": "./scripts/test-deploy-behaviour.sh",
+    "validate:env": "./scripts/validate-env.sh",
+    "deploy": "npm run deploy:dev",
+    "deploy:dev": "APP_ENV=dev ./scripts/validate-env.sh && APP_ENV=dev ./scripts/deploy-amplify.sh",
+    "deploy:prod": "./scripts/deploy-amplify-prod.sh"
   },
   "dependencies": {
     "lucide-react": "^0.469.0",

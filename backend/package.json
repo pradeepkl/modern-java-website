@@ -4,9 +4,13 @@
   "private": true,
   "scripts": {
     "test": "node --test",
+    "test:deploy": "../scripts/test-deploy-behaviour.sh",
     "export:waitlist": "node scripts/export-paperback-waitlist.js",
     "build": "sam build",
-    "deploy": "./scripts/deploy-api.sh",
+    "validate:env": "./scripts/validate-env.sh",
+    "deploy": "npm run deploy:dev",
+    "deploy:dev": "APP_ENV=dev ./scripts/deploy-api.sh",
+    "deploy:prod": "./scripts/deploy-api-prod.sh",
     "deploy:guided": "sam deploy --guided",
     "upload:assets": "./scripts/upload-digital-assets.sh",
     "setup:cloudfront-keys": "./scripts/ensure-cloudfront-keys.sh"

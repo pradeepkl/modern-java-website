@@ -1,59 +1,71 @@
 #!/usr/bin/env bash
-# Build the site and deploy dist/ to the AWS Amplify production branch.
+# Build and deploy the site to an Amplify branch matching APP_ENV.
+# Default APP_ENV=dev. Production requires an explicit deploy:prod path.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-# Load local Vite env (gitignored) so deploys pick up Turnstile and other keys.
-if [[ -f "$ROOT_DIR/.env.local" ]]; then
+APP_ENV="${APP_ENV:-dev}"
+if [[ "$APP_ENV" != "dev" && "$APP_ENV" != "prod" ]]; then
+  echo "APP_ENV must be \"dev\" or \"prod\" (got: \"${APP_ENV}\")" >&2
+  exit 1
+fi
+
+# Load environment-specific Vite env (gitignored). Prefer .env.<APP_ENV>, then .env.local.
+ENV_FILE=""
+if [[ -f "$ROOT_DIR/.env.${APP_ENV}" ]]; then
+  ENV_FILE="$ROOT_DIR/.env.${APP_ENV}"
+elif [[ -f "$ROOT_DIR/.env.local" ]]; then
+  ENV_FILE="$ROOT_DIR/.env.local"
+fi
+
+if [[ -n "$ENV_FILE" ]]; then
   set -a
-  # shellcheck disable=SC1091
-  source "$ROOT_DIR/.env.local"
+  # shellcheck disable=SC1090
+  source "$ENV_FILE"
   set +a
 fi
 
 REGION="${AWS_REGION:-${AWS_DEFAULT_REGION:-ap-south-1}}"
 APP_ID="${AMPLIFY_APP_ID:-dd9kgrhw8x8dv}"
-BRANCH="${AMPLIFY_BRANCH:-main}"
-export VITE_ORDER_API_URL="${VITE_ORDER_API_URL:-https://vgtwwchwuh.execute-api.ap-south-1.amazonaws.com}"
+
+if [[ "$APP_ENV" == "prod" ]]; then
+  BRANCH="${AMPLIFY_BRANCH:-main}"
+  SITE_URL="${DEPLOY_SITE_URL:-https://modern-java.classpath.in}"
+else
+  BRANCH="${AMPLIFY_BRANCH:-dev}"
+  SITE_URL="${DEPLOY_SITE_URL:-https://dev.modern-java.classpath.in}"
+fi
+
+ORDER_API_URL="${VITE_ORDER_API_URL:-}"
 TURNSTILE_SITE_KEY="${VITE_TURNSTILE_SITE_KEY:-}"
 GA_MEASUREMENT_ID="${VITE_GA_MEASUREMENT_ID:-}"
 CLARITY_ID="${VITE_CLARITY_ID:-}"
 
-# Production defaults for paperback surface (build-time Vite flags).
-# Must be exported into the Vite process — undefined vars bake as false.
-# Override via shell env or .env.local before running this script.
 export VITE_PAPERBACK_SALES_ENABLED="${VITE_PAPERBACK_SALES_ENABLED:-false}"
 export VITE_PAPERBACK_WAITLIST_ENABLED="${VITE_PAPERBACK_WAITLIST_ENABLED:-true}"
 
-SITE_URL="${DEPLOY_SITE_URL:-https://modern-java.classpath.in}"
 ZIP_PATH="${ROOT_DIR}/.amplify-deploy.zip"
 POLL_SECONDS="${DEPLOY_POLL_SECONDS:-5}"
 MAX_ATTEMPTS="${DEPLOY_MAX_ATTEMPTS:-36}"
 
 usage() {
   cat <<'EOF'
-Usage: npm run deploy
-       ./scripts/deploy-amplify.sh
+Usage: APP_ENV=dev ./scripts/deploy-amplify.sh
+       npm run deploy          # defaults to APP_ENV=dev
+       npm run deploy:dev
+       npm run deploy:prod     # requires typing PROD
 
-Builds the production site and uploads it to AWS Amplify (manual zip deploy).
+Deploys the frontend to an Amplify branch:
+  APP_ENV=dev  -> Amplify branch "dev"  (must use modern-java-dev API URL)
+  APP_ENV=prod -> Amplify branch "main" (must use modern-java-prod API URL)
 
-Environment (also loaded from .env.local when present):
-  AMPLIFY_APP_ID            Amplify app id (default: dd9kgrhw8x8dv)
-  AMPLIFY_BRANCH            Amplify branch (default: main)
-  AWS_REGION                AWS region (default: ap-south-1)
-  VITE_ORDER_API_URL        Order API base URL baked into the build
-  VITE_TURNSTILE_SITE_KEY   Cloudflare Turnstile site key (checkout + lead forms)
-  VITE_GA_MEASUREMENT_ID    GA4 measurement ID (consent-gated analytics)
-  VITE_CLARITY_ID           Microsoft Clarity project ID (optional)
-  VITE_PAPERBACK_SALES_ENABLED     Build-time flag (default: false)
-  VITE_PAPERBACK_WAITLIST_ENABLED  Build-time flag (default: true)
-  DEPLOY_SITE_URL           Printed after success (default: https://modern-java.classpath.in)
-  SKIP_BUILD=1              Reuse an existing dist/ without rebuilding
+Never put Razorpay secrets in frontend env files. The API returns the Key ID.
 
-Restore paperback ordering (requires rebuild + redeploy):
-  VITE_PAPERBACK_SALES_ENABLED=true VITE_PAPERBACK_WAITLIST_ENABLED=false npm run deploy
+Environment files (gitignored):
+  .env.dev   — VITE_ORDER_API_URL for modern-java-dev
+  .env.prod  — VITE_ORDER_API_URL for modern-java-prod
 EOF
 }
 
@@ -75,25 +87,47 @@ require_cmd npm
 require_cmd python3
 require_cmd zip
 
+if [[ -z "$ORDER_API_URL" ]]; then
+  echo "VITE_ORDER_API_URL is required for APP_ENV=${APP_ENV}." >&2
+  echo "Set it in .env.${APP_ENV} to the OrderApiUrl of stack modern-java-${APP_ENV}." >&2
+  exit 1
+fi
+
+# Reject accidental Razorpay secrets in frontend env.
+for forbidden in \
+  RAZORPAY_KEY_SECRET \
+  RAZORPAY_WEBHOOK_SECRET \
+  RAZORPAY_TEST_KEY_SECRET \
+  RAZORPAY_LIVE_KEY_SECRET \
+  VITE_RAZORPAY_KEY_SECRET \
+  VITE_RAZORPAY_WEBHOOK_SECRET
+do
+  if [[ -n "${!forbidden:-}" ]]; then
+    echo "Refusing to deploy: ${forbidden} must not be present in frontend environment." >&2
+    exit 1
+  fi
+done
+
 cleanup() {
   rm -f "$ZIP_PATH"
 }
 trap cleanup EXIT
 
-echo "==> Deploy target: Amplify app ${APP_ID} / branch ${BRANCH} (${REGION})"
+echo "==> Frontend deploy APP_ENV=${APP_ENV}"
+echo "    Amplify app ${APP_ID} / branch ${BRANCH} (${REGION})"
+echo "    VITE_ORDER_API_URL=${ORDER_API_URL}"
+echo "    Site URL: ${SITE_URL}"
 
 if [[ "${SKIP_BUILD:-0}" != "1" ]]; then
-  echo "==> Building production bundle"
+  echo "==> Building bundle for ${APP_ENV}"
   echo "    VITE_PAPERBACK_SALES_ENABLED=${VITE_PAPERBACK_SALES_ENABLED}"
   echo "    VITE_PAPERBACK_WAITLIST_ENABLED=${VITE_PAPERBACK_WAITLIST_ENABLED}"
-  echo "    VITE_ORDER_API_URL=${VITE_ORDER_API_URL}"
 
   build_env=(
-    "VITE_ORDER_API_URL=${VITE_ORDER_API_URL}"
+    "VITE_ORDER_API_URL=${ORDER_API_URL}"
     "VITE_PAPERBACK_SALES_ENABLED=${VITE_PAPERBACK_SALES_ENABLED}"
     "VITE_PAPERBACK_WAITLIST_ENABLED=${VITE_PAPERBACK_WAITLIST_ENABLED}"
   )
-  # Only set optional keys when present — empty values would override .env.local.
   if [[ -n "$TURNSTILE_SITE_KEY" ]]; then
     build_env+=("VITE_TURNSTILE_SITE_KEY=${TURNSTILE_SITE_KEY}")
   fi
@@ -104,21 +138,9 @@ if [[ "${SKIP_BUILD:-0}" != "1" ]]; then
     build_env+=("VITE_CLARITY_ID=${CLARITY_ID}")
   fi
 
-  if [[ -n "$GA_MEASUREMENT_ID" ]]; then
-    echo "    analytics: GA4=${GA_MEASUREMENT_ID}"
-  else
-    echo "    analytics: GA4 not set (cookie banner will show; no tracking scripts)"
-  fi
-  if [[ -n "$CLARITY_ID" ]]; then
-    echo "    analytics: Clarity=${CLARITY_ID}"
-  fi
-
-  # Forward flags into the Vite child process (npm scripts do not always inherit
-  # non-exported shell locals). env PREFIX=... is authoritative for this build.
   env "${build_env[@]}" npm run build
 else
   echo "==> Skipping build (SKIP_BUILD=1)"
-  echo "    WARNING: SKIP_BUILD reuses dist/; paperback flags are whatever was baked earlier."
 fi
 
 if [[ ! -d "$ROOT_DIR/dist" ]]; then
@@ -182,7 +204,7 @@ while [[ "$attempt" -le "$MAX_ATTEMPTS" ]]; do
 
   case "$STATUS" in
     SUCCEED)
-      echo "==> Deploy succeeded"
+      echo "==> Deploy succeeded (APP_ENV=${APP_ENV})"
       echo "Live: ${SITE_URL}"
       exit 0
       ;;

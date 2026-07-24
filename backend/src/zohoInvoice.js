@@ -389,8 +389,9 @@ const createAndSendInvoice = async ({
     is_inclusive_tax: false,
     payment_terms: 0,
     payment_terms_label: 'Paid',
-    notes:
-      'This is a system-generated invoice. No signature is needed.',
+    // Leave notes empty so the Standard Template "Authorized Signature"
+    // block is shown instead of a "no signature needed" note.
+    notes: '',
     terms: 'Thank you for your purchase of Modern Java: The Mindset Shift.',
     line_items: items,
     billing_address: billingAddressPayload({ city, postalCode }),

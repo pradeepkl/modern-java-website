@@ -5,7 +5,6 @@ import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { track, trackPurchase } from '../../lib/analytics';
 import { loadRazorpayCheckout } from '../../lib/razorpay';
 import { isTurnstileConfigured } from '../../lib/turnstile';
-import { CityInput } from '../shared/CityInput';
 import {
   TurnstileWidget,
   type TurnstileWidgetHandle,
@@ -79,14 +78,10 @@ export function DigitalOrderDialog({
     const data = new FormData(event.currentTarget);
     const name = String(data.get('name') || '').trim();
     const email = String(data.get('email') || '').trim();
-    const city = String(data.get('city') || '').trim();
-    const postalCode = String(data.get('postalCode') || '').trim();
     const marketingConsent = data.get('marketingConsent') === 'on';
     const customerPayload = {
       name,
       email,
-      city,
-      postalCode,
       marketingConsent,
       consentVersion: '2026-07-21',
       captchaToken: captchaToken || undefined,
@@ -170,7 +165,7 @@ export function DigitalOrderDialog({
       });
 
       const razorpay = new window.Razorpay({
-        key: order.keyId,
+        key: order.razorpayKeyId || order.keyId,
         amount: order.amount,
         currency: order.currency,
         name: 'Modern Java — Direct Download',
@@ -371,6 +366,9 @@ export function DigitalOrderDialog({
                   }
                 }}
               />
+              <span className="digital-order__field-hint">
+                This name will appear on your invoice.
+              </span>
             </label>
 
             <label className="digital-order__field">
@@ -391,26 +389,6 @@ export function DigitalOrderDialog({
                 }}
               />
             </label>
-
-            <div className="digital-order__field-row">
-              <label className="digital-order__field">
-                <span>City</span>
-                <CityInput required />
-              </label>
-              <label className="digital-order__field">
-                <span>ZIP / PIN code</span>
-                <input
-                  type="text"
-                  name="postalCode"
-                  placeholder="560001"
-                  inputMode="numeric"
-                  pattern="\d{6}"
-                  maxLength={6}
-                  autoComplete="postal-code"
-                  required
-                />
-              </label>
-            </div>
 
             <TurnstileWidget
               ref={turnstileRef}

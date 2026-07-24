@@ -16,49 +16,78 @@ CloudFront delivery for the sample chapter and paid digital editions.
 - Optional: Zoho Invoice (India) OAuth credentials for automatic invoices after
   paid orders (see below)
 
+## Environments (dev vs prod)
+
+Razorpay and the Order API use **separate AWS stacks** so a dev deploy cannot
+switch the public site to test mode:
+
+| APP_ENV | SAM stack | Razorpay mode | Amplify branch | Secrets file |
+|---------|-----------|---------------|----------------|--------------|
+| `dev` (default) | `modern-java-dev` | test (`rzp_test_`) | `dev` | `sam-secrets.env.dev` |
+| `prod` | `modern-java-prod` | live (`rzp_live_`) | `main` | `sam-secrets.env.prod` |
+
+`APP_ENV` is the authoritative selector. Do not infer payment mode from
+`NODE_ENV`. Each stack gets its own DynamoDB tables and API URL. Each Lambda
+receives **only** that environment’s Razorpay credentials.
+
+Legacy stack name `sam-app` (if still present) is not used by these scripts.
+Migrate by deploying `modern-java-dev` / `modern-java-prod`, then pointing
+frontends and Razorpay webhooks at the new `OrderApiUrl` / `RazorpayWebhookUrl`
+outputs.
+
 ## Deploy
 
 ```bash
 cd backend
 npm install
-cp sam-secrets.env.example sam-secrets.env   # once; fill secrets
-npm run deploy
+cp sam-secrets.env.example sam-secrets.env.dev   # Razorpay test keys
+cp sam-secrets.env.example sam-secrets.env.prod  # Razorpay live keys (when ready)
+npm run deploy          # defaults to APP_ENV=dev → modern-java-dev
+# npm run deploy:prod   # requires typing PROD → modern-java-prod
 ```
 
-`npm run deploy` runs `scripts/deploy-api.sh`, which:
-1. Ensures CloudFront URL-signing keys exist (local `.cloudfront-keys/` + SSM)
-2. Loads **`sam-secrets.env`** (gitignored) for Zoho/Turnstile/etc.
-3. Builds and deploys the stack
+`npm run deploy` / `deploy:dev` runs `scripts/deploy-api.sh`, which:
 
-Never put Zoho or bypass secrets in `samconfig.toml`.
+1. Validates `APP_ENV` and Razorpay key prefixes (`validate-env.sh`)
+2. Ensures CloudFront URL-signing keys exist (local `.cloudfront-keys/` + SSM)
+3. Loads **`sam-secrets.env.<APP_ENV>`** (gitignored) for Razorpay/Zoho/Turnstile
+4. Builds and deploys stack `modern-java-<APP_ENV>` with only that env’s secrets
 
-First-time / Razorpay keys (guided):
+Never put Zoho, Razorpay, or bypass secrets in `samconfig.toml`.
+Never put test and live Razorpay secrets in the same secrets file or Lambda.
 
-```bash
-npm run deploy:guided
+### Razorpay credentials
+
+In `sam-secrets.env.dev`:
+
+```env
+RAZORPAY_KEY_ID=rzp_test_...
+RAZORPAY_KEY_SECRET=...
+RAZORPAY_WEBHOOK_SECRET=...
 ```
 
-During guided deployment, provide:
+In `sam-secrets.env.prod`:
 
-- `RazorpayKeyId`
-- `RazorpayKeySecret`
-- `RazorpayWebhookSecret`
-- `AdminEmail` (`pradeep@classpath.in` — primary inbox; `admin@` aliases here)
-- `MailFromEmail` (`no-reply@classpath.in`)
-- `ReplyToEmail` (`pradeep@classpath.in`)
-- `AllowedOrigin` (the production website origin, without a trailing slash)
-- `SamplePdfKey`, `DigitalPdfKey`, and `DigitalEpubKey` only if you need
-  object keys other than the defaults
+```env
+RAZORPAY_KEY_ID=rzp_live_...
+RAZORPAY_KEY_SECRET=...
+RAZORPAY_WEBHOOK_SECRET=...
+```
 
-After deployment:
+Use the original test credentials from your secure source (do not try to recover
+masked values from CloudFormation). Live secrets must never be committed.
 
-1. Copy the `OrderApiUrl` stack output into the website environment as
-   `VITE_ORDER_API_URL`.
-2. Configure the `RazorpayWebhookUrl` stack output in Razorpay.
-3. Subscribe to the `payment.captured` webhook event.
-4. Use the same webhook secret in Razorpay and the SAM deployment parameter.
-5. Upload digital assets to the private bucket (sets long-lived cache headers
-   and invalidates CloudFront):
+After each stack deploy:
+
+1. Copy that stack’s `OrderApiUrl` into the matching frontend file
+   (`.env.dev` or `.env.prod`) as `VITE_ORDER_API_URL`.
+2. Configure **separate** Razorpay dashboard webhooks:
+   - Test mode → `modern-java-dev` `RazorpayWebhookUrl`
+   - Live mode → `modern-java-prod` `RazorpayWebhookUrl`
+3. Subscribe each webhook to `payment.captured` with **that environment’s**
+   webhook secret (must match the secrets file for that stack).
+4. Do not point both Razorpay modes at the same endpoint.
+5. Upload digital assets to that stack’s private bucket:
 
 ```bash
 npm run upload:assets
@@ -81,10 +110,31 @@ Sample-only upload:
 ./scripts/upload-digital-assets.sh --sample-only
 ```
 
-6. Rebuild and deploy the website.
+6. Deploy the matching frontend (`npm run deploy:dev` or `deploy:prod` from the
+   repo root) so `VITE_ORDER_API_URL` matches the stack.
 
 For local frontend development, copy the root `.env.example` to `.env.local`
-and set the deployed API URL.
+and set the **dev** API URL.
+
+### Verify which Razorpay environment is active
+
+```bash
+APP_ENV=dev ./scripts/validate-env.sh
+# prints: Razorpay environment: dev / Razorpay key: rzp_test_****xxxx
+```
+
+Order API responses include `paymentEnvironment` and `razorpayKeyId` (public Key
+ID only). Orders persist `paymentProvider: "razorpay"` and
+`paymentEnvironment: "dev"|"prod"`. Historical records without
+`paymentEnvironment` are treated as `dev`.
+
+### Rotating live credentials
+
+1. Create new live keys / webhook secret in the Razorpay dashboard.
+2. Update `sam-secrets.env.prod` only.
+3. Run `npm run deploy:prod` (type `PROD` when prompted).
+4. Update the live-mode webhook secret in the Razorpay dashboard to match.
+5. Never commit the new values; never copy them into the dev secrets file.
 
 ### Cloudflare Turnstile (bot protection)
 
@@ -94,8 +144,8 @@ pre-Amazon reader-list forms use Turnstile.
 1. Create a widget at [Cloudflare Turnstile](https://dash.cloudflare.com/?to=/:account/turnstile)
    with your production (and localhost) hostnames.
 2. Put the **site key** in the website env as `VITE_TURNSTILE_SITE_KEY`.
-3. Put the **secret key** in `sam-secrets.env` as `TurnstileSecretKey` and
-   redeploy the API (`npm run deploy`).
+3. Put the **secret key** in `sam-secrets.env.dev` / `sam-secrets.env.prod` as
+   `TurnstileSecretKey` and redeploy that environment’s API.
 
 When either key is unset, captcha is skipped so local development still works.
 Once the secret is deployed, the API rejects sample, digital, and waitlist
@@ -103,7 +153,8 @@ requests that lack a valid token.
 
 To test DRM-free delivery on localhost without Razorpay:
 
-1. Set `DigitalCheckoutBypassSecret` in `sam-secrets.env` and run `npm run deploy`.
+1. Set `DigitalCheckoutBypassSecret` in `sam-secrets.env.dev` and run
+   `npm run deploy` (dev stack).
 2. In `.env.local`, set:
    - `VITE_DIGITAL_CHECKOUT_BYPASS=true`
    - `VITE_DIGITAL_CHECKOUT_BYPASS_SECRET` to the same secret
@@ -129,7 +180,8 @@ confirmation still succeed.
    `https://accounts.zoho.in/oauth/v2/token`.
 3. In Zoho Invoice → Settings → Organization, copy the **Organization ID**.
 4. Optionally copy a tax/GST ID from Settings → Taxes if invoices must show tax.
-5. Put values in **`backend/sam-secrets.env`** (gitignored; start from
+5. Put values in **`backend/sam-secrets.env.dev`** and/or
+   **`backend/sam-secrets.env.prod`** (gitignored; start from
    `sam-secrets.env.example`):
 
 ```bash
@@ -142,12 +194,12 @@ ZohoTaxExemptionId= # NON TAXABLE exemption id when GST org requires it
 ZohoInvoiceTemplateId= # Standard Template id for qty / unit price / total
 ```
 
-6. Deploy:
+6. Deploy the matching environment:
 
 ```bash
-cd backend && npm run deploy
+cd backend && npm run deploy:dev
+# or: npm run deploy:prod
 ```
-
 Until these are set, the API logs `Zoho Invoice not configured` and checkout
 behaves as before.
 
@@ -176,9 +228,10 @@ behaves as before.
 - `POST /contact` accepts a Turnstile-protected contact form submission and
   emails `admin@classpath.in` (Reply-To set to the visitor address).
 - `POST /digital-orders` creates a Razorpay order for the DRM-free PDF
-  + ePub bundle. The normal verification endpoint emails time-limited
+  + ePub bundle. Customer fields are name and email only (city/ZIP are not
+  collected). The normal verification endpoint emails time-limited
   CloudFront signed download links after payment (and creates a Zoho Invoice
-  when configured).
+  when configured; billing address may be country-only).
 - `POST /paperback-waitlist` records a unique consented waitlist entry
   (DynamoDB `PaperbackWaitlistTable`, email as primary key). Duplicate emails
   update name/city/promotional consent without creating a second row or
