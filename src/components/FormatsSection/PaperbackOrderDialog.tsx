@@ -311,7 +311,7 @@ export function PaperbackOrderDialog({
               {quantity > 1 ? ` (${quantity} copies)` : ''} is confirmed.
             </p>
             <p className="order-dialog__order-id">
-              Order ID <strong>{confirmedOrderId}</strong>
+              Order ID - <strong>{confirmedOrderId}</strong>
             </p>
             <p className="order-dialog__success-note">
               Confirmation details have been emailed to you.

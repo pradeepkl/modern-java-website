@@ -126,7 +126,7 @@ export function PurchaseButtons({
             track('paperback_waitlist_open', { location: 'purchase_buttons' });
             setWaitlistOpen(true);
           }}
-          aria-label="Join the Modern Java paperback waitlist"
+          aria-label="Get notified when the Modern Java paperback opens for ordering"
           data-testid="paperback-waitlist-button"
         >
           <Bell size={20} strokeWidth={2} aria-hidden="true" />

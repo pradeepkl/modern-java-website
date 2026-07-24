@@ -300,7 +300,7 @@ export function DigitalOrderDialog({
               Your PDF + ePub bundle is ready.
             </p>
             <p className="digital-order__order-id">
-              Order ID <strong>{confirmedOrderId}</strong>
+              Order ID - <strong>{confirmedOrderId}</strong>
             </p>
             <p className="digital-order__success-note">
               Secure download links have been emailed to you.

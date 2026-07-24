@@ -73,10 +73,12 @@ export function PaperbackWaitlistSection() {
       >
         <div className="paperback-waitlist-section__inner page-container">
           <div className="paperback-waitlist-section__copy">
-            <p className="paperback-waitlist-section__eyebrow">
-              <BookOpen size={18} strokeWidth={1.75} aria-hidden="true" />
-              <span>{paperbackWaitlistCopy.sectionEyebrow}</span>
-            </p>
+            {paperbackWaitlistCopy.sectionEyebrow ? (
+              <p className="paperback-waitlist-section__eyebrow">
+                <BookOpen size={18} strokeWidth={1.75} aria-hidden="true" />
+                <span>{paperbackWaitlistCopy.sectionEyebrow}</span>
+              </p>
+            ) : null}
 
             <h2
               id="paperback-waitlist-heading"

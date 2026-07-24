@@ -5,30 +5,31 @@
  * Keep claims conservative until printer, paper, color, price, and timeline are final.
  */
 export const paperbackWaitlistCopy = {
-  sectionEyebrow: 'Paperback Edition',
-  sectionHeading: 'Help shape the first print run',
-  sectionLead: 'Many readers prefer technical books on paper.',
+  sectionEyebrow: '',
+  sectionHeading: 'Paperback Edition',
+  sectionLead:
+    'The paperback edition is currently being prepared for publication.',
   sectionBody:
-    "As an independent publisher, we're using reader interest to plan the initial paperback production. Joining the waitlist helps us estimate demand and ensures you're among the first to know when ordering opens.",
+    'Register your interest to be notified when ordering opens and receive updates on the first printing. The initial print run will be produced in limited quantities, and enrolled subscribers will receive priority access when ordering becomes available.',
   /** Optional social proof, e.g. "83 readers have already joined the waitlist." */
   socialProof: '',
-  button: 'Join the Waitlist',
+  button: 'Notify Me',
   buttonNote: 'No payment required.',
-  modalTitle: 'Join the Paperback Waitlist',
+  modalTitle: 'Paperback Edition',
   modalDescription:
-    "We're preparing a professionally printed paperback edition. Join the waitlist to be notified when it's ready.",
+    'Register your interest to be notified when ordering opens and receive updates on the first printing.',
   disclaimer:
     'No payment required. We will email you when the paperback becomes available.',
-  submit: 'Join the Waitlist',
-  submitting: 'Joining…',
+  submit: 'Notify Me',
+  submitting: 'Submitting…',
   successHeading: 'You’re on the list',
   successMessage:
     'We will email you as soon as the paperback edition becomes available.',
   successSecondary:
-    'Thank you for helping us estimate the first print run.',
+    'Thank you for registering your interest in the first printing.',
   alreadyRegisteredMessage:
-    'You are already on the paperback waitlist. We will notify you when it becomes available.',
-  createdMessage: 'You have joined the paperback waitlist.',
+    'You are already registered for paperback updates. We will notify you when ordering opens.',
+  createdMessage: 'You have registered for paperback updates.',
   serverError:
     'We could not add you to the waitlist right now. Please try again.',
   consentLabel: 'I agree to receive updates about the paperback edition.',

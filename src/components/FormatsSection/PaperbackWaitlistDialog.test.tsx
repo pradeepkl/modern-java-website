@@ -56,7 +56,7 @@ describe('PaperbackWaitlistDialog', () => {
     render(<PaperbackWaitlistDialog open onClose={() => {}} />);
 
     await user.click(
-      screen.getByRole('button', { name: /join the waitlist/i }),
+      screen.getByRole('button', { name: /notify me/i }),
     );
 
     expect(await screen.findByText(/please enter your name/i)).toBeTruthy();
@@ -80,7 +80,7 @@ describe('PaperbackWaitlistDialog', () => {
       screen.getByLabelText(/i agree to receive updates about the paperback/i),
     );
     await user.click(
-      screen.getByRole('button', { name: /join the waitlist/i }),
+      screen.getByRole('button', { name: /notify me/i }),
     );
 
     await waitFor(() => {
@@ -114,7 +114,7 @@ describe('PaperbackWaitlistDialog', () => {
       screen.getByLabelText(/i agree to receive updates about the paperback/i),
     );
     await user.click(
-      screen.getByRole('button', { name: /join the waitlist/i }),
+      screen.getByRole('button', { name: /notify me/i }),
     );
 
     expect(
