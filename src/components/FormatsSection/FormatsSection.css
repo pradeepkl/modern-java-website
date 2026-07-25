@@ -1,5 +1,11 @@
 .formats-section {
   padding: 72px 0 80px;
+  /* Default (paperback hidden): white between Trust (navy) and Footer (soft). */
+  background: var(--color-white);
+}
+
+/* When waitlist is shown: soft → waitlist white → footer soft. */
+.formats-section--before-waitlist {
   background: var(--color-surface-soft);
 }
 

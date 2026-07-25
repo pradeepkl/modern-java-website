@@ -1,5 +1,5 @@
 .site-footer {
-  /* Alternates with paperback-waitlist-section (white) for a clear visual break. */
+  /* Alternates with formats-section (white) while paperback waitlist is hidden. */
   background: var(--color-surface-soft);
   color: var(--color-muted);
   padding: 56px 0 0;

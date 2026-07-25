@@ -15,7 +15,11 @@ export function FormatsSection() {
   return (
     <section
       id="formats"
-      className="formats-section"
+      className={
+        paperbackMode === 'waitlist'
+          ? 'formats-section formats-section--before-waitlist'
+          : 'formats-section'
+      }
       aria-labelledby="formats-heading"
     >
       <div className="formats-section__inner page-container">
