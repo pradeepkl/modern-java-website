@@ -104,6 +104,9 @@ If both flags are `true`, sales wins.
 
 **1. Local / one-off Amplify zip deploy**
 
+Also set the same values in gitignored `.env.prod` (and `.env.local` if used),
+because `deploy-amplify.sh` sources those and they override script defaults.
+
 ```bash
 # Waitlist surface
 VITE_PAPERBACK_SALES_ENABLED=false \
