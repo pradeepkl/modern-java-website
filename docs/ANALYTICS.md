@@ -12,7 +12,7 @@ Set these in `.env.local` (local) and they are loaded automatically by
 | `VITE_GA_MEASUREMENT_ID` | `G-XXXXXXXXXX` | GA4 measurement ID |
 | `VITE_CLARITY_ID` | `abcdefghij` | Microsoft Clarity project ID (optional) |
 | `VITE_PAPERBACK_SALES_ENABLED` | `false` | Build-time flag (rebuild + redeploy to change) |
-| `VITE_PAPERBACK_WAITLIST_ENABLED` | `true` | Build-time flag (rebuild + redeploy to change) |
+| `VITE_PAPERBACK_WAITLIST_ENABLED` | `false` | Build-time flag (rebuild + redeploy to change; paperback UI hidden when false) |
 
 You can also export them in the shell before deploy; non-empty values are baked
 into the Vite bundle. Empty values are skipped so they do not wipe `.env.local`.

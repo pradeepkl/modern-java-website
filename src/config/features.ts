@@ -3,6 +3,13 @@
  *
  * Changing these requires a new frontend build and Amplify redeploy.
  *
+ * Paperback UI is currently hidden (both flags false → mode: unavailable).
+ * Code and dialogs remain intact; only the surface is gated.
+ *
+ * Show waitlist section:
+ *   VITE_PAPERBACK_SALES_ENABLED=false
+ *   VITE_PAPERBACK_WAITLIST_ENABLED=true
+ *
  * Restore paperback ordering:
  *   VITE_PAPERBACK_SALES_ENABLED=true
  *   VITE_PAPERBACK_WAITLIST_ENABLED=false

@@ -79,23 +79,55 @@ Paperback checkout uses the AWS SAM service in `backend/`. Follow
 **`modern-java-prod`** (live), then set `VITE_ORDER_API_URL` in `.env.dev` or
 `.env.prod` to that stack’s API URL.
 
-### Paperback waitlist (build-time flags)
+### Paperback UI (currently hidden)
 
-Vite feature flags control whether the formats card shows purchase, waitlist, or
-unavailable. Changing them requires a **frontend rebuild and Amplify redeploy**.
+Paperback purchase, waitlist section, and related CTAs are **hidden** on the
+live site. No paperback code or APIs were removed — only build-time flags gate
+the UI (`src/config/features.ts` → mode `unavailable`).
 
 Production Amplify deploys default to:
 
 ```env
 VITE_PAPERBACK_SALES_ENABLED=false
-VITE_PAPERBACK_WAITLIST_ENABLED=true
+VITE_PAPERBACK_WAITLIST_ENABLED=false
 ```
 
-Restore paperback ordering:
+#### Restore later
+
+| Goal | Flags | What appears |
+|------|--------|--------------|
+| Waitlist section only | `SALES=false`, `WAITLIST=true` | Standalone paperback waitlist + join dialog |
+| Direct paperback sales | `SALES=true`, `WAITLIST=false` | Paperback card / order dialog in formats |
+| Hidden again | both `false` | No paperback UI (current state) |
+
+If both flags are `true`, sales wins.
+
+**1. Local / one-off Amplify zip deploy**
 
 ```bash
-VITE_PAPERBACK_SALES_ENABLED=true VITE_PAPERBACK_WAITLIST_ENABLED=false npm run deploy
+# Waitlist surface
+VITE_PAPERBACK_SALES_ENABLED=false \
+VITE_PAPERBACK_WAITLIST_ENABLED=true \
+npm run deploy:prod
+
+# Or restore ordering
+VITE_PAPERBACK_SALES_ENABLED=true \
+VITE_PAPERBACK_WAITLIST_ENABLED=false \
+npm run deploy:prod
 ```
+
+**2. Amplify Console (if env vars are set there)**
+
+Amplify Hosting → app → Environment variables (or branch variables):
+
+- Set `VITE_PAPERBACK_WAITLIST_ENABLED` / `VITE_PAPERBACK_SALES_ENABLED` as above
+- Trigger a new frontend build for `main`
+
+**3. Confirm after deploy**
+
+- Waitlist: `#paperback-waitlist` section and join CTA visible
+- Sales: paperback option in `#formats` and purchase buttons
+- Backend waitlist (`POST /paperback-waitlist`) and order APIs stay deployed either way
 
 Existing Razorpay/order APIs remain deployed; only the frontend surface switches.
 
@@ -184,7 +216,7 @@ Defaults (overridable via env / `.env.<APP_ENV>`):
 | `VITE_GA_MEASUREMENT_ID` | GA4 measurement ID (optional; consent-gated) |
 | `VITE_CLARITY_ID` | Microsoft Clarity project ID (optional) |
 | `VITE_PAPERBACK_SALES_ENABLED` | Build-time flag (default `false` on deploy) |
-| `VITE_PAPERBACK_WAITLIST_ENABLED` | Build-time flag (default `true` on deploy) |
+| `VITE_PAPERBACK_WAITLIST_ENABLED` | Build-time flag (default `false` on deploy; paperback UI hidden) |
 | `DEPLOY_SITE_URL` | Printed after success |
 
 Analytics setup, conversion events, and GA4 key-event configuration are documented in [`docs/ANALYTICS.md`](./docs/ANALYTICS.md).
