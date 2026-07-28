@@ -97,6 +97,8 @@ export function PurchaseButtons({
             track('checkout_open', { format: 'digital' });
             trackMetaConversion('initiate-checkout:digital', 'InitiateCheckout', {
               content_name: 'modern_java_digital',
+              content_category: 'book_purchase',
+              content_ids: ['modern_java_digital'],
               content_type: 'product',
               currency: 'INR',
               value: 699,
@@ -118,6 +120,8 @@ export function PurchaseButtons({
             track('checkout_open', { format: 'paperback' });
             trackMetaConversion('initiate-checkout:paperback', 'InitiateCheckout', {
               content_name: 'modern_java_paperback',
+              content_category: 'book_purchase',
+              content_ids: ['modern_java_paperback'],
               content_type: 'product',
               currency: 'INR',
               value: 899,

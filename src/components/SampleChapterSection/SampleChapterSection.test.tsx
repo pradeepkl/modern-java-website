@@ -64,6 +64,7 @@ describe('SampleChapterSection Meta lead tracking', () => {
       {
         content_name: 'sample_chapter',
         content_category: 'book_preview',
+        source: 'sample_preview_form',
       },
     );
   });

@@ -195,7 +195,7 @@ function sanitizeParameters(
   return Object.keys(clean).length > 0 ? clean : undefined;
 }
 
-/** Standard Meta events (Purchase / Lead / etc. — not wired yet). */
+/** Standard Meta events (Purchase / Lead / etc.). */
 export function trackMetaEvent(
   eventName: MetaStandardEvent,
   parameters?: Record<string, unknown>,

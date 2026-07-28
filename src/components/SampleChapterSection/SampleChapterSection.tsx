@@ -80,6 +80,7 @@ export function SampleChapterSection() {
       trackMetaConversion('lead:sample-preview', 'Lead', {
         content_name: 'sample_chapter',
         content_category: 'book_preview',
+        source: 'sample_preview_form',
       });
     } catch (error) {
       setStatus('error');

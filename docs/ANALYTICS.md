@@ -35,17 +35,25 @@ third-party scripts load.
 - Standard Meta conversions use explicit dedupe keys so one browser session
   does not double-count the same formats view, checkout start, lead capture,
   or verified purchase.
+- Meta payloads keep safe business fields such as `content_name`,
+  `content_category`, `content_type`, `content_ids`, `value`, `currency`, and
+  `num_items`, while still stripping direct identifiers such as email, name,
+  phone, street address, city, state, and postal code.
 - The HTML `<noscript>` Meta image fallback is **omitted** because analytics
   are consent-gated and static HTML cannot evaluate consent without JavaScript
   (same approach as GA4/Clarity).
 - Fired standard Meta events:
   - `ViewContent`: first `#formats` section view after analytics consent
+    (`content_name`, `content_category`, `content_ids`, `content_type`)
   - `Lead`: successful chapter preview signup, Amazon modal signup, and
-    paperback waitlist success
+    paperback waitlist success (`content_name`, `content_category`,
+    `content_ids`, `source`)
   - `InitiateCheckout`: first digital/paperback checkout open after analytics
-    consent
+    consent (`content_name`, `content_category`, `content_ids`, `content_type`,
+    `currency`, `value`)
   - `Purchase`: only after verified Razorpay success or approved local bypass,
-    deduped by app order id
+    deduped by app order id (`content_name`, `content_category`,
+    `content_ids`, `content_type`, `currency`, `value`, `num_items`)
 
 #### Meta Events Manager verification (after production deploy)
 
@@ -125,7 +133,7 @@ Primary demand number: **unique confirmed waitlist records** (DynamoDB), not but
 `purchase` includes GA4 ecommerce fields:
 
 - `currency`: `INR`
-- `value`: order total (399 digital, 499 × qty paperback)
+- `value`: order total (699 digital, 899 × qty paperback)
 - `transaction_id`: app order id
 - `format`: `digital` | `paperback`
 - `payment_method`: `razorpay` | `bypass`
@@ -148,7 +156,9 @@ Waitlist form inputs use `data-clarity-mask="true"` so name, email, and city are
 
 ## Privacy
 
-- No email, name, phone, or address is sent to GA4/Clarity/Meta (`src/lib/analytics.ts` and `src/lib/metaPixel.ts` strip those keys).
+- No email, name, phone, street address, city, state, or postal code is sent
+  to GA4/Clarity/Meta (`src/lib/analytics.ts` and `src/lib/metaPixel.ts`
+  strip those keys).
 - Analytics consent is separate from marketing email checkboxes.
 - Documented in `/privacy-policy`.
 

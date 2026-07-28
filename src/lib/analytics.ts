@@ -12,9 +12,11 @@ const CLARITY_ID = import.meta.env.VITE_CLARITY_ID?.trim() || '';
 
 export type ConsentStatus = 'granted' | 'denied';
 
+type AnalyticsScalar = string | number | boolean | null | undefined;
+type AnalyticsArrayValue = ReadonlyArray<string | number | boolean>;
 export type AnalyticsProps = Record<
   string,
-  string | number | boolean | null | undefined
+  AnalyticsScalar | AnalyticsArrayValue
 >;
 
 type GtagFunction = (...args: unknown[]) => void;
@@ -29,6 +31,28 @@ declare global {
 
 let trackersLoaded = false;
 let utmCaptured = false;
+
+const PII_PARAM_KEYS = new Set([
+  'address',
+  'billing_address',
+  'city',
+  'customer_name',
+  'delivery_address',
+  'email',
+  'first_name',
+  'full_name',
+  'last_name',
+  'name',
+  'phone',
+  'postal',
+  'postal_code',
+  'shipping_address',
+  'state',
+  'street',
+  'street_address',
+  'zip',
+  'zip_code',
+]);
 
 const UTM_KEYS = [
   'utm_source',
@@ -154,8 +178,45 @@ function sanitizeProps(props?: AnalyticsProps): Record<string, string | number |
 
   for (const [key, value] of Object.entries(base)) {
     if (value === undefined || value === null) continue;
-    // Never send emails, names, phones, or addresses to analytics.
-    if (/email|name|phone|address|postal/i.test(key)) continue;
+    if (PII_PARAM_KEYS.has(key.toLowerCase())) continue;
+    if (Array.isArray(value)) continue;
+    if (
+      typeof value !== 'string' &&
+      typeof value !== 'number' &&
+      typeof value !== 'boolean'
+    ) {
+      continue;
+    }
+    clean[key] = value;
+  }
+
+  return clean;
+}
+
+function sanitizeMetaProps(
+  props?: AnalyticsProps,
+): Record<string, string | number | boolean | readonly (string | number | boolean)[]> {
+  const base = { ...getUtmProps(), ...props };
+  const clean: Record<
+    string,
+    string | number | boolean | readonly (string | number | boolean)[]
+  > = {};
+
+  for (const [key, value] of Object.entries(base)) {
+    if (value === undefined || value === null) continue;
+    if (PII_PARAM_KEYS.has(key.toLowerCase())) continue;
+    if (Array.isArray(value)) {
+      const filtered = value.filter(
+        (entry): entry is string | number | boolean =>
+          typeof entry === 'string' ||
+          typeof entry === 'number' ||
+          typeof entry === 'boolean',
+      );
+      if (filtered.length > 0) {
+        clean[key] = filtered;
+      }
+      continue;
+    }
     clean[key] = value;
   }
 
@@ -200,7 +261,7 @@ export function trackMetaConversion(
 ): void {
   if (getConsent() !== 'granted') return;
   if (!trackersLoaded) initAnalytics();
-  trackMetaEventOnce(dedupeKey, eventName, sanitizeProps(props));
+  trackMetaEventOnce(dedupeKey, eventName, sanitizeMetaProps(props));
 }
 
 export function trackPurchase(params: {
@@ -239,6 +300,8 @@ export function trackPurchase(params: {
     currency: 'INR',
     value: params.value,
     content_name: `modern_java_${params.format}`,
+    content_category: 'book_purchase',
+    content_ids: [`modern_java_${params.format}`],
     content_type: 'product',
     num_items: quantity,
   });

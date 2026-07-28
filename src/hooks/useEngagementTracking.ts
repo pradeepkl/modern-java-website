@@ -47,6 +47,8 @@ export function useEngagementTracking(enabled: boolean): void {
               if (id === 'formats') {
                 trackMetaConversion('view-content:formats', 'ViewContent', {
                   content_name: 'formats',
+                  content_category: 'book_formats',
+                  content_ids: ['modern_java_kindle', 'modern_java_digital'],
                   content_type: 'product_group',
                 });
               }

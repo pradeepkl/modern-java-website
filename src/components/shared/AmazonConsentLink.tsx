@@ -301,6 +301,7 @@ export function AmazonConsentLink({
         {
           content_name: 'amazon_exit_signup',
           content_category: 'book_interest',
+          content_ids: ['modern_java_kindle'],
           source: AMAZON_EXIT_MODAL_SOURCE,
         },
       );

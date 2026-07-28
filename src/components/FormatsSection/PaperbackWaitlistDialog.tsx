@@ -248,6 +248,7 @@ export function PaperbackWaitlistDialog({
         {
           content_name: 'paperback_waitlist',
           content_category: 'book_interest',
+          content_ids: ['modern_java_paperback'],
           source,
         },
       );

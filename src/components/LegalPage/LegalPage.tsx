@@ -10,7 +10,7 @@ interface LegalPageProps {
   type: LegalPageType;
 }
 
-const lastUpdated = '24 July 2026';
+const lastUpdated = '28 July 2026';
 
 function PrivacyPolicy() {
   return (
@@ -77,9 +77,12 @@ function PrivacyPolicy() {
           Meta Pixel. These tools may set cookies or similar identifiers and
           collect page URL, device and browser type, approximate location,
           scroll and click behaviour, and conversion events such as formats
-          views, lead captures, checkout starts, and completed checkouts. We do
-          not send your email address, name, phone number, delivery address,
-          postal code, or payment card details to these analytics providers.
+          views, lead captures, checkout starts, and completed checkouts. Those
+          events may include non-identifying metadata such as the format viewed
+          or purchased, order value, quantity, content category, referral source,
+          and broad campaign tags. We do not send your email address, name,
+          phone number, delivery address, city, state, postal code, or payment
+          card details to these analytics providers.
         </p>
         <p>
           Analytics consent is separate from marketing email consent. You can
@@ -130,9 +133,9 @@ function PrivacyPolicy() {
           hosting, order records, file delivery, and transactional email, and
           Cloudflare for Turnstile bot protection. Kindle purchases are
           completed on Amazon and are governed by Amazon&apos;s privacy policy
-          and terms. Optional analytics are provided by Google and Microsoft
-          under their respective privacy policies when you accept analytics
-          cookies.
+          and terms. Optional analytics are provided by Google, Microsoft, and
+          Meta under their respective privacy policies when you accept
+          analytics cookies.
         </p>
       </section>
 
@@ -261,9 +264,10 @@ function TermsOfUse() {
         <h2>Third-party services and links</h2>
         <p>
           This website links to and relies on third-party services, including
-          Amazon, Razorpay, and Cloudflare Turnstile. We are not responsible for
-          their content, availability, security, or practices. Your use of those
-          services is governed by their respective terms.
+          Amazon, Razorpay, Cloudflare Turnstile, and optional analytics and
+          advertising services such as Google, Microsoft, and Meta. We are not
+          responsible for their content, availability, security, or practices.
+          Your use of those services is governed by their respective terms.
         </p>
       </section>
 
