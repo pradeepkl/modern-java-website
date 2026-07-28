@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AnalyticsConsentBanner } from './components/AnalyticsConsent/AnalyticsConsentBanner';
+import { MetaPageViewTracker } from './components/analytics/MetaPageViewTracker';
 import { Header } from './components/Header/Header';
 import { Hero } from './components/Hero/Hero';
 import { PurposeSection } from './components/PurposeSection/PurposeSection';
@@ -51,6 +52,7 @@ function App() {
   if (path === '/privacy-policy') {
     return (
       <>
+        <MetaPageViewTracker />
         <AnalyticsConsentBanner />
         <LegalPage type="privacy" />
       </>
@@ -60,6 +62,7 @@ function App() {
   if (path === '/terms-of-use') {
     return (
       <>
+        <MetaPageViewTracker />
         <AnalyticsConsentBanner />
         <LegalPage type="terms" />
       </>
@@ -69,6 +72,7 @@ function App() {
   if (path === '/unsubscribe') {
     return (
       <>
+        <MetaPageViewTracker />
         <AnalyticsConsentBanner />
         <UnsubscribePage />
       </>
@@ -78,6 +82,7 @@ function App() {
   if (path === '/contact') {
     return (
       <>
+        <MetaPageViewTracker />
         <AnalyticsConsentBanner />
         <ContactPage />
       </>
@@ -86,6 +91,7 @@ function App() {
 
   return (
     <div className="site-shell">
+      <MetaPageViewTracker />
       <AnalyticsConsentBanner />
       <Header
         menuOpen={menuOpen}

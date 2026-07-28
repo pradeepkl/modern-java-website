@@ -40,6 +40,7 @@ Set in `.env.local`, then `npm run deploy` (script loads and bakes these at buil
 |----------|---------|--------|
 | `VITE_GA_MEASUREMENT_ID` | GA4 measurement ID | ⚠️ Still empty — create property and set |
 | `VITE_CLARITY_ID` | Microsoft Clarity (optional) | Optional |
+| `VITE_META_PIXEL_ID` | Meta Pixel (`1844493498903023`) | Set in `.env.prod` before prod deploy |
 
 See `docs/ANALYTICS.md`. Mark `sample_form_success`, `purchase`, and `amazon_exit` as GA4 key events after IDs ship.
 

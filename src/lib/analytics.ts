@@ -1,3 +1,8 @@
+import {
+  getConfiguredMetaPixelId,
+  initializeMetaPixel,
+} from './metaPixel';
+
 const CONSENT_STORAGE_KEY = 'mj_analytics_consent';
 const UTM_STORAGE_KEY = 'mj_utm';
 
@@ -122,14 +127,24 @@ function loadClarity(): void {
   document.head.appendChild(script);
 }
 
-/** Load GA4 / Clarity only after analytics consent is granted. */
+/** Load GA4 / Clarity / Meta Pixel only after analytics consent is granted. */
 export function initAnalytics(): void {
-  if (trackersLoaded || getConsent() !== 'granted') return;
-  if (!GA_MEASUREMENT_ID && !CLARITY_ID) return;
+  if (getConsent() !== 'granted') return;
 
-  trackersLoaded = true;
-  loadGtag();
-  loadClarity();
+  const metaPixelId = getConfiguredMetaPixelId();
+
+  if (!trackersLoaded) {
+    if (GA_MEASUREMENT_ID || CLARITY_ID || metaPixelId) {
+      trackersLoaded = true;
+      loadGtag();
+      loadClarity();
+    }
+  }
+
+  // Meta PageView is owned by MetaPageViewTracker (avoids duplicate PageViews).
+  if (metaPixelId) {
+    initializeMetaPixel(metaPixelId);
+  }
 }
 
 function sanitizeProps(props?: AnalyticsProps): Record<string, string | number | boolean> {

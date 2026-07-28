@@ -1,6 +1,8 @@
-# Analytics setup (GA4 + Clarity)
+# Analytics setup (GA4 + Clarity + Meta Pixel)
 
-The site loads Google Analytics 4 and Microsoft Clarity **only after** the visitor chooses **Accept analytics** on the cookie banner. Essential-only visitors are not tracked.
+The site loads Google Analytics 4, Microsoft Clarity, and Meta Pixel **only
+after** the visitor chooses **Accept analytics** on the cookie banner.
+Essential-only visitors are not tracked.
 
 ## Environment variables
 
@@ -11,13 +13,45 @@ Set these in `.env.local` (local) and they are loaded automatically by
 |----------|---------|---------|
 | `VITE_GA_MEASUREMENT_ID` | `G-XXXXXXXXXX` | GA4 measurement ID |
 | `VITE_CLARITY_ID` | `abcdefghij` | Microsoft Clarity project ID (optional) |
+| `VITE_META_PIXEL_ID` | `1844493498903023` | Meta (Facebook) Pixel ID (optional; production builds only) |
 | `VITE_PAPERBACK_SALES_ENABLED` | `false` | Build-time flag (rebuild + redeploy to change) |
 | `VITE_PAPERBACK_WAITLIST_ENABLED` | `false` | Build-time flag (rebuild + redeploy to change; paperback UI hidden when false) |
 
 You can also export them in the shell before deploy; non-empty values are baked
 into the Vite bundle. Empty values are skipped so they do not wipe `.env.local`.
 
-If both are empty, the consent banner still appears but no third-party scripts load.
+If all analytics IDs are empty, the consent banner still appears but no
+third-party scripts load.
+
+### Meta Pixel notes
+
+- Runtime init is configuration-driven via `VITE_META_PIXEL_ID` (`src/lib/metaPixel.ts`).
+- Activation requires `import.meta.env.PROD` — the pixel does not load in
+  `npm run dev`, Vitest, or non-production bundles even if the ID is set.
+- `PageView` is owned by `MetaPageViewTracker` (not a static `fbq('track')` in
+  `index.html`) so the initial route records a single page view.
+- Duplicate `PageView`s for the same `pathname + search` are suppressed
+  (covers React StrictMode remounts). Hash-only changes are not tracked.
+- The HTML `<noscript>` Meta image fallback is **omitted** because analytics
+  are consent-gated and static HTML cannot evaluate consent without JavaScript
+  (same approach as GA4/Clarity).
+- Conversion helpers (`trackMetaEvent` / `trackMetaCustomEvent`) exist for
+  later use. `Lead`, `ViewContent`, `InitiateCheckout`, and `Purchase` are
+  **not** fired yet.
+
+#### Meta Events Manager verification (after production deploy)
+
+1. Open Meta Events Manager → **Classpath Publications Pixel**.
+2. Open **Test events**.
+3. Visit `https://modern-java.classpath.in` and accept analytics.
+4. Confirm one `PageView`.
+5. Navigate to another path (e.g. `/privacy-policy`) and confirm one more
+   `PageView` per full navigation.
+6. Refresh and confirm exactly one new `PageView`.
+7. With an ad blocker / tracking protection enabled, confirm the site still
+   works.
+
+Events Manager outside Test Events may take a short time to update.
 
 ## Mark these events as key conversions in GA4
 
@@ -101,7 +135,7 @@ Waitlist form inputs use `data-clarity-mask="true"` so name, email, and city are
 
 ## Privacy
 
-- No email, name, phone, or address is sent to GA4/Clarity (`src/lib/analytics.ts` strips those keys).
+- No email, name, phone, or address is sent to GA4/Clarity/Meta (`src/lib/analytics.ts` and `src/lib/metaPixel.ts` strip those keys).
 - Analytics consent is separate from marketing email checkboxes.
 - Documented in `/privacy-policy`.
 

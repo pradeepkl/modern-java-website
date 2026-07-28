@@ -218,6 +218,7 @@ Defaults (overridable via env / `.env.<APP_ENV>`):
 | `VITE_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key |
 | `VITE_GA_MEASUREMENT_ID` | GA4 measurement ID (optional; consent-gated) |
 | `VITE_CLARITY_ID` | Microsoft Clarity project ID (optional) |
+| `VITE_META_PIXEL_ID` | Meta Pixel ID (optional; production + consent-gated) |
 | `VITE_PAPERBACK_SALES_ENABLED` | Build-time flag (default `false` on deploy) |
 | `VITE_PAPERBACK_WAITLIST_ENABLED` | Build-time flag (default `false` on deploy; paperback UI hidden) |
 | `DEPLOY_SITE_URL` | Printed after success |

@@ -42,6 +42,7 @@ ORDER_API_URL="${VITE_ORDER_API_URL:-}"
 TURNSTILE_SITE_KEY="${VITE_TURNSTILE_SITE_KEY:-}"
 GA_MEASUREMENT_ID="${VITE_GA_MEASUREMENT_ID:-}"
 CLARITY_ID="${VITE_CLARITY_ID:-}"
+META_PIXEL_ID="${VITE_META_PIXEL_ID:-}"
 
 export VITE_PAPERBACK_SALES_ENABLED="${VITE_PAPERBACK_SALES_ENABLED:-false}"
 export VITE_PAPERBACK_WAITLIST_ENABLED="${VITE_PAPERBACK_WAITLIST_ENABLED:-false}"
@@ -137,6 +138,9 @@ if [[ "${SKIP_BUILD:-0}" != "1" ]]; then
   fi
   if [[ -n "$CLARITY_ID" ]]; then
     build_env+=("VITE_CLARITY_ID=${CLARITY_ID}")
+  fi
+  if [[ -n "$META_PIXEL_ID" ]]; then
+    build_env+=("VITE_META_PIXEL_ID=${META_PIXEL_ID}")
   fi
 
   env "${build_env[@]}" npm run build

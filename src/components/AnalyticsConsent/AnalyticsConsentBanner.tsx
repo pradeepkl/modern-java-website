@@ -52,9 +52,10 @@ export function AnalyticsConsentBanner() {
             Help us improve this site
           </p>
           <p id="analytics-consent-desc" className="analytics-consent__text">
-            We use privacy-respecting analytics (Google Analytics and Microsoft
-            Clarity) to understand which pages and checkout steps work well. We
-            do not send your email, name, or payment details to these tools.{' '}
+            We use privacy-respecting analytics (Google Analytics, Microsoft
+            Clarity, and Meta Pixel when configured) to understand which pages
+            and checkout steps work well. We do not send your email, name, or
+            payment details to these tools.{' '}
             <a href="/privacy-policy">Privacy policy</a>
           </p>
         </div>
