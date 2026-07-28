@@ -57,22 +57,42 @@ third-party scripts load.
 
 #### Meta Events Manager verification (after production deploy)
 
-1. Open Meta Events Manager → **Classpath Publications Pixel**.
-2. Open **Test events**.
-3. Visit `https://modern-java.classpath.in` and accept analytics.
-4. Scroll to `#formats` and confirm one `ViewContent`.
-5. Confirm one `PageView`.
-6. Navigate to another path (e.g. `/privacy-policy`) and confirm one more
-   `PageView` per full navigation.
-7. Open a direct checkout or paperback checkout and confirm one
-   `InitiateCheckout`.
-8. Submit the chapter preview form successfully and confirm one `Lead`.
-9. Complete a real or bypass purchase and confirm one `Purchase`.
-10. Refresh and confirm exactly one new `PageView`.
-11. With an ad blocker / tracking protection enabled, confirm the site still
-   works.
+**Setup**
 
-Events Manager outside Test Events may take a short time to update.
+1. Open Meta Events Manager → **Classpath Publications Pixel**.
+2. Open **Test events** and keep that tab open.
+3. Visit `https://modern-java.classpath.in` in a private window (ad blockers
+   off for the test).
+4. Choose **Accept analytics**.
+5. Confirm one `PageView`.
+
+**Safe live checklist for funnel events**
+
+| # | Action on the live site | Expect in Test Events | Expected params (non-PII) |
+|---|-------------------------|------------------------|---------------------------|
+| 1 | Scroll to **Formats** (`#formats`) | one `ViewContent` | `content_name=formats`, `content_category=book_formats`, `content_type=product_group`, `content_ids` includes Kindle/digital ids |
+| 2 | Click **Buy direct** / open DRM-free checkout | one `InitiateCheckout` | `content_name=modern_java_digital`, `content_category=book_purchase`, `content_type=product`, `currency=INR`, `value=699` |
+| 3 | Close and reopen the same checkout | **no** second `InitiateCheckout` | dedupe key is per format for the session |
+| 4 | Submit chapter preview with a real inbox you control | one `Lead` | `content_name=sample_chapter`, `content_category=book_preview`, `source=sample_preview_form` |
+| 5 | (Optional) Join Amazon exit signup, then close without buying | one more `Lead` | `content_name=amazon_exit_signup`, `content_category=book_interest`, `source=amazon_exit_modal` |
+| 6 | Complete one real Razorpay payment (₹699 digital) **or** a known bypass order only if you intentionally use that path | one `Purchase` | `currency=INR`, `value=699`, `content_name=modern_java_digital`, `content_type=product`, `num_items=1` |
+| 7 | Refresh the homepage | exactly one new `PageView` | no extra `ViewContent` / `InitiateCheckout` / `Purchase` from the refresh alone |
+
+**Pass / fail notes**
+
+- Events must appear only after **Accept analytics**. Essential-only visitors
+  should send nothing to Meta.
+- Never expect email, name, phone, address, city, state, or postal code in
+  Test Events parameters.
+- `Purchase` must appear only after payment verification succeeds — not on
+  “Pay ₹699 securely” click, and not after a failed payment.
+- Failed sample-preview / checkout attempts must **not** create `Lead` or
+  `Purchase`.
+- Outside Test Events, the main Events Manager UI can lag by a few minutes.
+
+**Recommended order for a quick smoke pass:** steps 1 → 2 → 3 → 4 → 7.
+Use step 6 only when you are ready to place a real (or intentional bypass)
+order.
 
 ## Mark these events as key conversions in GA4
 
