@@ -1,6 +1,6 @@
 import { FormEvent, useRef, useState } from 'react';
 import { BookOpen, Check, Mail } from 'lucide-react';
-import { track } from '../../lib/analytics';
+import { track, trackMetaConversion } from '../../lib/analytics';
 import { isTurnstileConfigured } from '../../lib/turnstile';
 import { SectionEyebrow } from '../shared/SectionEyebrow';
 import {
@@ -77,6 +77,10 @@ export function SampleChapterSection() {
       setStatus('success');
       setMessage('Check your inbox—the chapter preview is on its way.');
       track('sample_form_success', { marketing_consent: marketingConsent });
+      trackMetaConversion('lead:sample-preview', 'Lead', {
+        content_name: 'sample_chapter',
+        content_category: 'book_preview',
+      });
     } catch (error) {
       setStatus('error');
       setCaptchaToken(null);

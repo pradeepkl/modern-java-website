@@ -38,6 +38,7 @@ const META_PIXEL_SCRIPT_ATTR = 'data-meta-pixel';
 let scriptInserted = false;
 let initializedPixelId: string | null = null;
 let lastPageViewLocation: string | null = null;
+const sentEventKeys = new Set<string>();
 
 function readConfiguredPixelId(): string {
   return import.meta.env.VITE_META_PIXEL_ID?.trim() || '';
@@ -218,6 +219,22 @@ export function trackMetaEvent(
   }
 }
 
+/**
+ * Track a standard Meta event once for a caller-provided dedupe key.
+ * Useful for purchase confirmations, modal opens, and lead captures where
+ * duplicate handler execution would otherwise double-count conversions.
+ */
+export function trackMetaEventOnce(
+  dedupeKey: string,
+  eventName: Exclude<MetaStandardEvent, 'PageView'>,
+  parameters?: Record<string, unknown>,
+): void {
+  const key = dedupeKey.trim();
+  if (!key || sentEventKeys.has(key)) return;
+  sentEventKeys.add(key);
+  trackMetaEvent(eventName, parameters);
+}
+
 export function trackMetaCustomEvent(
   eventName: string,
   parameters?: Record<string, unknown>,
@@ -242,6 +259,7 @@ export function __resetMetaPixelForTests(): void {
   scriptInserted = false;
   initializedPixelId = null;
   lastPageViewLocation = null;
+  sentEventKeys.clear();
   if (typeof window !== 'undefined') {
     delete window.fbq;
     delete window._fbq;

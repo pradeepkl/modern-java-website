@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ShoppingCart } from 'lucide-react';
 import { type FormatOption } from '../../data/formats';
-import { track } from '../../lib/analytics';
+import { track, trackMetaConversion } from '../../lib/analytics';
 import { FormatCardShell } from './FormatCardShell';
 import { PaperbackOrderDialog } from './PaperbackOrderDialog';
 
@@ -39,6 +39,12 @@ export function PaperbackPurchaseCard({ format }: PaperbackPurchaseCardProps) {
   const openCheckout = () => {
     track('format_cta_click', { format: format.id });
     track('checkout_open', { format: format.id });
+    trackMetaConversion('initiate-checkout:paperback', 'InitiateCheckout', {
+      content_name: 'modern_java_paperback',
+      content_type: 'product',
+      currency: 'INR',
+      value: 899,
+    });
     setOrderFormOpen(true);
   };
 

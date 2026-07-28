@@ -145,6 +145,7 @@ describe('metaPixel', () => {
     const {
       initializeMetaPixel,
       trackMetaEvent,
+      trackMetaEventOnce,
       trackMetaCustomEvent,
       __resetMetaPixelForTests,
     } = await loadMetaPixel();
@@ -165,6 +166,15 @@ describe('metaPixel', () => {
       'sample_interest',
       { section: 'hero' },
     ]);
+
+    trackMetaEventOnce('purchase:order-123', 'Purchase', { value: 699 });
+    trackMetaEventOnce('purchase:order-123', 'Purchase', { value: 699 });
+
+    const purchases = queued.filter(
+      (entry) =>
+        Array.isArray(entry) && entry[0] === 'track' && entry[1] === 'Purchase',
+    );
+    expect(purchases).toHaveLength(1);
   });
 
   it('helpers safely no-op before initialization', async () => {

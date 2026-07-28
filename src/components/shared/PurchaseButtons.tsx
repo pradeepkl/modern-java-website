@@ -3,7 +3,7 @@ import { Bell, Download, ShoppingCart } from 'lucide-react';
 import { getPaperbackMode } from '../../config/features';
 import { book } from '../../data/book';
 import { paperbackWaitlistCopy } from '../../data/paperbackWaitlistCopy';
-import { track, trackCtaClick } from '../../lib/analytics';
+import { track, trackCtaClick, trackMetaConversion } from '../../lib/analytics';
 import { DigitalOrderDialog } from '../FormatsSection/DigitalOrderDialog';
 import { PaperbackOrderDialog } from '../FormatsSection/PaperbackOrderDialog';
 import { PaperbackWaitlistDialog } from '../FormatsSection/PaperbackWaitlistDialog';
@@ -95,6 +95,12 @@ export function PurchaseButtons({
           onClick={() => {
             track('format_cta_click', { format: 'digital' });
             track('checkout_open', { format: 'digital' });
+            trackMetaConversion('initiate-checkout:digital', 'InitiateCheckout', {
+              content_name: 'modern_java_digital',
+              content_type: 'product',
+              currency: 'INR',
+              value: 699,
+            });
             setDigitalOrderFormOpen(true);
           }}
           aria-label="Buy the Modern Java PDF and ePub bundle"
@@ -110,6 +116,12 @@ export function PurchaseButtons({
           onClick={() => {
             track('format_cta_click', { format: 'paperback' });
             track('checkout_open', { format: 'paperback' });
+            trackMetaConversion('initiate-checkout:paperback', 'InitiateCheckout', {
+              content_name: 'modern_java_paperback',
+              content_type: 'product',
+              currency: 'INR',
+              value: 899,
+            });
             setOrderFormOpen(true);
           }}
           aria-label="Place an order for the Modern Java paperback"

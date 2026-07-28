@@ -1,6 +1,7 @@
 import {
   getConfiguredMetaPixelId,
   initializeMetaPixel,
+  trackMetaEventOnce,
 } from './metaPixel';
 
 const CONSENT_STORAGE_KEY = 'mj_analytics_consent';
@@ -192,6 +193,16 @@ export function trackCtaClick(cta: string, location: string): void {
   track('cta_click', { cta, location });
 }
 
+export function trackMetaConversion(
+  dedupeKey: string,
+  eventName: 'ViewContent' | 'Lead' | 'InitiateCheckout' | 'Purchase',
+  props?: AnalyticsProps,
+): void {
+  if (getConsent() !== 'granted') return;
+  if (!trackersLoaded) initAnalytics();
+  trackMetaEventOnce(dedupeKey, eventName, sanitizeProps(props));
+}
+
 export function trackPurchase(params: {
   format: 'digital' | 'paperback';
   value: number;
@@ -201,25 +212,34 @@ export function trackPurchase(params: {
 }): void {
   if (getConsent() !== 'granted') return;
   if (!trackersLoaded) initAnalytics();
-  if (!window.gtag || !GA_MEASUREMENT_ID) return;
 
   const quantity = params.quantity ?? 1;
-  window.gtag('event', 'purchase', {
+  if (window.gtag && GA_MEASUREMENT_ID) {
+    window.gtag('event', 'purchase', {
+      currency: 'INR',
+      value: params.value,
+      transaction_id: params.transactionId,
+      ...sanitizeProps({
+        format: params.format,
+        payment_method: params.paymentMethod,
+        quantity,
+      }),
+      items: [
+        {
+          item_id: params.format,
+          item_name: `Modern Java — ${params.format}`,
+          price: params.value / quantity,
+          quantity,
+        },
+      ],
+    });
+  }
+
+  trackMetaConversion(`purchase:${params.transactionId}`, 'Purchase', {
     currency: 'INR',
     value: params.value,
-    transaction_id: params.transactionId,
-    ...sanitizeProps({
-      format: params.format,
-      payment_method: params.paymentMethod,
-      quantity,
-    }),
-    items: [
-      {
-        item_id: params.format,
-        item_name: `Modern Java — ${params.format}`,
-        price: params.value / quantity,
-        quantity,
-      },
-    ],
+    content_name: `modern_java_${params.format}`,
+    content_type: 'product',
+    num_items: quantity,
   });
 }

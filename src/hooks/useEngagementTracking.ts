@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { getConsent, track } from '../lib/analytics';
+import { getConsent, track, trackMetaConversion } from '../lib/analytics';
 
 const SECTION_TRACK_IDS = [
   'why-this-book',
@@ -44,6 +44,12 @@ export function useEngagementTracking(enabled: boolean): void {
               if (seenSections.current.has(id)) continue;
               seenSections.current.add(id);
               track('section_view', { section_id: id });
+              if (id === 'formats') {
+                trackMetaConversion('view-content:formats', 'ViewContent', {
+                  content_name: 'formats',
+                  content_type: 'product_group',
+                });
+              }
             }
           },
           { threshold: [0.5] },

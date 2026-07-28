@@ -11,7 +11,7 @@ import { createPortal } from 'react-dom';
 import { Bell, CheckCircle2, X } from 'lucide-react';
 import { paperbackWaitlistCopy } from '../../data/paperbackWaitlistCopy';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
-import { getUtmProps, track } from '../../lib/analytics';
+import { getUtmProps, track, trackMetaConversion } from '../../lib/analytics';
 import {
   hasWaitlistFieldErrors,
   normalizeWaitlistFormValues,
@@ -242,6 +242,15 @@ export function PaperbackWaitlistDialog({
         registration_status: registrationStatus,
         source,
       });
+      trackMetaConversion(
+        `lead:paperback-waitlist:${source}:${registrationStatus}`,
+        'Lead',
+        {
+          content_name: 'paperback_waitlist',
+          content_category: 'book_interest',
+          source,
+        },
+      );
       setProcessing(false);
     } catch {
       setErrorMessage(paperbackWaitlistCopy.serverError);

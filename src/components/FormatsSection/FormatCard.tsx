@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Download } from 'lucide-react';
 import { getPaperbackMode } from '../../config/features';
 import { type FormatOption } from '../../data/formats';
-import { track } from '../../lib/analytics';
+import { track, trackMetaConversion } from '../../lib/analytics';
 import { AmazonConsentLink } from '../shared/AmazonConsentLink';
 import { BrandButtonLogo } from '../shared/BrandButtonLogo';
 import { DigitalOrderDialog } from './DigitalOrderDialog';
@@ -61,6 +61,12 @@ function StandardFormatCard({ format }: FormatCardProps) {
   const openCheckout = () => {
     track('format_cta_click', { format: format.id });
     track('checkout_open', { format: format.id });
+    trackMetaConversion(`initiate-checkout:${format.id}`, 'InitiateCheckout', {
+      content_name: `modern_java_${format.id}`,
+      content_type: 'product',
+      currency: 'INR',
+      value: format.id === 'digital' ? 699 : undefined,
+    });
     setOrderFormOpen(true);
   };
 

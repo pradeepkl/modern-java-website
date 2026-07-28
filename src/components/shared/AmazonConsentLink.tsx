@@ -18,7 +18,7 @@ import {
   amazonExitModalCopy,
 } from '../../data/amazonExitModalCopy';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
-import { getUtmProps, track } from '../../lib/analytics';
+import { getUtmProps, track, trackMetaConversion } from '../../lib/analytics';
 import { isTurnstileConfigured } from '../../lib/turnstile';
 import {
   ModalStatusIcon,
@@ -295,6 +295,15 @@ export function AmazonConsentLink({
         ...analyticsBase,
         registration_status: registrationStatus,
       });
+      trackMetaConversion(
+        `lead:amazon-exit:${buttonLocation}:${registrationStatus}`,
+        'Lead',
+        {
+          content_name: 'amazon_exit_signup',
+          content_category: 'book_interest',
+          source: AMAZON_EXIT_MODAL_SOURCE,
+        },
+      );
       setSubmitting(false);
     } catch (error) {
       setErrorMessage(

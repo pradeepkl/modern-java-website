@@ -32,23 +32,36 @@ third-party scripts load.
   `index.html`) so the initial route records a single page view.
 - Duplicate `PageView`s for the same `pathname + search` are suppressed
   (covers React StrictMode remounts). Hash-only changes are not tracked.
+- Standard Meta conversions use explicit dedupe keys so one browser session
+  does not double-count the same formats view, checkout start, lead capture,
+  or verified purchase.
 - The HTML `<noscript>` Meta image fallback is **omitted** because analytics
   are consent-gated and static HTML cannot evaluate consent without JavaScript
   (same approach as GA4/Clarity).
-- Conversion helpers (`trackMetaEvent` / `trackMetaCustomEvent`) exist for
-  later use. `Lead`, `ViewContent`, `InitiateCheckout`, and `Purchase` are
-  **not** fired yet.
+- Fired standard Meta events:
+  - `ViewContent`: first `#formats` section view after analytics consent
+  - `Lead`: successful chapter preview signup, Amazon modal signup, and
+    paperback waitlist success
+  - `InitiateCheckout`: first digital/paperback checkout open after analytics
+    consent
+  - `Purchase`: only after verified Razorpay success or approved local bypass,
+    deduped by app order id
 
 #### Meta Events Manager verification (after production deploy)
 
 1. Open Meta Events Manager → **Classpath Publications Pixel**.
 2. Open **Test events**.
 3. Visit `https://modern-java.classpath.in` and accept analytics.
-4. Confirm one `PageView`.
-5. Navigate to another path (e.g. `/privacy-policy`) and confirm one more
+4. Scroll to `#formats` and confirm one `ViewContent`.
+5. Confirm one `PageView`.
+6. Navigate to another path (e.g. `/privacy-policy`) and confirm one more
    `PageView` per full navigation.
-6. Refresh and confirm exactly one new `PageView`.
-7. With an ad blocker / tracking protection enabled, confirm the site still
+7. Open a direct checkout or paperback checkout and confirm one
+   `InitiateCheckout`.
+8. Submit the chapter preview form successfully and confirm one `Lead`.
+9. Complete a real or bypass purchase and confirm one `Purchase`.
+10. Refresh and confirm exactly one new `PageView`.
+11. With an ad blocker / tracking protection enabled, confirm the site still
    works.
 
 Events Manager outside Test Events may take a short time to update.
