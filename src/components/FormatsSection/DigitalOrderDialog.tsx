@@ -2,7 +2,7 @@ import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 
 import { createPortal } from 'react-dom';
 import { CheckCircle2, CreditCard, Download, X } from 'lucide-react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
-import { track, trackPurchase } from '../../lib/analytics';
+import { track, trackPurchase, buildMetaAttributionPayload } from '../../lib/analytics';
 import { loadRazorpayCheckout } from '../../lib/razorpay';
 import { isTurnstileConfigured, shouldSkipCheckoutPayment } from '../../lib/turnstile';
 import {
@@ -142,6 +142,7 @@ export function DigitalOrderDialog({
           body: JSON.stringify({
             ...customerPayload,
             skipPayment: true,
+            ...buildMetaAttributionPayload(),
           }),
         });
         const bypassOrder = await bypassResult.json();
@@ -175,7 +176,10 @@ export function DigitalOrderDialog({
       const createResult = await fetch(`${ORDER_API_URL}/digital-orders`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(customerPayload),
+        body: JSON.stringify({
+          ...customerPayload,
+          ...buildMetaAttributionPayload(),
+        }),
       });
       const order = await createResult.json();
 

@@ -1,8 +1,9 @@
 # Paperback Order API
 
 AWS SAM backend for paperback orders, Razorpay payment verification, DynamoDB
-storage, SES email confirmation, Zoho Invoice creation, and private S3 +
-CloudFront delivery for the chapter preview and paid digital editions.
+storage, SES email confirmation, Zoho Invoice creation, private S3 +
+CloudFront delivery for the chapter preview and paid digital editions, and
+Meta Conversions API (`Lead` / `Purchase`) after verified success.
 
 ## Prerequisites
 
@@ -224,6 +225,13 @@ behaves as before.
   payments.
 - `POST /sample-requests` records optional marketing consent and emails a
   time-limited CloudFront signed download link for the chapter preview PDF.
+  On successful acceptance it returns `accepted: true` and a stable
+  `sampleRequestId`, and may emit Meta CAPI `Lead` when analytics consent
+  was granted.
+- `POST /orders/verify` / Razorpay webhook / authorized bypass: after an order
+  is marked paid, may emit Meta CAPI `Purchase` once (`metaPurchaseSentAt`
+  claim). See `docs/ANALYTICS.md` for SSM token setup, Test Events, and the
+  `MetaCapiEnabled` kill switch.
 - `POST /marketing-consents` records Classpath Reader List / marketing opt-in
   on `SampleRequestsTable` (email PK). First valid opt-in is atomic
   (`marketingConsent` missing or false → true); only that write sends the

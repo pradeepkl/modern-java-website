@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "test": "node --test",
+    "test": "node --test 'src/**/*.test.js'",
     "test:deploy": "../scripts/test-deploy-behaviour.sh",
     "export:waitlist": "node scripts/export-paperback-waitlist.js",
     "send:review-followup": "node scripts/send-amazon-review-followup.js",

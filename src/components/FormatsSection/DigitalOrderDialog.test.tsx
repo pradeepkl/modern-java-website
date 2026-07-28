@@ -5,6 +5,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const analyticsMocks = vi.hoisted(() => ({
   track: vi.fn(),
   trackPurchase: vi.fn(),
+  buildMetaAttributionPayload: vi.fn(() => ({
+    analyticsConsent: true,
+    eventSourceUrl: 'https://example.com/',
+  })),
 }));
 
 let razorpayOptions:
@@ -22,6 +26,7 @@ let razorpayOptions:
 vi.mock('../../lib/analytics', () => ({
   track: analyticsMocks.track,
   trackPurchase: analyticsMocks.trackPurchase,
+  buildMetaAttributionPayload: analyticsMocks.buildMetaAttributionPayload,
 }));
 
 vi.mock('../../lib/turnstile', () => ({

@@ -112,6 +112,29 @@ Parameters:
     NoEcho: true
     Default: ''
     Description: HMAC secret for RFC 8058 one-click unsubscribe tokens (required in prod)
+  MetaPixelId:
+    Type: String
+    Default: ''
+    Description: Meta Pixel ID for Conversions API (server-side Lead/Purchase). Empty disables CAPI.
+  MetaAccessTokenSsmParam:
+    Type: String
+    Default: /modern-java/meta/access-token
+    Description: SSM SecureString parameter holding the Meta Conversions API access token
+  MetaGraphApiVersion:
+    Type: String
+    Default: v21.0
+    Description: Meta Graph API version used for Conversions API calls
+  MetaTestEventCode:
+    Type: String
+    Default: ''
+    Description: Optional Meta Test Events code (non-production validation only)
+  MetaCapiEnabled:
+    Type: String
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Default: 'true'
+    Description: Kill switch for Meta Conversions API (Lead/Purchase)
 
 Globals:
   Function:
@@ -151,6 +174,11 @@ Globals:
         CLOUDFRONT_DOMAIN: !GetAtt DigitalAssetsDistribution.DomainName
         CLOUDFRONT_KEY_PAIR_ID: !Ref DigitalAssetsCloudFrontPublicKey
         CLOUDFRONT_PRIVATE_KEY_SSM_PARAM: !Ref CloudFrontPrivateKeySsmParam
+        META_PIXEL_ID: !Ref MetaPixelId
+        META_ACCESS_TOKEN_SSM_PARAM: !Ref MetaAccessTokenSsmParam
+        META_GRAPH_API_VERSION: !Ref MetaGraphApiVersion
+        META_TEST_EVENT_CODE: !Ref MetaTestEventCode
+        META_CAPI_ENABLED: !Ref MetaCapiEnabled
 
 Resources:
   OrderApi:
@@ -193,9 +221,13 @@ Resources:
             - Effect: Allow
               Action:
                 - ssm:GetParameter
-              Resource: !Sub
-                - 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParamName}'
-                - ParamName: !Ref CloudFrontPrivateKeySsmParam
+              Resource:
+                - !Sub
+                  - 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParamName}'
+                  - ParamName: !Ref CloudFrontPrivateKeySsmParam
+                - !Sub
+                  - 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter${ParamName}'
+                  - ParamName: !Ref MetaAccessTokenSsmParam
       Events:
         CreateOrder:
           Type: HttpApi

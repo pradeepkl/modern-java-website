@@ -52,6 +52,11 @@ const {
 } = require('./razorpayClient');
 const { getRazorpayConfig, isDevAppEnvironment } = require('./razorpayConfig');
 const {
+  extractMetaAttribution,
+  sendLeadConversion,
+  sendPurchaseConversion,
+} = require('./metaConversionsApi');
+const {
   escapeHtml,
   BOOK_FULL_TITLE,
   wrapTransactionalEmail,
@@ -335,6 +340,57 @@ const getClientIp = (event) => {
   );
 };
 
+const readMetaAttribution = (event, json) =>
+  extractMetaAttribution({
+    json,
+    event,
+    getClientIp,
+  });
+
+/**
+ * Claim exclusive right to emit a Meta Purchase CAPI event for this order.
+ * Prevents verify + webhook races from double-sending.
+ * @param {string} appOrderId
+ * @returns {Promise<boolean>}
+ */
+const claimMetaPurchaseSend = async (appOrderId) => {
+  if (!ORDERS_TABLE || !appOrderId) return false;
+  try {
+    await dynamo.send(
+      new UpdateCommand({
+        TableName: ORDERS_TABLE,
+        Key: { appOrderId },
+        UpdateExpression: 'SET metaPurchaseSentAt = :now',
+        ConditionExpression: 'attribute_not_exists(metaPurchaseSentAt)',
+        ExpressionAttributeValues: {
+          ':now': new Date().toISOString(),
+        },
+      }),
+    );
+    return true;
+  } catch (error) {
+    if (isMarketingConditionalCheckFailed(error)) return false;
+    console.error('meta_capi_purchase_claim_failed', {
+      event_name: 'Purchase',
+      event_id: appOrderId,
+      errorName: error?.name || 'Error',
+    });
+    return false;
+  }
+};
+
+/**
+ * Send Purchase CAPI at most once per order. Never throws.
+ * @param {Record<string, any>} order
+ * @param {string} source
+ */
+const maybeSendPurchaseConversion = async (order, source) => {
+  if (!order?.appOrderId) return;
+  const claimed = await claimMetaPurchaseSend(order.appOrderId);
+  if (!claimed) return;
+  await sendPurchaseConversion({ order, source });
+};
+
 const isLocalClientOrigin = (event) => {
   const candidates = [
     event.headers?.origin,
@@ -525,6 +581,7 @@ const objectExists = async (key) => {
 const requestSampleChapter = async (event) => {
   const { json } = parseBody(event);
   const email = String(json.email || '').trim().toLowerCase();
+  const metaAttribution = readMetaAttribution(event, json);
 
   if (!EMAIL_PATTERN.test(email)) {
     throw new Error('Invalid email address');
@@ -548,11 +605,16 @@ const requestSampleChapter = async (event) => {
   const previousRequest = existing.Item?.lastRequestedAt
     ? Date.parse(existing.Item.lastRequestedAt)
     : 0;
+  const sampleRequestId =
+    String(existing.Item?.sampleRequestId || '').trim() ||
+    `SR-${randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase()}`;
 
   if (Date.now() - previousRequest < SAMPLE_REQUEST_COOLDOWN_MS) {
     return response(200, {
       message:
         'The chapter preview was sent recently. Please check your inbox.',
+      accepted: false,
+      sampleRequestId: existing.Item?.sampleRequestId || undefined,
     });
   }
 
@@ -654,6 +716,7 @@ const requestSampleChapter = async (event) => {
       Item: {
         ...existing.Item,
         email,
+        sampleRequestId,
         firstRequestedAt: existing.Item?.firstRequestedAt || now,
         lastRequestedAt: now,
         requestCount: Number(existing.Item?.requestCount || 0) + 1,
@@ -699,8 +762,26 @@ const requestSampleChapter = async (event) => {
     ],
   });
 
+  // Meta CAPI Lead — never fails the sample workflow.
+  try {
+    await sendLeadConversion({
+      sampleRequestId,
+      email,
+      attribution: metaAttribution,
+      source: 'sample_request',
+    });
+  } catch (error) {
+    console.error('meta_capi_lead_failed', {
+      event_name: 'Lead',
+      event_id: sampleRequestId,
+      errorName: error?.name || 'Error',
+    });
+  }
+
   return response(200, {
     message: 'Check your inbox—the chapter preview is on its way.',
+    accepted: true,
+    sampleRequestId,
   });
 };
 
@@ -1077,6 +1158,7 @@ const validateDigitalCustomer = (input) => {
 const createDigitalOrder = async (event) => {
   const { json } = parseBody(event);
   const { name, email } = validateDigitalCustomer(json);
+  const metaAttribution = readMetaAttribution(event, json);
 
   await verifyTurnstileCaptcha(event, json.captchaToken);
 
@@ -1154,29 +1236,31 @@ const createDigitalOrder = async (event) => {
   if (skipPayment) {
     const paymentId = `bypass_${randomUUID().slice(0, 12)}`;
     const paymentMeta = paymentMetaForSkippedCheckout();
+    const paidOrder = {
+      appOrderId,
+      razorpayOrderId: `order_bypass_${appOrderId}`,
+      productType: 'digital_bundle',
+      ...customerFields,
+      amount: DIGITAL_BUNDLE_PRICE_PAISE,
+      currency: 'INR',
+      status: 'paid',
+      paymentId,
+      ...paymentMeta,
+      revisionUpdates: true,
+      marketingConsent,
+      marketingConsentAt: marketingConsent ? now : null,
+      consentVersion: marketingConsent
+        ? String(json.consentVersion || 'unknown')
+        : null,
+      checkoutBypass: true,
+      metaAttribution,
+      createdAt: now,
+      updatedAt: now,
+    };
     await dynamo.send(
       new PutCommand({
         TableName: ORDERS_TABLE,
-        Item: {
-          appOrderId,
-          razorpayOrderId: `order_bypass_${appOrderId}`,
-          productType: 'digital_bundle',
-          ...customerFields,
-          amount: DIGITAL_BUNDLE_PRICE_PAISE,
-          currency: 'INR',
-          status: 'paid',
-          paymentId,
-          ...paymentMeta,
-          revisionUpdates: true,
-          marketingConsent,
-          marketingConsentAt: marketingConsent ? now : null,
-          consentVersion: marketingConsent
-            ? String(json.consentVersion || 'unknown')
-            : null,
-          checkoutBypass: true,
-          createdAt: now,
-          updatedAt: now,
-        },
+        Item: paidOrder,
         ConditionExpression: 'attribute_not_exists(appOrderId)',
       }),
     );
@@ -1189,6 +1273,7 @@ const createDigitalOrder = async (event) => {
       marketingConsent,
       productType: 'digital_bundle',
       checkoutBypass: true,
+      metaAttribution,
     };
     const downloads = await createDigitalDownloadLinks();
     try {
@@ -1196,6 +1281,7 @@ const createDigitalOrder = async (event) => {
     } catch (error) {
       console.error('Bypass order paid but confirmation email failed', error);
     }
+    await maybeSendPurchaseConversion(paidOrder, 'digital_bypass');
 
     return response(201, {
       appOrderId,
@@ -1229,6 +1315,7 @@ const createDigitalOrder = async (event) => {
         consentVersion: marketingConsent
           ? String(json.consentVersion || 'unknown')
           : null,
+        metaAttribution,
         createdAt: now,
         updatedAt: now,
       },
@@ -1632,6 +1719,7 @@ const createOrder = async (event) => {
   const { json } = parseBody(event);
   await verifyTurnstileCaptcha(event, json.captchaToken);
   const orderInput = validateOrder(json);
+  const metaAttribution = readMetaAttribution(event, json);
   const appOrderId = `MJ-${randomUUID().slice(0, 8).toUpperCase()}`;
   const amount = orderInput.quantity * PAPERBACK_PRICE_PAISE;
   const now = new Date().toISOString();
@@ -1641,22 +1729,24 @@ const createOrder = async (event) => {
   if (skipPayment) {
     const paymentId = `bypass_${randomUUID().slice(0, 12)}`;
     const paymentMeta = paymentMetaForSkippedCheckout();
+    const paidOrder = {
+      appOrderId,
+      razorpayOrderId: `order_bypass_${appOrderId}`,
+      ...orderInput,
+      amount,
+      currency: 'INR',
+      status: 'paid',
+      paymentId,
+      ...paymentMeta,
+      checkoutBypass: true,
+      metaAttribution,
+      createdAt: now,
+      updatedAt: now,
+    };
     await dynamo.send(
       new PutCommand({
         TableName: ORDERS_TABLE,
-        Item: {
-          appOrderId,
-          razorpayOrderId: `order_bypass_${appOrderId}`,
-          ...orderInput,
-          amount,
-          currency: 'INR',
-          status: 'paid',
-          paymentId,
-          ...paymentMeta,
-          checkoutBypass: true,
-          createdAt: now,
-          updatedAt: now,
-        },
+        Item: paidOrder,
         ConditionExpression: 'attribute_not_exists(appOrderId)',
       }),
     );
@@ -1667,6 +1757,7 @@ const createOrder = async (event) => {
       amount,
       ...orderInput,
       checkoutBypass: true,
+      metaAttribution,
     };
     try {
       await sendConfirmationEmails(order);
@@ -1676,6 +1767,7 @@ const createOrder = async (event) => {
         error,
       );
     }
+    await maybeSendPurchaseConversion(paidOrder, 'paperback_bypass');
 
     return response(201, {
       appOrderId,
@@ -1704,6 +1796,7 @@ const createOrder = async (event) => {
         currency: 'INR',
         status: 'payment_pending',
         ...persistedPaymentFields(razorpayConfig),
+        metaAttribution,
         createdAt: now,
         updatedAt: now,
       },
@@ -1782,6 +1875,7 @@ const verifyOrder = async (event) => {
     } catch (error) {
       console.error('Order paid but confirmation email failed', error);
     }
+    await maybeSendPurchaseConversion(updated.Attributes, 'orders_verify');
   }
 
   return response(200, {
@@ -1835,6 +1929,10 @@ const processWebhook = async (event) => {
         } catch (error) {
           console.error('Webhook reconciled payment but email failed', error);
         }
+        await maybeSendPurchaseConversion(
+          updated.Attributes,
+          'razorpay_webhook',
+        );
       }
     }
   }

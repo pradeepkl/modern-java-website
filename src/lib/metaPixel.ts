@@ -195,10 +195,16 @@ function sanitizeParameters(
   return Object.keys(clean).length > 0 ? clean : undefined;
 }
 
+export type MetaEventOptions = {
+  /** Shared with Conversions API for browser/server deduplication. */
+  eventID?: string;
+};
+
 /** Standard Meta events (Purchase / Lead / etc.). */
 export function trackMetaEvent(
   eventName: MetaStandardEvent,
   parameters?: Record<string, unknown>,
+  options?: MetaEventOptions,
 ): void {
   if (!initializedPixelId || typeof window === 'undefined') return;
   if (!window.fbq) return;
@@ -209,8 +215,14 @@ export function trackMetaEvent(
 
   try {
     const clean = sanitizeParameters(parameters);
-    if (clean) {
+    const eventID = options?.eventID?.trim();
+    const eventData = eventID ? { eventID } : undefined;
+    if (clean && eventData) {
+      window.fbq('track', eventName, clean, eventData);
+    } else if (clean) {
       window.fbq('track', eventName, clean);
+    } else if (eventData) {
+      window.fbq('track', eventName, {}, eventData);
     } else {
       window.fbq('track', eventName);
     }
@@ -228,11 +240,12 @@ export function trackMetaEventOnce(
   dedupeKey: string,
   eventName: Exclude<MetaStandardEvent, 'PageView'>,
   parameters?: Record<string, unknown>,
+  options?: MetaEventOptions,
 ): void {
   const key = dedupeKey.trim();
   if (!key || sentEventKeys.has(key)) return;
   sentEventKeys.add(key);
-  trackMetaEvent(eventName, parameters);
+  trackMetaEvent(eventName, parameters, options);
 }
 
 export function trackMetaCustomEvent(

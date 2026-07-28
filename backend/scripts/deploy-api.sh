@@ -35,6 +35,11 @@ set +a
 : "${ZohoInvoiceTemplateId:=}"
 : "${DigitalCheckoutBypassSecret:=}"
 : "${TurnstileSecretKey:=}"
+: "${MetaPixelId:=}"
+: "${MetaAccessTokenSsmParam:=/modern-java/meta/access-token}"
+: "${MetaGraphApiVersion:=v21.0}"
+: "${MetaTestEventCode:=}"
+: "${MetaCapiEnabled:=true}"
 : "${RAZORPAY_KEY_ID:?RAZORPAY_KEY_ID is required}"
 : "${RAZORPAY_KEY_SECRET:?RAZORPAY_KEY_SECRET is required}"
 : "${RAZORPAY_WEBHOOK_SECRET:?RAZORPAY_WEBHOOK_SECRET is required}"
@@ -55,7 +60,7 @@ escape_param() {
 
 PARAMETER_OVERRIDES=$(
   cat <<EOF
-AppEnv="${APP_ENV}" RazorpayKeyId="$(escape_param "$RAZORPAY_KEY_ID")" RazorpayKeySecret="$(escape_param "$RAZORPAY_KEY_SECRET")" RazorpayWebhookSecret="$(escape_param "$RAZORPAY_WEBHOOK_SECRET")" AdminEmail="pradeep@classpath.in" AllowedOrigin="https://modern-java.classpath.in,http://localhost:5173" MailFromEmail="no-reply@classpath.in" ReplyToEmail="pradeep@classpath.in" SesRegion="us-east-1" WebsiteUrl="https://modern-java.classpath.in" SamplePdfKey="sample/modern-java-preview.pdf" DigitalPdfKey="digital/modern-java-drm-free_v1.0.pdf" DigitalEpubKey="digital/modern-java-drm-free_v1.0.epub" DigitalCheckoutBypassSecret="$(escape_param "${DigitalCheckoutBypassSecret}")" TurnstileSecretKey="$(escape_param "${TurnstileSecretKey}")" ZohoClientId="$(escape_param "${ZohoClientId}")" ZohoClientSecret="$(escape_param "${ZohoClientSecret}")" ZohoRefreshToken="$(escape_param "${ZohoRefreshToken}")" ZohoOrganizationId="$(escape_param "${ZohoOrganizationId}")" ZohoTaxId="$(escape_param "${ZohoTaxId}")" ZohoTaxExemptionId="$(escape_param "${ZohoTaxExemptionId}")" ZohoInvoiceTemplateId="$(escape_param "${ZohoInvoiceTemplateId}")" SesConfigurationSetName="classpath-email-${APP_ENV}" UnsubscribeTokenSecret="$(escape_param "${UnsubscribeTokenSecret}")"
+AppEnv="${APP_ENV}" RazorpayKeyId="$(escape_param "$RAZORPAY_KEY_ID")" RazorpayKeySecret="$(escape_param "$RAZORPAY_KEY_SECRET")" RazorpayWebhookSecret="$(escape_param "$RAZORPAY_WEBHOOK_SECRET")" AdminEmail="pradeep@classpath.in" AllowedOrigin="https://modern-java.classpath.in,http://localhost:5173" MailFromEmail="no-reply@classpath.in" ReplyToEmail="pradeep@classpath.in" SesRegion="us-east-1" WebsiteUrl="https://modern-java.classpath.in" SamplePdfKey="sample/modern-java-preview.pdf" DigitalPdfKey="digital/modern-java-drm-free_v1.0.pdf" DigitalEpubKey="digital/modern-java-drm-free_v1.0.epub" DigitalCheckoutBypassSecret="$(escape_param "${DigitalCheckoutBypassSecret}")" TurnstileSecretKey="$(escape_param "${TurnstileSecretKey}")" ZohoClientId="$(escape_param "${ZohoClientId}")" ZohoClientSecret="$(escape_param "${ZohoClientSecret}")" ZohoRefreshToken="$(escape_param "${ZohoRefreshToken}")" ZohoOrganizationId="$(escape_param "${ZohoOrganizationId}")" ZohoTaxId="$(escape_param "${ZohoTaxId}")" ZohoTaxExemptionId="$(escape_param "${ZohoTaxExemptionId}")" ZohoInvoiceTemplateId="$(escape_param "${ZohoInvoiceTemplateId}")" SesConfigurationSetName="classpath-email-${APP_ENV}" UnsubscribeTokenSecret="$(escape_param "${UnsubscribeTokenSecret}")" MetaPixelId="$(escape_param "${MetaPixelId}")" MetaAccessTokenSsmParam="$(escape_param "${MetaAccessTokenSsmParam}")" MetaGraphApiVersion="$(escape_param "${MetaGraphApiVersion}")" MetaTestEventCode="$(escape_param "${MetaTestEventCode}")" MetaCapiEnabled="$(escape_param "${MetaCapiEnabled}")"
 EOF
 )
 

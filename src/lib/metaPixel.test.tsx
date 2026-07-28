@@ -167,14 +167,24 @@ describe('metaPixel', () => {
       { section: 'hero' },
     ]);
 
-    trackMetaEventOnce('purchase:order-123', 'Purchase', { value: 699 });
-    trackMetaEventOnce('purchase:order-123', 'Purchase', { value: 699 });
+    trackMetaEventOnce('purchase:order-123', 'Purchase', { value: 699 }, {
+      eventID: 'order-123',
+    });
+    trackMetaEventOnce('purchase:order-123', 'Purchase', { value: 699 }, {
+      eventID: 'order-123',
+    });
 
     const purchases = queued.filter(
       (entry) =>
         Array.isArray(entry) && entry[0] === 'track' && entry[1] === 'Purchase',
     );
     expect(purchases).toHaveLength(1);
+    expect(purchases[0]).toEqual([
+      'track',
+      'Purchase',
+      { value: 699 },
+      { eventID: 'order-123' },
+    ]);
   });
 
   it('helpers safely no-op before initialization', async () => {

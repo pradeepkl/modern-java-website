@@ -9,7 +9,7 @@ import {
 import { createPortal } from 'react-dom';
 import { CheckCircle2, CreditCard, Minus, Plus, X } from 'lucide-react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
-import { track, trackPurchase } from '../../lib/analytics';
+import { track, trackPurchase, buildMetaAttributionPayload } from '../../lib/analytics';
 import { loadRazorpayCheckout } from '../../lib/razorpay';
 import { isTurnstileConfigured, shouldSkipCheckoutPayment } from '../../lib/turnstile';
 import { CityInput } from '../shared/CityInput';
@@ -174,7 +174,10 @@ export function PaperbackOrderDialog({
       const createResult = await fetch(`${ORDER_API_URL}/orders`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(orderInput),
+        body: JSON.stringify({
+          ...orderInput,
+          ...buildMetaAttributionPayload(),
+        }),
       });
       const order = await createResult.json();
 

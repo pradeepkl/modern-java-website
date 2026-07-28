@@ -1,6 +1,6 @@
 import { FormEvent, useRef, useState } from 'react';
 import { BookOpen, Check, Mail } from 'lucide-react';
-import { track, trackMetaConversion } from '../../lib/analytics';
+import { track, trackMetaConversion, buildMetaAttributionPayload } from '../../lib/analytics';
 import { isTurnstileConfigured } from '../../lib/turnstile';
 import { SectionEyebrow } from '../shared/SectionEyebrow';
 import {
@@ -63,6 +63,7 @@ export function SampleChapterSection() {
           marketingConsent,
           consentVersion: '2026-07-21',
           captchaToken: captchaToken || undefined,
+          ...buildMetaAttributionPayload(),
         }),
       });
       const payload = await result.json();
@@ -77,11 +78,24 @@ export function SampleChapterSection() {
       setStatus('success');
       setMessage('Check your inbox—the chapter preview is on its way.');
       track('sample_form_success', { marketing_consent: marketingConsent });
-      trackMetaConversion('lead:sample-preview', 'Lead', {
-        content_name: 'sample_chapter',
-        content_category: 'book_preview',
-        source: 'sample_preview_form',
-      });
+
+      // Fire browser Lead only for newly accepted sends; eventID matches CAPI.
+      const sampleRequestId =
+        typeof payload.sampleRequestId === 'string'
+          ? payload.sampleRequestId.trim()
+          : '';
+      if (payload.accepted === true && sampleRequestId) {
+        trackMetaConversion(
+          `lead:sample-preview:${sampleRequestId}`,
+          'Lead',
+          {
+            content_name: 'sample_chapter',
+            content_category: 'book_preview',
+            source: 'sample_preview_form',
+          },
+          { eventID: sampleRequestId },
+        );
+      }
     } catch (error) {
       setStatus('error');
       setCaptchaToken(null);

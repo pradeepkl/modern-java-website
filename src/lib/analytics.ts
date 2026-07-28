@@ -254,14 +254,72 @@ export function trackCtaClick(cta: string, location: string): void {
   track('cta_click', { cta, location });
 }
 
+function readBrowserCookie(name: string): string | undefined {
+  if (typeof document === 'undefined') return undefined;
+  try {
+    const encoded = encodeURIComponent(name);
+    const parts = document.cookie.split(';');
+    for (const part of parts) {
+      const trimmed = part.trim();
+      if (!trimmed.startsWith(`${encoded}=`) && !trimmed.startsWith(`${name}=`)) {
+        continue;
+      }
+      const raw = trimmed.slice(trimmed.indexOf('=') + 1);
+      return decodeURIComponent(raw);
+    }
+  } catch {
+    /* ignore */
+  }
+  return undefined;
+}
+
+/**
+ * Meta click IDs already set by the Pixel (_fbp / _fbc). Empty when consent
+ * was never granted or cookies are blocked — never invent values.
+ */
+export function getMetaBrowserIds(): { fbp?: string; fbc?: string } {
+  if (getConsent() !== 'granted') return {};
+  const fbp = readBrowserCookie('_fbp')?.trim();
+  const fbc = readBrowserCookie('_fbc')?.trim();
+  return {
+    ...(fbp ? { fbp } : {}),
+    ...(fbc ? { fbc } : {}),
+  };
+}
+
+/**
+ * Fields the backend needs for Conversions API Lead / Purchase.
+ * Only includes analyticsConsent when the visitor accepted analytics.
+ */
+export function buildMetaAttributionPayload(): {
+  analyticsConsent: boolean;
+  fbp?: string;
+  fbc?: string;
+  eventSourceUrl?: string;
+  clientUserAgent?: string;
+} {
+  const analyticsConsent = getConsent() === 'granted';
+  if (!analyticsConsent || typeof window === 'undefined') {
+    return { analyticsConsent: false };
+  }
+
+  return {
+    analyticsConsent: true,
+    ...getMetaBrowserIds(),
+    eventSourceUrl: window.location.href,
+    clientUserAgent: window.navigator?.userAgent,
+  };
+}
+
 export function trackMetaConversion(
   dedupeKey: string,
   eventName: 'ViewContent' | 'Lead' | 'InitiateCheckout' | 'Purchase',
   props?: AnalyticsProps,
+  options?: { eventID?: string },
 ): void {
   if (getConsent() !== 'granted') return;
   if (!trackersLoaded) initAnalytics();
-  trackMetaEventOnce(dedupeKey, eventName, sanitizeMetaProps(props));
+  trackMetaEventOnce(dedupeKey, eventName, sanitizeMetaProps(props), options);
 }
 
 export function trackPurchase(params: {
@@ -296,13 +354,19 @@ export function trackPurchase(params: {
     });
   }
 
-  trackMetaConversion(`purchase:${params.transactionId}`, 'Purchase', {
-    currency: 'INR',
-    value: params.value,
-    content_name: `modern_java_${params.format}`,
-    content_category: 'book_purchase',
-    content_ids: [`modern_java_${params.format}`],
-    content_type: 'product',
-    num_items: quantity,
-  });
+  // eventID must match server Conversions API event_id (app order id).
+  trackMetaConversion(
+    `purchase:${params.transactionId}`,
+    'Purchase',
+    {
+      currency: 'INR',
+      value: params.value,
+      content_name: `modern_java_${params.format}`,
+      content_category: 'book_purchase',
+      content_ids: [`modern_java_${params.format}`],
+      content_type: 'product',
+      num_items: quantity,
+    },
+    { eventID: params.transactionId },
+  );
 }

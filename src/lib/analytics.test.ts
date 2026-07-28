@@ -81,6 +81,7 @@ describe('analytics Meta payload sanitization', () => {
         content_ids: ['modern_java_digital'],
         source: 'sample_preview_form',
       },
+      undefined,
     );
   });
 
@@ -106,6 +107,7 @@ describe('analytics Meta payload sanitization', () => {
         content_type: 'product',
         num_items: 1,
       },
+      { eventID: 'APP-123' },
     );
   });
 });
