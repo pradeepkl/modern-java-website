@@ -19,6 +19,6 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src", "config/product-prices.json"],
-  "exclude": ["src/**/*.{test,spec}.{ts,tsx}"]
+  "include": ["src", "config/product-prices.json", "backend/src/product-prices.json"],
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/**/*.spec.ts", "src/**/*.spec.tsx"]
 }

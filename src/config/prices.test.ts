@@ -1,6 +1,5 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import packagedPrices from '../../backend/src/product-prices.json';
 import {
   formatInrAmount,
   getAmountInr,
@@ -31,12 +30,6 @@ describe('product prices config', () => {
   });
 
   it('matches the Lambda-packaged copy under backend/src', () => {
-    const packaged = JSON.parse(
-      readFileSync(
-        resolve(process.cwd(), 'backend/src/product-prices.json'),
-        'utf8',
-      ),
-    );
-    expect(packaged).toEqual(productPrices);
+    expect(packagedPrices).toEqual(productPrices);
   });
 });
