@@ -4,12 +4,14 @@ const metaPixelMocks = vi.hoisted(() => ({
   getConfiguredMetaPixelId: vi.fn(() => '1844493498903023'),
   initializeMetaPixel: vi.fn(),
   trackMetaEventOnce: vi.fn(),
+  trackMetaCustomEvent: vi.fn(),
 }));
 
 vi.mock('./metaPixel', () => ({
   getConfiguredMetaPixelId: metaPixelMocks.getConfiguredMetaPixelId,
   initializeMetaPixel: metaPixelMocks.initializeMetaPixel,
   trackMetaEventOnce: metaPixelMocks.trackMetaEventOnce,
+  trackMetaCustomEvent: metaPixelMocks.trackMetaCustomEvent,
 }));
 
 async function loadAnalytics() {
@@ -88,9 +90,10 @@ describe('analytics Meta payload sanitization', () => {
   it('sends business-useful Purchase fields to Meta', async () => {
     const { trackPurchase } = await loadAnalytics();
 
+    // value is INR rupees (e.g. ₹5 = 500 paise), never raw paise.
     trackPurchase({
       format: 'digital',
-      value: 699,
+      value: 5,
       transactionId: 'APP-123',
       paymentMethod: 'razorpay',
     });
@@ -100,7 +103,7 @@ describe('analytics Meta payload sanitization', () => {
       'Purchase',
       {
         currency: 'INR',
-        value: 699,
+        value: 5,
         content_name: 'modern_java_digital',
         content_category: 'book_purchase',
         content_ids: ['modern_java_digital'],
@@ -109,5 +112,97 @@ describe('analytics Meta payload sanitization', () => {
       },
       { eventID: 'APP-123' },
     );
+  });
+
+  it('fires AmazonClick with canonical params and AMZ- eventID', async () => {
+    const {
+      trackAmazonClick,
+      AMAZON_CLICK_EVENT,
+      AMAZON_CLICK_PARAMS,
+    } = await loadAnalytics();
+
+    const eventId = trackAmazonClick();
+
+    expect(eventId).toMatch(/^AMZ-[0-9A-F]{12}$/);
+    expect(metaPixelMocks.trackMetaCustomEvent).toHaveBeenCalledWith(
+      AMAZON_CLICK_EVENT,
+      { ...AMAZON_CLICK_PARAMS },
+      { eventID: eventId },
+    );
+  });
+
+  it('does not fire AmazonClick without analytics consent', async () => {
+    localStorage.setItem('mj_analytics_consent', 'denied');
+    const { trackAmazonClick } = await loadAnalytics();
+
+    expect(trackAmazonClick()).toBeUndefined();
+    expect(metaPixelMocks.trackMetaCustomEvent).not.toHaveBeenCalled();
+  });
+
+  it('createAmazonClickEventId always returns AMZ- prefixed ids', async () => {
+    const { createAmazonClickEventId } = await loadAnalytics();
+    const a = createAmazonClickEventId();
+    const b = createAmazonClickEventId();
+    expect(a).toMatch(/^AMZ-[0-9A-F]{12}$/);
+    expect(b).toMatch(/^AMZ-[0-9A-F]{12}$/);
+    expect(a).not.toBe(b);
+  });
+
+  it('navigateToAmazon fires AmazonClick then assigns after delay', async () => {
+    vi.useFakeTimers();
+    const assignMock = vi.fn();
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: {
+        assign: assignMock,
+        href: 'https://modern-java.classpath.in/',
+      },
+    });
+
+    const {
+      navigateToAmazon,
+      AMAZON_CLICK_NAV_DELAY_MS,
+      AMAZON_CLICK_EVENT,
+    } = await loadAnalytics();
+
+    navigateToAmazon('https://www.amazon.in/dp/B0H6R4334W');
+
+    expect(metaPixelMocks.trackMetaCustomEvent).toHaveBeenCalledWith(
+      AMAZON_CLICK_EVENT,
+      expect.objectContaining({
+        content_name: 'Modern Java Kindle',
+        destination: 'amazon',
+      }),
+      expect.objectContaining({ eventID: expect.stringMatching(/^AMZ-/) }),
+    );
+    expect(assignMock).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(AMAZON_CLICK_NAV_DELAY_MS);
+    expect(assignMock).toHaveBeenCalledWith('https://www.amazon.in/dp/B0H6R4334W');
+    vi.useRealTimers();
+  });
+
+  it('navigateToAmazon still assigns when Meta tracking throws', async () => {
+    vi.useFakeTimers();
+    metaPixelMocks.trackMetaCustomEvent.mockImplementationOnce(() => {
+      throw new Error('pixel blocked');
+    });
+    const assignMock = vi.fn();
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: {
+        assign: assignMock,
+        href: 'https://modern-java.classpath.in/',
+      },
+    });
+
+    const { navigateToAmazon, AMAZON_CLICK_NAV_DELAY_MS } = await loadAnalytics();
+    expect(() =>
+      navigateToAmazon('https://www.amazon.in/dp/B0H6R4334W'),
+    ).not.toThrow();
+
+    await vi.advanceTimersByTimeAsync(AMAZON_CLICK_NAV_DELAY_MS);
+    expect(assignMock).toHaveBeenCalledWith('https://www.amazon.in/dp/B0H6R4334W');
+    vi.useRealTimers();
   });
 });

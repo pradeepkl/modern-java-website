@@ -21,6 +21,11 @@ export function formatInrAmount(amountInr: number): string {
   return `₹${amountInr}`;
 }
 
+/** Razorpay / order amounts are paise; Meta + GA need rupees (INR). */
+export function paiseToInr(amountPaise: number): number {
+  return Number(amountPaise) / 100;
+}
+
 export function getProductPrice(formatId: ProductFormatId): ProductPrice {
   return productPrices[formatId];
 }

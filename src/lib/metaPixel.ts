@@ -64,6 +64,34 @@ function currentLocationKey(): string {
   return `${window.location.pathname}${window.location.search}`;
 }
 
+/**
+ * Meta's Pixel auto-picks up ?test_event_code=TESTxxxx from the page URL
+ * (often left by Events Manager → Test events → open website). That tags
+ * real browser hits as test traffic. Strip it in production before init.
+ */
+export function stripMetaTestEventCodeFromUrl(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has('test_event_code')) return false;
+    url.searchParams.delete('test_event_code');
+    const next = `${url.pathname}${url.search}${url.hash}`;
+    window.history.replaceState(window.history.state, '', next || '/');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Never forward test_event_code on browser Pixel event options. */
+function sanitizeEventOptions(
+  options?: MetaEventOptions,
+): { eventID: string } | undefined {
+  const eventID = options?.eventID?.trim();
+  if (!eventID) return undefined;
+  return { eventID };
+}
+
 function ensureFbqStub(): FbqFunction | null {
   if (typeof window === 'undefined') return null;
   if (window.fbq) return window.fbq;
@@ -132,6 +160,8 @@ export function initializeMetaPixel(pixelId: string): void {
   insertMetaPixelScript();
 
   try {
+    // Must run before init so fbevents.js never sees a leftover test code.
+    stripMetaTestEventCodeFromUrl();
     fbq('init', id);
     initializedPixelId = id;
   } catch {
@@ -215,8 +245,7 @@ export function trackMetaEvent(
 
   try {
     const clean = sanitizeParameters(parameters);
-    const eventID = options?.eventID?.trim();
-    const eventData = eventID ? { eventID } : undefined;
+    const eventData = sanitizeEventOptions(options);
     if (clean && eventData) {
       window.fbq('track', eventName, clean, eventData);
     } else if (clean) {
@@ -251,14 +280,20 @@ export function trackMetaEventOnce(
 export function trackMetaCustomEvent(
   eventName: string,
   parameters?: Record<string, unknown>,
+  options?: MetaEventOptions,
 ): void {
   if (!initializedPixelId || typeof window === 'undefined') return;
   if (!window.fbq || !eventName.trim()) return;
 
   try {
     const clean = sanitizeParameters(parameters);
-    if (clean) {
+    const eventData = sanitizeEventOptions(options);
+    if (clean && eventData) {
+      window.fbq('trackCustom', eventName, clean, eventData);
+    } else if (clean) {
       window.fbq('trackCustom', eventName, clean);
+    } else if (eventData) {
+      window.fbq('trackCustom', eventName, {}, eventData);
     } else {
       window.fbq('trackCustom', eventName);
     }

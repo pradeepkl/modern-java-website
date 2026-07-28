@@ -11,6 +11,7 @@ import { CheckCircle2, CreditCard, Minus, Plus, X } from 'lucide-react';
 import {
   formatInrAmount,
   getAmountInr,
+  paiseToInr,
 } from '../../config/prices';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { track, trackPurchase, buildMetaAttributionPayload } from '../../lib/analytics';
@@ -195,7 +196,10 @@ export function PaperbackOrderDialog({
         completedRef.current = true;
         trackPurchase({
           format: 'paperback',
-          value: PAPERBACK_PRICE * orderInput.quantity,
+          // Order amount is paise; Pixel/GA expect INR rupees.
+          value: paiseToInr(
+            order.amount ?? PAPERBACK_PRICE * orderInput.quantity * 100,
+          ),
           transactionId: order.appOrderId,
           paymentMethod: 'bypass',
           quantity: orderInput.quantity,
@@ -266,7 +270,10 @@ export function PaperbackOrderDialog({
             completedRef.current = true;
             trackPurchase({
               format: 'paperback',
-              value: PAPERBACK_PRICE * orderInput.quantity,
+              // Order amount is paise; Pixel/GA expect INR rupees.
+              value: paiseToInr(
+                order.amount ?? PAPERBACK_PRICE * orderInput.quantity * 100,
+              ),
               transactionId: verification.appOrderId,
               paymentMethod: 'razorpay',
               quantity: orderInput.quantity,

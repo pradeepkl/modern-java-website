@@ -6,13 +6,24 @@ import {
   amazonExitModalCopy,
   AMAZON_EXIT_MODAL_SOURCE,
 } from '../../data/amazonExitModalCopy';
-import { track } from '../../lib/analytics';
+import {
+  AMAZON_CLICK_EVENT,
+  AMAZON_CLICK_PARAMS,
+  navigateToAmazon,
+  track,
+} from '../../lib/analytics';
 import { AmazonConsentLink } from './AmazonConsentLink';
 
-vi.mock('../../lib/analytics', () => ({
-  track: vi.fn(),
-  getUtmProps: () => ({}),
-}));
+vi.mock('../../lib/analytics', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../lib/analytics')>();
+  return {
+    ...actual,
+    track: vi.fn(),
+    navigateToAmazon: vi.fn(),
+    trackMetaConversion: vi.fn(),
+    getUtmProps: () => ({}),
+  };
+});
 
 vi.mock('../../lib/turnstile', () => ({
   isTurnstileConfigured: () => false,
@@ -105,12 +116,51 @@ describe('AmazonConsentLink', () => {
     await user.click(screen.getByRole('link', { name: /buy on amazon/i }));
     await user.click(screen.getByTestId('amazon-exit-skip'));
 
-    expect(assignMock).toHaveBeenCalledWith(book.amazonUrl);
+    expect(navigateToAmazon).toHaveBeenCalledWith(book.amazonUrl);
     expect(fetch).not.toHaveBeenCalled();
     expect(track).toHaveBeenCalledWith(
       'amazon_exit_continue_without_email',
       expect.objectContaining({ source: AMAZON_EXIT_MODAL_SOURCE }),
     );
+  });
+
+  it('fires exactly one AmazonClick before Amazon navigation on continue without joining', async () => {
+    const user = userEvent.setup();
+    render(
+      <AmazonConsentLink href={book.amazonUrl} buttonLocation="formats">
+        Buy on Amazon
+      </AmazonConsentLink>,
+    );
+
+    await user.click(screen.getByRole('link', { name: /buy on amazon/i }));
+    await user.click(screen.getByTestId('amazon-exit-skip'));
+    // Double-click must not emit a second AmazonClick (exited guard).
+    await user.click(screen.getByTestId('amazon-exit-skip'));
+
+    expect(navigateToAmazon).toHaveBeenCalledTimes(1);
+    expect(navigateToAmazon).toHaveBeenCalledWith(book.amazonUrl);
+    expect(track).toHaveBeenCalledWith(
+      'amazon_exit',
+      expect.objectContaining({ path: 'skip' }),
+    );
+  });
+
+  it('still navigates to Amazon when AmazonClick tracking throws', async () => {
+    // navigateToAmazon itself must swallow tracking errors; component still calls it once.
+    vi.mocked(navigateToAmazon).mockImplementationOnce((url: string) => {
+      window.location.assign(url);
+    });
+
+    const user = userEvent.setup();
+    render(
+      <AmazonConsentLink href={book.amazonUrl}>Buy on Amazon</AmazonConsentLink>,
+    );
+
+    await user.click(screen.getByRole('link', { name: /buy on amazon/i }));
+    await user.click(screen.getByTestId('amazon-exit-skip'));
+
+    expect(navigateToAmazon).toHaveBeenCalledWith(book.amazonUrl);
+    expect(assignMock).toHaveBeenCalledWith(book.amazonUrl);
   });
 
   it('rejects an invalid email without submitting', async () => {
@@ -161,11 +211,50 @@ describe('AmazonConsentLink', () => {
     expect(body.sourceVersion).toBe('2');
 
     await user.click(screen.getByTestId('amazon-exit-continue-after-signup'));
-    expect(assignMock).toHaveBeenCalledWith(book.amazonUrl);
+    expect(navigateToAmazon).toHaveBeenCalledWith(book.amazonUrl);
     expect(track).toHaveBeenCalledWith(
       'amazon_exit_continue_after_signup',
       expect.objectContaining({ source: AMAZON_EXIT_MODAL_SOURCE }),
     );
+    expect(navigateToAmazon).toHaveBeenCalledTimes(1);
+    expect(track).toHaveBeenCalledWith(
+      'amazon_exit',
+      expect.objectContaining({ path: 'consent' }),
+    );
+  });
+
+  it('fires AmazonClick once on join-and-continue path after signup', async () => {
+    const user = userEvent.setup();
+    render(
+      <AmazonConsentLink href={book.amazonUrl}>Buy on Amazon</AmazonConsentLink>,
+    );
+
+    await user.click(screen.getByRole('link', { name: /buy on amazon/i }));
+    await user.type(
+      screen.getByTestId('amazon-exit-email'),
+      'reader@example.com',
+    );
+    await user.click(screen.getByTestId('amazon-exit-submit'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('amazon-exit-continue-after-signup')).toBeTruthy();
+    });
+
+    expect(navigateToAmazon).not.toHaveBeenCalled();
+
+    await user.click(screen.getByTestId('amazon-exit-continue-after-signup'));
+    expect(navigateToAmazon).toHaveBeenCalledTimes(1);
+    expect(navigateToAmazon).toHaveBeenCalledWith(book.amazonUrl);
+  });
+
+  it('exports canonical AmazonClick Meta parameters', () => {
+    expect(AMAZON_CLICK_EVENT).toBe('AmazonClick');
+    expect(AMAZON_CLICK_PARAMS).toEqual({
+      content_ids: ['modern_java_kindle'],
+      content_type: 'product',
+      content_name: 'Modern Java Kindle',
+      destination: 'amazon',
+    });
   });
 
   it('handles duplicate email as a successful already-on-list state', async () => {
@@ -220,7 +309,7 @@ describe('AmazonConsentLink', () => {
     );
 
     await user.click(screen.getByTestId('amazon-exit-skip'));
-    expect(assignMock).toHaveBeenCalledWith(book.amazonUrl);
+    expect(navigateToAmazon).toHaveBeenCalledWith(book.amazonUrl);
   });
 
   it('masks the email field for Clarity', async () => {

@@ -18,7 +18,12 @@ import {
   amazonExitModalCopy,
 } from '../../data/amazonExitModalCopy';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
-import { getUtmProps, track, trackMetaConversion } from '../../lib/analytics';
+import {
+  getUtmProps,
+  navigateToAmazon,
+  track,
+  trackMetaConversion,
+} from '../../lib/analytics';
 import { isTurnstileConfigured } from '../../lib/turnstile';
 import {
   ModalStatusIcon,
@@ -168,12 +173,14 @@ export function AmazonConsentLink({
       | 'amazon_exit_continue_without_email'
       | 'amazon_exit_continue_after_signup',
   ) => {
-    if (!exited.current) {
-      exited.current = true;
-      track(eventName, analyticsBase);
-      track('amazon_exit', { path, ...analyticsBase });
-    }
-    window.location.assign(href);
+    // One user action → one AmazonClick + one navigation.
+    if (exited.current) return;
+    exited.current = true;
+    track(eventName, analyticsBase);
+    track('amazon_exit', { path, ...analyticsBase });
+    // Explicit Meta business event (not SubscribedButtonClick auto-detection).
+    // navigateToAmazon fires AmazonClick then delays assign so Pixel can flush.
+    navigateToAmazon(href);
   };
 
   const handleTurnstileError = (reason: 'load' | 'widget') => {

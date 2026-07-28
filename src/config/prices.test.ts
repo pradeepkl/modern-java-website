@@ -6,6 +6,7 @@ import {
   getFormattedListPrice,
   getFormattedPrice,
   getListAmountInr,
+  paiseToInr,
   productPrices,
 } from './prices';
 
@@ -24,6 +25,14 @@ describe('product prices config', () => {
     expect(productPrices.kindle.amountInr).toBeGreaterThan(0);
     expect(productPrices.digital.amountInr).toBeGreaterThan(0);
     expect(productPrices.paperback.amountInr).toBeGreaterThan(0);
+  });
+
+  it('converts Razorpay paise amounts to INR rupees for Pixel/GA', () => {
+    expect(paiseToInr(500)).toBe(5);
+    expect(paiseToInr(productPrices.digital.amountInr * 100)).toBe(
+      productPrices.digital.amountInr,
+    );
+    expect(paiseToInr(0)).toBe(0);
   });
 
   it('formats INR display strings from config amounts', () => {

@@ -1,8 +1,19 @@
 import {
   getConfiguredMetaPixelId,
   initializeMetaPixel,
+  trackMetaCustomEvent,
   trackMetaEventOnce,
 } from './metaPixel';
+
+/** Canonical Meta custom event for the final Amazon Kindle outbound click. */
+export const AMAZON_CLICK_EVENT = 'AmazonClick' as const;
+
+export const AMAZON_CLICK_PARAMS = {
+  content_ids: ['modern_java_kindle'],
+  content_type: 'product',
+  content_name: 'Modern Java Kindle',
+  destination: 'amazon',
+} as const;
 
 const CONSENT_STORAGE_KEY = 'mj_analytics_consent';
 const UTM_STORAGE_KEY = 'mj_utm';
@@ -322,8 +333,99 @@ export function trackMetaConversion(
   trackMetaEventOnce(dedupeKey, eventName, sanitizeMetaProps(props), options);
 }
 
+/**
+ * Stable unique Meta event_id for AmazonClick (browser Pixel).
+ * Format: AMZ- + 12 uppercase hex chars (matches SR-/MJ- style ids).
+ */
+export function createAmazonClickEventId(): string {
+  try {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return `AMZ-${crypto.randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase()}`;
+    }
+  } catch {
+    /* fall through */
+  }
+
+  const bytes = new Uint8Array(6);
+  try {
+    if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+      crypto.getRandomValues(bytes);
+    } else {
+      for (let i = 0; i < bytes.length; i += 1) {
+        bytes[i] = Math.floor(Math.random() * 256);
+      }
+    }
+  } catch {
+    for (let i = 0; i < bytes.length; i += 1) {
+      bytes[i] = Math.floor(Math.random() * 256);
+    }
+  }
+
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0'))
+    .join('')
+    .toUpperCase();
+  return `AMZ-${hex}`;
+}
+
+/**
+ * Fire exactly one Meta custom AmazonClick for the final Amazon outbound.
+ * Never throws — callers must still navigate to Amazon if tracking fails.
+ */
+export function trackAmazonClick(): string | undefined {
+  try {
+    if (getConsent() !== 'granted') return undefined;
+    // Always re-enter init so pixel is ready even if GA loaded first.
+    initAnalytics();
+
+    const eventId = createAmazonClickEventId();
+    trackMetaCustomEvent(
+      AMAZON_CLICK_EVENT,
+      sanitizeMetaProps({ ...AMAZON_CLICK_PARAMS }),
+      { eventID: eventId },
+    );
+    return eventId;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Brief pause so Meta Pixel can flush AmazonClick before page unload. */
+export const AMAZON_CLICK_NAV_DELAY_MS = 400;
+
+/**
+ * Fire AmazonClick (if consented), then navigate to Amazon after a short delay.
+ * Tracking failures never prevent navigation. One call schedules one navigation.
+ */
+export function navigateToAmazon(url: string): void {
+  try {
+    trackAmazonClick();
+  } catch {
+    /* tracking must never block Amazon navigation */
+  }
+
+  const go = () => {
+    try {
+      window.location.assign(url);
+    } catch {
+      window.location.href = url;
+    }
+  };
+
+  try {
+    window.setTimeout(go, AMAZON_CLICK_NAV_DELAY_MS);
+  } catch {
+    go();
+  }
+}
+
+/**
+ * Fire GA4 + Meta Purchase after verified payment.
+ * `value` must be the charged total in INR rupees (not paise).
+ * Callers should convert with paiseToInr(order.amount).
+ */
 export function trackPurchase(params: {
   format: 'digital' | 'paperback';
+  /** Charged order total in INR rupees (100 paise = 1 INR). */
   value: number;
   transactionId: string;
   paymentMethod: 'razorpay' | 'bypass';

@@ -13,6 +13,7 @@ const {
   purchaseFieldsFromOrder,
   safeMetaLog,
   redactSecrets,
+  buildCapiRequestBody,
   sendCapiEvent,
   sendMetaConversionSafely,
   sendPurchaseConversion,
@@ -110,22 +111,22 @@ describe('payload builders', () => {
     const digital = purchaseFieldsFromOrder({
       appOrderId: 'MJ-D-1',
       productType: 'digital_bundle',
-      amount: 69900,
+      amount: 500, // 500 paise = ₹5
       currency: 'INR',
       email: 'a@b.c',
       metaAttribution: { fbp: 'fb.1.1.1', analyticsConsent: true },
     });
-    assert.equal(digital.value, 699);
+    assert.equal(digital.value, 5);
     assert.deepEqual(digital.contentIds, ['modern_java_digital']);
     assert.equal(digital.numItems, 1);
 
     const paperback = purchaseFieldsFromOrder({
       appOrderId: 'MJ-2',
-      amount: 179800,
+      amount: 1000, // 1000 paise = ₹10 for qty 2 at ₹5
       quantity: 2,
       currency: 'INR',
     });
-    assert.equal(paperback.value, 1798);
+    assert.equal(paperback.value, 10);
     assert.deepEqual(paperback.contentIds, ['modern_java_paperback']);
     assert.equal(paperback.numItems, 2);
   });
@@ -212,6 +213,71 @@ describe('config and disable switch', () => {
       META_PIXEL_ID: '',
     });
     assert.equal(config.enabled, false);
+  });
+
+  it('treats empty or whitespace META_TEST_EVENT_CODE as absent', () => {
+    for (const value of ['', '   ', undefined]) {
+      const config = getMetaCapiConfig({
+        META_CAPI_ENABLED: 'true',
+        META_PIXEL_ID: '1844493498903023',
+        META_TEST_EVENT_CODE: value,
+      });
+      assert.equal(config.testEventCode, '');
+    }
+  });
+});
+
+describe('buildCapiRequestBody test_event_code omission (prod)', () => {
+  const lead = () =>
+    buildLeadEvent({
+      eventId: 'SR-PRODCHECK1',
+      eventSourceUrl: 'https://modern-java.classpath.in/',
+    });
+
+  it('omits test_event_code entirely when META_TEST_EVENT_CODE is empty', () => {
+    for (const testEventCode of ['', '   ', undefined, null]) {
+      const body = buildCapiRequestBody({
+        event: lead(),
+        accessToken: 'meta-token',
+        testEventCode,
+      });
+      const json = JSON.stringify(body);
+
+      assert.equal(
+        Object.prototype.hasOwnProperty.call(body, 'test_event_code'),
+        false,
+      );
+      assert.equal(body.test_event_code, undefined);
+      assert.equal(json.includes('"test_event_code"'), false);
+      assert.equal(json.includes('TEST25149'), false);
+      assert.doesNotMatch(json, /"test_event_code"\s*:\s*(""|null|"PROD")/);
+      assert.equal(body.access_token, 'meta-token');
+      assert.equal(Array.isArray(body.data), true);
+    }
+  });
+
+  it('includes test_event_code only when a real code is configured', () => {
+    const body = buildCapiRequestBody({
+      event: lead(),
+      accessToken: 'meta-token',
+      testEventCode: 'TEST25149',
+    });
+    assert.equal(body.test_event_code, 'TEST25149');
+  });
+
+  it('safeMetaLog reports test_event_code_included false without secrets', () => {
+    const logged = safeMetaLog({
+      event_name: 'Lead',
+      event_id: 'SR-1',
+      test_event_code_included: false,
+      pixel_id: '1844493498903023',
+      access_token: 'should-not-appear',
+      email: 'should-not-appear@example.com',
+    });
+    assert.equal(logged.test_event_code_included, false);
+    assert.equal(logged.test_event_code, undefined);
+    assert.equal(logged.access_token, undefined);
+    assert.equal(logged.email, undefined);
   });
 });
 
@@ -312,7 +378,11 @@ describe('sendCapiEvent retry and failure isolation', () => {
       calls += 1;
       const body = JSON.parse(options.body);
       assert.equal(body.access_token, 'meta-token');
-      assert.equal(body.test_event_code, undefined);
+      assert.equal(
+        Object.prototype.hasOwnProperty.call(body, 'test_event_code'),
+        false,
+      );
+      assert.equal(String(options.body).includes('"test_event_code"'), false);
       return {
         ok: false,
         status: 400,

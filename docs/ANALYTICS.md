@@ -60,6 +60,15 @@ third-party scripts load.
     `currency`, `value`)
   - `Purchase`: only after verified Razorpay success or approved local bypass,
     deduped by app order id (`eventID = appOrderId`)
+- Fired custom Meta events:
+  - `AmazonClick`: exactly once at the **final** Amazon outbound
+    (`window.location.assign` to the Kindle URL), after either “Continue
+    without joining” or “Continue to Amazon” post-signup. Not fired on the
+    initial Buy on Amazon CTA or on email submit alone. Parameters:
+    `content_ids=["modern_java_kindle"]`, `content_type=product`,
+    `content_name=Modern Java Kindle`, `destination=amazon`, plus
+    `eventID` beginning with `AMZ-`. This is distinct from Meta’s automatic
+    button-click detection (which may still report the modal skip button).
 
 ## Meta Conversions API (server)
 
@@ -132,6 +141,14 @@ purchase confirmation.
    `Purchase` with `event_id = appOrderId`.
 6. Clear `MetaTestEventCode` before relying on production reporting.
 
+**Production must never send `test_event_code`.** Browser Pixel strips
+`?test_event_code=…` from the URL before `fbq('init')` so leftover Test Events
+links (e.g. `TEST25149`) do not tag live traffic. CAPI `MetaTestEventCode` is
+empty on the prod stack. Events viewed inside the **Test events** tab may still
+*display* the session’s test code in the UI even when the payload omitted it —
+for clean prod verification use **Overview / Activity**, a private window, and
+a URL **without** `test_event_code`.
+
 Operational logs use keys like `meta_capi_sent` / `meta_capi_skipped` and never
 include access tokens, raw emails, `_fbp`, `_fbc`, or hashed identifiers.
 
@@ -151,11 +168,12 @@ include access tokens, raw emails, `_fbp`, `_fbc`, or hashed identifiers.
 | # | Action on the live site | Expect in Test Events | Expected params (non-PII) |
 |---|-------------------------|------------------------|---------------------------|
 | 1 | Scroll to **Formats** (`#formats`) | one `ViewContent` | `content_name=formats`, `content_category=book_formats`, `content_type=product_group`, `content_ids` includes Kindle/digital ids |
-| 2 | Click **Buy direct** / open DRM-free checkout | one `InitiateCheckout` | `content_name=modern_java_digital`, `content_category=book_purchase`, `content_type=product`, `currency=INR`, `value=699` |
+| 2 | Click **Buy direct** / open DRM-free checkout | one `InitiateCheckout` | `content_name=modern_java_digital`, `content_category=book_purchase`, `content_type=product`, `currency=INR`, `value` = catalog digital amount in **rupees** (from `product-prices.json`, e.g. ₹5 while test pricing is live) |
 | 3 | Close and reopen the same checkout | **no** second `InitiateCheckout` | dedupe key is per format for the session |
 | 4 | Submit chapter preview with a real inbox you control | one logical `Lead` (Browser + Server) | shared `event_id` / `sampleRequestId`; browser params include `content_name=sample_chapter` |
 | 5 | (Optional) Join Amazon exit signup, then close without buying | one more browser `Lead` | `content_name=amazon_exit_signup` (browser-only in this phase) |
-| 6 | Complete one real Razorpay payment (₹699 digital) **or** a known bypass order only if you intentionally use that path | one logical `Purchase` (Browser + Server) | shared `event_id` = `appOrderId`; `currency=INR`, `value=699` |
+| 5b | Click **Continue without joining** *or* **Continue to Amazon** after signup | one browser custom `AmazonClick` | `content_name=Modern Java Kindle`, `content_ids=["modern_java_kindle"]`, `content_type=product`, `destination=amazon`, `event_id` / `eventID` starts with `AMZ-`. Do **not** treat Meta auto button events (buttonText / classList) as this conversion. |
+| 6 | Complete one real Razorpay payment (current digital amount) **or** a known bypass order only if you intentionally use that path | one logical `Purchase` (Browser + Server) | shared `event_id` = `appOrderId`; `currency=INR`, `value` = **charged order total in rupees** (`order.amount` paise ÷ 100 — never a stale catalog hardcode) |
 | 7 | Refresh the homepage | exactly one new `PageView` | no extra `ViewContent` / `InitiateCheckout` / `Purchase` from the refresh alone |
 
 **Pass / fail notes**
@@ -165,7 +183,7 @@ include access tokens, raw emails, `_fbp`, `_fbc`, or hashed identifiers.
 - Never expect email, name, phone, address, city, state, or postal code in
   Test Events parameters.
 - `Purchase` must appear only after payment verification succeeds — not on
-  “Pay ₹699 securely” click, and not after a failed payment.
+  the “Pay … securely” click, and not after a failed payment.
 - Failed sample-preview / checkout attempts must **not** create `Lead` or
   `Purchase`.
 - Outside Test Events, the main Events Manager UI can lag by a few minutes.
@@ -207,6 +225,7 @@ Pre-Amazon modal events never include email or other PII. Parameters may include
 | `amazon_exit_continue_after_signup` | Visitor continued to Amazon after signup success |
 | `amazon_exit_turnstile_error` | Turnstile script/widget failure |
 | `amazon_exit` | Actual navigation to Amazon (keep as GA4 key event) |
+| Meta `AmazonClick` (custom) | Same moment as `amazon_exit` — final outbound only; both consent paths; `eventID` = `AMZ-…` |
 
 **Reporting cutover (marketing consent source):** New Amazon-modal opt-ins store `marketingConsentSource = amazon_exit_modal` with `sourceVersion = "2"`. Historical rows may still show `amazon-pre-navigation` and are **not** rewritten. When reporting, treat both sources as Amazon-modal signups and split by `sourceVersion` / date if needed.
 
@@ -233,7 +252,7 @@ Primary demand number: **unique confirmed waitlist records** (DynamoDB), not but
 `purchase` includes GA4 ecommerce fields:
 
 - `currency`: `INR`
-- `value`: order total (699 digital, 899 × qty paperback)
+- `value`: charged order total in **rupees** (`order.amount` in paise ÷ 100; 100 paise = ₹1). Browser Pixel and CAPI must match this — never send raw paise and never hardcode a stale catalog price (e.g. old ₹699 when the order is ₹5 / 500 paise).
 - `transaction_id`: app order id
 - `format`: `digital` | `paperback`
 - `payment_method`: `razorpay` | `bypass`

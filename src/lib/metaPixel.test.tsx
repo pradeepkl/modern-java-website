@@ -54,6 +54,22 @@ describe('metaPixel', () => {
     expect(initCalls[0]).toEqual(['init', PIXEL_ID]);
   });
 
+  it('strips test_event_code from the URL before Pixel init', async () => {
+    window.history.replaceState({}, '', '/?utm_source=meta&test_event_code=TEST25149');
+    const { initializeMetaPixel, stripMetaTestEventCodeFromUrl, __resetMetaPixelForTests } =
+      await loadMetaPixel();
+    __resetMetaPixelForTests();
+
+    expect(window.location.search).toContain('test_event_code=TEST25149');
+    initializeMetaPixel(PIXEL_ID);
+    expect(window.location.search).not.toContain('test_event_code');
+    expect(window.location.search).toContain('utm_source=meta');
+
+    window.history.replaceState({}, '', '/?test_event_code=TEST999');
+    expect(stripMetaTestEventCodeFromUrl()).toBe(true);
+    expect(window.location.search).toBe('');
+  });
+
   it('does nothing when the Pixel ID is missing', async () => {
     const { initializeMetaPixel, isMetaPixelAvailable } = await loadMetaPixel();
 
@@ -165,6 +181,29 @@ describe('metaPixel', () => {
       'trackCustom',
       'sample_interest',
       { section: 'hero' },
+    ]);
+
+    trackMetaCustomEvent(
+      'AmazonClick',
+      {
+        content_ids: ['modern_java_kindle'],
+        content_type: 'product',
+        content_name: 'Modern Java Kindle',
+        destination: 'amazon',
+      },
+      { eventID: 'AMZ-ABCDEF123456' },
+    );
+
+    expect(queued).toContainEqual([
+      'trackCustom',
+      'AmazonClick',
+      {
+        content_ids: ['modern_java_kindle'],
+        content_type: 'product',
+        content_name: 'Modern Java Kindle',
+        destination: 'amazon',
+      },
+      { eventID: 'AMZ-ABCDEF123456' },
     ]);
 
     trackMetaEventOnce('purchase:order-123', 'Purchase', { value: 699 }, {

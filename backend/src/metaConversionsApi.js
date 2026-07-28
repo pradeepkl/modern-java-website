@@ -394,6 +394,7 @@ const safeMetaLog = (fields) => {
     'action_source',
     'event_source_url',
     'test_event_code',
+    'test_event_code_included',
     'pixel_id',
     'value',
     'currency',
@@ -427,6 +428,31 @@ const redactSecrets = (text, token) => {
     out = out.split(token).join('[REDACTED]');
   }
   return out;
+};
+
+/**
+ * Build the Graph API /events JSON body.
+ * When META_TEST_EVENT_CODE is empty/whitespace, omit test_event_code entirely
+ * (never send "", "PROD", or a leftover TEST code by default).
+ *
+ * @param {{
+ *   event: Record<string, unknown>,
+ *   accessToken: string,
+ *   testEventCode?: string,
+ * }} input
+ * @returns {Record<string, unknown>}
+ */
+const buildCapiRequestBody = ({ event, accessToken, testEventCode }) => {
+  /** @type {Record<string, unknown>} */
+  const body = {
+    data: [event],
+    access_token: String(accessToken || '').trim(),
+  };
+  const code = String(testEventCode || '').trim();
+  if (code) {
+    body.test_event_code = code;
+  }
+  return body;
 };
 
 /**
@@ -475,14 +501,12 @@ const sendCapiEvent = async ({
   }
 
   const endpoint = `https://graph.facebook.com/${config.graphVersion}/${config.pixelId}/events`;
-  /** @type {Record<string, unknown>} */
-  const body = {
-    data: [event],
-    access_token: token,
-  };
-  if (config.testEventCode) {
-    body.test_event_code = config.testEventCode;
-  }
+  const resolvedTestCode = String(config.testEventCode || '').trim();
+  const body = buildCapiRequestBody({
+    event,
+    accessToken: token,
+    testEventCode: resolvedTestCode,
+  });
 
   let attempts = 0;
   let lastStatus;
@@ -525,7 +549,8 @@ const sendCapiEvent = async ({
             event_time: event.event_time,
             action_source: event.action_source,
             event_source_url: event.event_source_url || null,
-            test_event_code: config.testEventCode || null,
+            test_event_code_included: Boolean(resolvedTestCode),
+            ...(resolvedTestCode ? { test_event_code: resolvedTestCode } : {}),
             pixel_id: config.pixelId,
             value: customData.value,
             currency: customData.currency,
@@ -728,6 +753,7 @@ module.exports = {
   purchaseFieldsFromOrder,
   safeMetaLog,
   redactSecrets,
+  buildCapiRequestBody,
   sendCapiEvent,
   sendMetaConversionSafely,
   sendLeadConversion,

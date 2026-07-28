@@ -4,6 +4,7 @@ import { CheckCircle2, CreditCard, Download, X } from 'lucide-react';
 import {
   formatInrAmount,
   getAmountInr,
+  paiseToInr,
 } from '../../config/prices';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { track, trackPurchase, buildMetaAttributionPayload } from '../../lib/analytics';
@@ -169,7 +170,8 @@ export function DigitalOrderDialog({
         completedRef.current = true;
         trackPurchase({
           format: 'digital',
-          value: DIGITAL_PRICE,
+          // Order amount is paise; Pixel/GA expect INR rupees.
+          value: paiseToInr(bypassOrder.amount ?? DIGITAL_PRICE * 100),
           transactionId: bypassOrder.appOrderId,
           paymentMethod: 'bypass',
         });
@@ -243,7 +245,8 @@ export function DigitalOrderDialog({
             completedRef.current = true;
             trackPurchase({
               format: 'digital',
-              value: DIGITAL_PRICE,
+              // Order amount is paise; Pixel/GA expect INR rupees.
+              value: paiseToInr(order.amount ?? DIGITAL_PRICE * 100),
               transactionId: verification.appOrderId,
               paymentMethod: 'razorpay',
             });
