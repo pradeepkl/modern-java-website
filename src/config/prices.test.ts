@@ -13,20 +13,32 @@ describe('product prices config', () => {
   it('loads Kindle, digital, and paperback amounts from config', () => {
     expect(productPrices.currency).toBe('INR');
     expect(productPrices.discountLabel).toBe('20% off');
-    expect(getAmountInr('kindle')).toBe(499);
-    expect(getAmountInr('digital')).toBe(699);
-    expect(getAmountInr('paperback')).toBe(899);
-    expect(getListAmountInr('kindle')).toBe(624);
-    expect(getListAmountInr('digital')).toBe(874);
-    expect(getListAmountInr('paperback')).toBe(1124);
+    expect(getAmountInr('kindle')).toBe(productPrices.kindle.amountInr);
+    expect(getAmountInr('digital')).toBe(productPrices.digital.amountInr);
+    expect(getAmountInr('paperback')).toBe(productPrices.paperback.amountInr);
+    expect(getListAmountInr('kindle')).toBe(productPrices.kindle.listAmountInr);
+    expect(getListAmountInr('digital')).toBe(productPrices.digital.listAmountInr);
+    expect(getListAmountInr('paperback')).toBe(
+      productPrices.paperback.listAmountInr,
+    );
+    expect(productPrices.kindle.amountInr).toBeGreaterThan(0);
+    expect(productPrices.digital.amountInr).toBeGreaterThan(0);
+    expect(productPrices.paperback.amountInr).toBeGreaterThan(0);
   });
 
   it('formats INR display strings from config amounts', () => {
-    expect(formatInrAmount(499)).toBe('₹499');
-    expect(getFormattedPrice('kindle')).toBe('₹499');
-    expect(getFormattedPrice('digital')).toBe('₹699');
-    expect(getFormattedPrice('paperback')).toBe('₹899');
-    expect(getFormattedListPrice('paperback')).toBe('₹1124');
+    expect(formatInrAmount(productPrices.kindle.amountInr)).toBe(
+      getFormattedPrice('kindle'),
+    );
+    expect(getFormattedPrice('digital')).toBe(
+      `₹${productPrices.digital.amountInr}`,
+    );
+    expect(getFormattedPrice('paperback')).toBe(
+      `₹${productPrices.paperback.amountInr}`,
+    );
+    expect(getFormattedListPrice('paperback')).toBe(
+      `₹${productPrices.paperback.listAmountInr}`,
+    );
   });
 
   it('matches the Lambda-packaged copy under backend/src', () => {

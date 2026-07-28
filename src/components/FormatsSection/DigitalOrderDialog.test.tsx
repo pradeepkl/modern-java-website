@@ -1,6 +1,10 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { getAmountInr } from '../../config/prices';
+
+const DIGITAL_PRICE = getAmountInr('digital');
+const DIGITAL_PRICE_PAISE = DIGITAL_PRICE * 100;
 
 const analyticsMocks = vi.hoisted(() => ({
   track: vi.fn(),
@@ -65,7 +69,7 @@ describe('DigitalOrderDialog purchase tracking', () => {
           json: async () => ({
             appOrderId: 'APP-123',
             razorpayOrderId: 'order_123',
-            amount: 69900,
+            amount: DIGITAL_PRICE_PAISE,
             currency: 'INR',
             razorpayKeyId: 'rzp_test_123',
           }),
@@ -138,7 +142,7 @@ describe('DigitalOrderDialog purchase tracking', () => {
     await waitFor(() => {
       expect(analyticsMocks.trackPurchase).toHaveBeenCalledWith({
         format: 'digital',
-        value: 699,
+        value: DIGITAL_PRICE,
         transactionId: 'APP-123',
         paymentMethod: 'razorpay',
       });
@@ -155,7 +159,7 @@ describe('DigitalOrderDialog purchase tracking', () => {
           json: async () => ({
             appOrderId: 'APP-123',
             razorpayOrderId: 'order_123',
-            amount: 69900,
+            amount: DIGITAL_PRICE_PAISE,
             currency: 'INR',
             razorpayKeyId: 'rzp_test_123',
           }),

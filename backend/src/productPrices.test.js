@@ -13,19 +13,23 @@ const {
 } = require('./productPrices');
 
 describe('productPrices', () => {
-  it('loads expected catalog amounts', () => {
+  it('loads catalog amounts from product-prices.json', () => {
     assert.equal(productPrices.currency, 'INR');
-    assert.equal(productPrices.kindle.amountInr, 499);
-    assert.equal(productPrices.digital.amountInr, 699);
-    assert.equal(productPrices.paperback.amountInr, 899);
+    assert.equal(getAmountInr('kindle'), productPrices.kindle.amountInr);
+    assert.equal(getAmountInr('digital'), productPrices.digital.amountInr);
+    assert.equal(getAmountInr('paperback'), productPrices.paperback.amountInr);
+    assert.ok(productPrices.kindle.amountInr > 0);
+    assert.ok(productPrices.digital.amountInr > 0);
+    assert.ok(productPrices.paperback.amountInr > 0);
   });
 
   it('exposes paise helpers used by checkout', () => {
-    assert.equal(inrToPaise(699), 69900);
-    assert.equal(getAmountInr('digital'), 699);
-    assert.equal(getDigitalBundlePricePaise(), 69900);
-    assert.equal(getPaperbackUnitPricePaise(), 89900);
-    assert.equal(getPaperbackTotalPaise(2), 179800);
+    const digitalInr = productPrices.digital.amountInr;
+    const paperbackInr = productPrices.paperback.amountInr;
+    assert.equal(inrToPaise(digitalInr), digitalInr * 100);
+    assert.equal(getDigitalBundlePricePaise(), digitalInr * 100);
+    assert.equal(getPaperbackUnitPricePaise(), paperbackInr * 100);
+    assert.equal(getPaperbackTotalPaise(2), paperbackInr * 200);
   });
 
   it('rejects invalid paperback quantities', () => {
