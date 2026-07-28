@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ShoppingCart } from 'lucide-react';
+import { getAmountInr } from '../../config/prices';
 import { type FormatOption } from '../../data/formats';
 import { track, trackMetaConversion } from '../../lib/analytics';
 import { FormatCardShell } from './FormatCardShell';
@@ -45,7 +46,7 @@ export function PaperbackPurchaseCard({ format }: PaperbackPurchaseCardProps) {
       content_ids: ['modern_java_paperback'],
       content_type: 'product',
       currency: 'INR',
-      value: 899,
+      value: getAmountInr('paperback'),
     });
     setOrderFormOpen(true);
   };

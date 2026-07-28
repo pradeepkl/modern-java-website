@@ -1,3 +1,8 @@
+import {
+  getFormattedListPrice,
+  getFormattedPrice,
+  productPrices,
+} from '../config/prices';
 import { book } from './book';
 
 export type FormatFeatureTone = 'core' | 'upgrade';
@@ -38,9 +43,9 @@ export const formatOptions: FormatOption[] = [
       { text: 'Highlight, search, and take notes' },
       { text: 'Companion code on GitHub' },
     ],
-    price: '₹499',
-    listPrice: '₹624',
-    discountLabel: '20% off',
+    price: getFormattedPrice('kindle'),
+    listPrice: getFormattedListPrice('kindle'),
+    discountLabel: productPrices.discountLabel,
     availability: 'Available now on Amazon',
     ctaLabel: 'Buy on Amazon',
     ctaUrl: book.amazonUrl,
@@ -57,9 +62,9 @@ export const formatOptions: FormatOption[] = [
       { text: 'Access to future revised editions', tone: 'upgrade' },
       { text: 'Secure download links by email' },
     ],
-    price: '₹699',
-    listPrice: '₹874',
-    discountLabel: '20% off',
+    price: getFormattedPrice('digital'),
+    listPrice: getFormattedListPrice('digital'),
+    discountLabel: productPrices.discountLabel,
     availability: 'Delivered directly by email',
     versionLabel: 'Current version - 1',
     ctaLabel: 'Buy direct',
@@ -81,9 +86,9 @@ export const formatOptions: FormatOption[] = [
       { text: 'Rich-color architecture and flow diagrams' },
       { text: 'Deep reading without screen fatigue' },
     ],
-    price: '₹899',
-    listPrice: '₹1124',
-    discountLabel: '20% off',
+    price: getFormattedPrice('paperback'),
+    listPrice: getFormattedListPrice('paperback'),
+    discountLabel: productPrices.discountLabel,
     availability: 'Place your order directly',
     versionLabel: 'Current version - 1',
     ctaLabel: 'Place order',

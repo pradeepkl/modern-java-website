@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "test": "node --test 'src/**/*.test.js'",
+    "test": "cp ../config/product-prices.json src/product-prices.json && node --test 'src/**/*.test.js'",
     "test:deploy": "../scripts/test-deploy-behaviour.sh",
     "export:waitlist": "node scripts/export-paperback-waitlist.js",
     "send:review-followup": "node scripts/send-amazon-review-followup.js",
@@ -12,7 +12,7 @@
     "send:sample-education": "node scripts/send-sample-education.js",
     "send:sample-reminder": "node scripts/send-sample-reminder.js",
     "preview:emails": "node scripts/preview-emails.js",
-    "build": "sam build",
+    "build": "cp ../config/product-prices.json src/product-prices.json && sam build",
     "validate:env": "./scripts/validate-env.sh",
     "deploy": "npm run deploy:dev",
     "deploy:dev": "APP_ENV=dev ./scripts/deploy-api.sh",

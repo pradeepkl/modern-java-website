@@ -19,6 +19,11 @@ const {
   getSignedUrl: getCloudFrontSignedUrl,
 } = require('@aws-sdk/cloudfront-signer');
 const { createAndSendInvoice } = require('./zohoInvoice');
+const {
+  getDigitalBundlePricePaise,
+  getPaperbackUnitPricePaise,
+  getPaperbackTotalPaise,
+} = require('./productPrices');
 const { joinPaperbackWaitlist } = require('./paperbackWaitlist');
 const {
   CREATED_MESSAGE: MARKETING_CREATED_MESSAGE,
@@ -289,8 +294,6 @@ const invoiceAttachments = (invoice) => {
   ];
 };
 
-const PAPERBACK_PRICE_PAISE = 89900;
-const DIGITAL_BUNDLE_PRICE_PAISE = 69900;
 const MAX_QUANTITY = 20;
 const DOWNLOAD_LINK_TTL_SECONDS = 7 * 24 * 60 * 60;
 const SAMPLE_DOWNLOAD_LINK_TTL_SECONDS = 2 * 24 * 60 * 60;
@@ -1241,7 +1244,7 @@ const createDigitalOrder = async (event) => {
       razorpayOrderId: `order_bypass_${appOrderId}`,
       productType: 'digital_bundle',
       ...customerFields,
-      amount: DIGITAL_BUNDLE_PRICE_PAISE,
+      amount: getDigitalBundlePricePaise(),
       currency: 'INR',
       status: 'paid',
       paymentId,
@@ -1268,7 +1271,7 @@ const createDigitalOrder = async (event) => {
     const order = {
       appOrderId,
       paymentId,
-      amount: DIGITAL_BUNDLE_PRICE_PAISE,
+      amount: getDigitalBundlePricePaise(),
       ...customerFields,
       marketingConsent,
       productType: 'digital_bundle',
@@ -1292,7 +1295,7 @@ const createDigitalOrder = async (event) => {
 
   const razorpayConfig = getRazorpayConfig();
   const razorpayOrder = await createRazorpayOrder({
-    amount: DIGITAL_BUNDLE_PRICE_PAISE,
+    amount: getDigitalBundlePricePaise(),
     receipt: appOrderId,
     notes: { appOrderId, productType: 'digital_bundle' },
   }, razorpayConfig);
@@ -1305,7 +1308,7 @@ const createDigitalOrder = async (event) => {
         razorpayOrderId: razorpayOrder.id,
         productType: 'digital_bundle',
         ...customerFields,
-        amount: DIGITAL_BUNDLE_PRICE_PAISE,
+        amount: getDigitalBundlePricePaise(),
         currency: 'INR',
         status: 'payment_pending',
         ...persistedPaymentFields(razorpayConfig),
@@ -1326,7 +1329,7 @@ const createDigitalOrder = async (event) => {
   return response(201, {
     appOrderId,
     razorpayOrderId: razorpayOrder.id,
-    amount: DIGITAL_BUNDLE_PRICE_PAISE,
+    amount: getDigitalBundlePricePaise(),
     currency: 'INR',
     ...publicOrderPaymentFields(razorpayConfig),
   });
@@ -1590,7 +1593,7 @@ const createInvoiceForOrder = async (order) => {
           description:
             'Product code: MJ-DIGITAL. Direct digital edition (PDF + ePub).',
           quantity: 1,
-          rate: Number(order.amount || DIGITAL_BUNDLE_PRICE_PAISE) / 100,
+          rate: Number(order.amount || getDigitalBundlePricePaise()) / 100,
           unit: 'nos',
         },
       ]
@@ -1600,7 +1603,7 @@ const createInvoiceForOrder = async (order) => {
           name: 'Modern Java — Paperback',
           description: 'Product code: MJ-PAPERBACK. Print edition.',
           quantity: Number(order.quantity || 1),
-          rate: PAPERBACK_PRICE_PAISE / 100,
+          rate: getPaperbackUnitPricePaise() / 100,
           unit: 'nos',
         },
       ];
@@ -1721,7 +1724,7 @@ const createOrder = async (event) => {
   const orderInput = validateOrder(json);
   const metaAttribution = readMetaAttribution(event, json);
   const appOrderId = `MJ-${randomUUID().slice(0, 8).toUpperCase()}`;
-  const amount = orderInput.quantity * PAPERBACK_PRICE_PAISE;
+  const amount = getPaperbackTotalPaise(orderInput.quantity);
   const now = new Date().toISOString();
   const skipPayment =
     isDevAppEnvironment() || isLocalClientOrigin(event);

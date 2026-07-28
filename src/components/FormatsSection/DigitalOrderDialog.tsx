@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { CheckCircle2, CreditCard, Download, X } from 'lucide-react';
+import {
+  formatInrAmount,
+  getAmountInr,
+} from '../../config/prices';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { track, trackPurchase, buildMetaAttributionPayload } from '../../lib/analytics';
 import { loadRazorpayCheckout } from '../../lib/razorpay';
@@ -26,7 +30,8 @@ interface DigitalOrderDialogProps {
   previewState?: 'form' | 'success';
 }
 
-const DIGITAL_PRICE = 699;
+const DIGITAL_PRICE = getAmountInr('digital');
+const DIGITAL_PRICE_LABEL = formatInrAmount(DIGITAL_PRICE);
 const ORDER_API_URL = import.meta.env.VITE_ORDER_API_URL?.replace(/\/$/, '');
 const DIGITAL_CHECKOUT_BYPASS =
   import.meta.env.DEV &&
@@ -309,7 +314,7 @@ export function DigitalOrderDialog({
             <p id={descriptionId} className="order-dialog__description">
               {SKIP_CHECKOUT_PAYMENT
                 ? 'Dev mode — submit to receive download links without Razorpay.'
-                : 'Pay ₹699 securely and receive both formats by email.'}
+                : `Pay ${DIGITAL_PRICE_LABEL} securely and receive both formats by email.`}
             </p>
           </div>
           <button
@@ -452,7 +457,7 @@ export function DigitalOrderDialog({
                   : 'Starting payment…'
                 : SKIP_CHECKOUT_PAYMENT
                   ? 'Send download links (no payment)'
-                  : 'Pay ₹699 securely'}
+                  : `Pay ${DIGITAL_PRICE_LABEL} securely`}
             </button>
           </form>
         )}

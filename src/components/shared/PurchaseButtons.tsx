@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { Bell, Download, ShoppingCart } from 'lucide-react';
 import { getPaperbackMode } from '../../config/features';
+import {
+  formatInrAmount,
+  getAmountInr,
+} from '../../config/prices';
 import { book } from '../../data/book';
 import { paperbackWaitlistCopy } from '../../data/paperbackWaitlistCopy';
 import { track, trackCtaClick, trackMetaConversion } from '../../lib/analytics';
@@ -10,6 +14,12 @@ import { PaperbackWaitlistDialog } from '../FormatsSection/PaperbackWaitlistDial
 import { AmazonConsentLink } from './AmazonConsentLink';
 import { BrandButtonLogo } from './BrandButtonLogo';
 import './shared.css';
+
+const KINDLE_PRICE_LABEL = formatInrAmount(getAmountInr('kindle'));
+const DIGITAL_PRICE = getAmountInr('digital');
+const DIGITAL_PRICE_LABEL = formatInrAmount(DIGITAL_PRICE);
+const PAPERBACK_PRICE = getAmountInr('paperback');
+const PAPERBACK_PRICE_LABEL = formatInrAmount(PAPERBACK_PRICE);
 
 interface PurchaseButtonsProps {
   size?: 'default' | 'large';
@@ -86,7 +96,7 @@ export function PurchaseButtons({
         onIntent={() => track('format_cta_click', { format: 'kindle' })}
       >
         <BrandButtonLogo brand="amazon" />
-        Buy Kindle — ₹499
+        {`Buy Kindle — ${KINDLE_PRICE_LABEL}`}
       </AmazonConsentLink>
       {includeDigital ? (
         <button
@@ -101,14 +111,14 @@ export function PurchaseButtons({
               content_ids: ['modern_java_digital'],
               content_type: 'product',
               currency: 'INR',
-              value: 699,
+              value: DIGITAL_PRICE,
             });
             setDigitalOrderFormOpen(true);
           }}
           aria-label="Buy the Modern Java PDF and ePub bundle"
         >
           <Download size={20} strokeWidth={2} aria-hidden="true" />
-          Buy PDF + ePub — ₹699
+          {`Buy PDF + ePub — ${DIGITAL_PRICE_LABEL}`}
         </button>
       ) : null}
       {paperbackMode === 'sales' ? (
@@ -124,14 +134,14 @@ export function PurchaseButtons({
               content_ids: ['modern_java_paperback'],
               content_type: 'product',
               currency: 'INR',
-              value: 899,
+              value: PAPERBACK_PRICE,
             });
             setOrderFormOpen(true);
           }}
           aria-label="Place an order for the Modern Java paperback"
         >
           <ShoppingCart size={20} strokeWidth={2} aria-hidden="true" />
-          Place paperback order — ₹899
+          {`Place paperback order — ${PAPERBACK_PRICE_LABEL}`}
         </button>
       ) : null}
       {paperbackMode === 'waitlist' ? (

@@ -8,6 +8,10 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { CheckCircle2, CreditCard, Minus, Plus, X } from 'lucide-react';
+import {
+  formatInrAmount,
+  getAmountInr,
+} from '../../config/prices';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { track, trackPurchase, buildMetaAttributionPayload } from '../../lib/analytics';
 import { loadRazorpayCheckout } from '../../lib/razorpay';
@@ -33,7 +37,8 @@ interface PaperbackOrderDialogProps {
   previewState?: 'form' | 'success';
 }
 
-const PAPERBACK_PRICE = 899;
+const PAPERBACK_PRICE = getAmountInr('paperback');
+const PAPERBACK_PRICE_LABEL = formatInrAmount(PAPERBACK_PRICE);
 const ORDER_API_URL = import.meta.env.VITE_ORDER_API_URL?.replace(/\/$/, '');
 const SKIP_CHECKOUT_PAYMENT = shouldSkipCheckoutPayment();
 const TEST_ORDER_DEFAULTS = import.meta.env.DEV
@@ -332,8 +337,8 @@ export function PaperbackOrderDialog({
             </h2>
             <p id={descriptionId} className="order-dialog__description">
               {SKIP_CHECKOUT_PAYMENT
-                ? '₹899 per copy. Dev mode — submit delivery details without Razorpay.'
-                : '₹899 per copy. Complete your delivery details and pay securely through Razorpay.'}
+                ? `${PAPERBACK_PRICE_LABEL} per copy. Dev mode — submit delivery details without Razorpay.`
+                : `${PAPERBACK_PRICE_LABEL} per copy. Complete your delivery details and pay securely through Razorpay.`}
             </p>
           </div>
           <button

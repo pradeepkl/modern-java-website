@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Download } from 'lucide-react';
 import { getPaperbackMode } from '../../config/features';
+import { getAmountInr } from '../../config/prices';
 import { type FormatOption } from '../../data/formats';
 import { track, trackMetaConversion } from '../../lib/analytics';
 import { AmazonConsentLink } from '../shared/AmazonConsentLink';
@@ -67,7 +68,7 @@ function StandardFormatCard({ format }: FormatCardProps) {
       content_ids: [`modern_java_${format.id}`],
       content_type: 'product',
       currency: 'INR',
-      value: format.id === 'digital' ? 699 : undefined,
+      value: format.id === 'digital' ? getAmountInr('digital') : undefined,
     });
     setOrderFormOpen(true);
   };

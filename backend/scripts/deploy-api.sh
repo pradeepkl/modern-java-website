@@ -64,6 +64,9 @@ AppEnv="${APP_ENV}" RazorpayKeyId="$(escape_param "$RAZORPAY_KEY_ID")" RazorpayK
 EOF
 )
 
+echo "==> Syncing product prices config into Lambda package"
+cp "$ROOT/../config/product-prices.json" "$ROOT/src/product-prices.json"
+
 echo "==> Deploying API stack ${STACK_NAME} (APP_ENV=${APP_ENV})"
 sam build
 sam deploy \
