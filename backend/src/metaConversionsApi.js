@@ -390,6 +390,15 @@ const safeMetaLog = (fields) => {
   const allowed = [
     'event_name',
     'event_id',
+    'event_time',
+    'action_source',
+    'event_source_url',
+    'test_event_code',
+    'pixel_id',
+    'value',
+    'currency',
+    'events_received',
+    'messages',
     'status',
     'reason',
     'attempt',
@@ -493,11 +502,35 @@ const sendCapiEvent = async ({
       lastStatus = response.status;
 
       if (response.ok) {
+        let metaMessages = [];
+        let eventsReceived;
+        try {
+          const payload = await response.json();
+          eventsReceived = payload?.events_received;
+          metaMessages = Array.isArray(payload?.messages)
+            ? payload.messages
+            : [];
+        } catch {
+          metaMessages = [];
+        }
+        const customData =
+          event.custom_data && typeof event.custom_data === 'object'
+            ? event.custom_data
+            : {};
         console.info(
           'meta_capi_sent',
           safeMetaLog({
             event_name: event.event_name,
             event_id: event.event_id,
+            event_time: event.event_time,
+            action_source: event.action_source,
+            event_source_url: event.event_source_url || null,
+            test_event_code: config.testEventCode || null,
+            pixel_id: config.pixelId,
+            value: customData.value,
+            currency: customData.currency,
+            events_received: eventsReceived,
+            messages: metaMessages,
             status: 'ok',
             httpStatus: response.status,
             attempt: attempts,

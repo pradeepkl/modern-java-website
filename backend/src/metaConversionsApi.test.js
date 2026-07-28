@@ -222,8 +222,10 @@ describe('sendCapiEvent retry and failure isolation', () => {
 
   it('retries transient HTTP failures then succeeds', async () => {
     let calls = 0;
-    const fetchImpl = async () => {
+    const fetchImpl = async (_url, options) => {
       calls += 1;
+      const body = JSON.parse(options.body);
+      assert.equal(body.test_event_code, 'TEST123');
       if (calls === 1) {
         return {
           ok: false,
@@ -234,7 +236,7 @@ describe('sendCapiEvent retry and failure isolation', () => {
       return {
         ok: true,
         status: 200,
-        text: async () => '{"events_received":1}',
+        json: async () => ({ events_received: 1, messages: [] }),
       };
     };
 
@@ -255,6 +257,53 @@ describe('sendCapiEvent retry and failure isolation', () => {
     assert.equal(result.sent, true);
     assert.equal(result.attempts, 2);
     assert.equal(calls, 2);
+  });
+
+  it('includes test_event_code and purchase value/currency in payload', async () => {
+    let captured;
+    const fetchImpl = async (_url, options) => {
+      captured = JSON.parse(options.body);
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ events_received: 1, messages: [] }),
+      };
+    };
+
+    const result = await sendCapiEvent({
+      event: buildPurchaseEvent({
+        eventId: 'MJ-D-TEST1',
+        orderId: 'MJ-D-TEST1',
+        value: 699,
+        currency: 'INR',
+        contentIds: ['modern_java_digital'],
+        contentName: 'modern_java_digital',
+        eventSourceUrl: 'https://modern-java.classpath.in/',
+      }),
+      config: {
+        enabled: true,
+        pixelId: '1844493498903023',
+        graphVersion: 'v21.0',
+        accessTokenSsmParam: '',
+        testEventCode: 'TEST25149',
+      },
+      accessToken: 'meta-token',
+      fetchImpl,
+      sleep: async () => {},
+    });
+
+    assert.equal(result.sent, true);
+    assert.equal(captured.test_event_code, 'TEST25149');
+    assert.equal(captured.data[0].event_name, 'Purchase');
+    assert.equal(captured.data[0].event_id, 'MJ-D-TEST1');
+    assert.equal(captured.data[0].action_source, 'website');
+    assert.equal(
+      captured.data[0].event_source_url,
+      'https://modern-java.classpath.in/',
+    );
+    assert.equal(captured.data[0].custom_data.value, 699);
+    assert.equal(captured.data[0].custom_data.currency, 'INR');
+    assert.equal(typeof captured.data[0].event_time, 'number');
   });
 
   it('does not retry permanent HTTP errors', async () => {
