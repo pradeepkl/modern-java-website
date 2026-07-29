@@ -72,9 +72,9 @@ function PrivacyPolicy() {
       <section>
         <h2>Analytics and cookies</h2>
         <p>
-          If you choose <strong>Accept analytics</strong> on the cookie banner,
-          we load Google Analytics 4 and, when configured, Microsoft Clarity and
-          Meta Pixel. These tools may set cookies or similar identifiers and
+          If you choose <strong>Accept</strong> on the cookie banner, we load
+          Google Analytics 4 and, when configured, Microsoft Clarity and Meta
+          Pixel. These tools may set cookies or similar identifiers and
           collect page URL, device and browser type, approximate location,
           scroll and click behaviour, and conversion events such as formats
           views, lead captures, checkout starts, and completed checkouts. Those

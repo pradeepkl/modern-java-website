@@ -49,13 +49,12 @@ export function AnalyticsConsentBanner() {
       <div className="analytics-consent__inner page-container">
         <div className="analytics-consent__copy">
           <p id="analytics-consent-title" className="analytics-consent__title">
-            Help us improve this site
+            We use cookies
           </p>
           <p id="analytics-consent-desc" className="analytics-consent__text">
-            We use privacy-respecting analytics (Google Analytics, Microsoft
-            Clarity, and Meta Pixel when configured) to understand which pages
-            and checkout steps work well. We do not send your email, name, or
-            payment details to these tools.{' '}
+            Cookies and similar tools help us understand how this site is used
+            and improve your experience. You can change your choice anytime by
+            clearing site data.{' '}
             <a href="/privacy-policy">Privacy policy</a>
           </p>
         </div>
@@ -72,7 +71,7 @@ export function AnalyticsConsentBanner() {
             className="button button-primary"
             onClick={() => choose('granted')}
           >
-            Accept analytics
+            Accept
           </button>
         </div>
       </div>
