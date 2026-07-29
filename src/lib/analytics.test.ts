@@ -90,10 +90,10 @@ describe('analytics Meta payload sanitization', () => {
   it('sends business-useful Purchase fields to Meta', async () => {
     const { trackPurchase } = await loadAnalytics();
 
-    // value is INR rupees (e.g. ₹5 = 500 paise), never raw paise.
+    // value is INR rupees (e.g. ₹699 = 69900 paise), never raw paise.
     trackPurchase({
       format: 'digital',
-      value: 5,
+      value: 699,
       transactionId: 'APP-123',
       paymentMethod: 'razorpay',
     });
@@ -103,7 +103,7 @@ describe('analytics Meta payload sanitization', () => {
       'Purchase',
       {
         currency: 'INR',
-        value: 5,
+        value: 699,
         content_name: 'modern_java_digital',
         content_category: 'book_purchase',
         content_ids: ['modern_java_digital'],

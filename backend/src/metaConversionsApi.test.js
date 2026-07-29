@@ -111,12 +111,12 @@ describe('payload builders', () => {
     const digital = purchaseFieldsFromOrder({
       appOrderId: 'MJ-D-1',
       productType: 'digital_bundle',
-      amount: 500, // 500 paise = ₹5
+      amount: 69900, // 69900 paise = ₹699
       currency: 'INR',
       email: 'a@b.c',
       metaAttribution: { fbp: 'fb.1.1.1', analyticsConsent: true },
     });
-    assert.equal(digital.value, 5);
+    assert.equal(digital.value, 699);
     assert.deepEqual(digital.contentIds, ['modern_java_digital']);
     assert.equal(digital.numItems, 1);
 

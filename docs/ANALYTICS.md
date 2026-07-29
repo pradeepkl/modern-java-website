@@ -168,7 +168,7 @@ include access tokens, raw emails, `_fbp`, `_fbc`, or hashed identifiers.
 | # | Action on the live site | Expect in Test Events | Expected params (non-PII) |
 |---|-------------------------|------------------------|---------------------------|
 | 1 | Scroll to **Formats** (`#formats`) | one `ViewContent` | `content_name=formats`, `content_category=book_formats`, `content_type=product_group`, `content_ids` includes Kindle/digital ids |
-| 2 | Click **Buy direct** / open DRM-free checkout | one `InitiateCheckout` | `content_name=modern_java_digital`, `content_category=book_purchase`, `content_type=product`, `currency=INR`, `value` = catalog digital amount in **rupees** (from `product-prices.json`, e.g. ₹5 while test pricing is live) |
+| 2 | Click **Buy direct** / open DRM-free checkout | one `InitiateCheckout` | `content_name=modern_java_digital`, `content_category=book_purchase`, `content_type=product`, `currency=INR`, `value` = catalog digital amount in **rupees** (from `product-prices.json`, currently ₹699) |
 | 3 | Close and reopen the same checkout | **no** second `InitiateCheckout` | dedupe key is per format for the session |
 | 4 | Submit chapter preview with a real inbox you control | one logical `Lead` (Browser + Server) | shared `event_id` / `sampleRequestId`; browser params include `content_name=sample_chapter` |
 | 5 | (Optional) Join Amazon exit signup, then close without buying | one more browser `Lead` | `content_name=amazon_exit_signup` (browser-only in this phase) |
@@ -252,7 +252,7 @@ Primary demand number: **unique confirmed waitlist records** (DynamoDB), not but
 `purchase` includes GA4 ecommerce fields:
 
 - `currency`: `INR`
-- `value`: charged order total in **rupees** (`order.amount` in paise ÷ 100; 100 paise = ₹1). Browser Pixel and CAPI must match this — never send raw paise and never hardcode a stale catalog price (e.g. old ₹699 when the order is ₹5 / 500 paise).
+- `value`: charged order total in **rupees** (`order.amount` in paise ÷ 100; 100 paise = ₹1). Browser Pixel and CAPI must match this — never send raw paise and never hardcode a stale catalog price (e.g. send ₹699 when the order charged ₹699 / 69900 paise).
 - `transaction_id`: app order id
 - `format`: `digital` | `paperback`
 - `payment_method`: `razorpay` | `bypass`
