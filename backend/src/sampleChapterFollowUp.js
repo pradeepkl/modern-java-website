@@ -20,6 +20,8 @@ const {
   emailParagraph,
   emailButton,
   emailSiteLink,
+  emailInstagramFollowText,
+  emailInstagramFollow,
   emailClosing,
   emailMutedNote,
 } = require('./emailLayout');
@@ -75,6 +77,8 @@ function buildSampleChapterFollowUpEmail({
     '',
     `Visit the Modern Java website: ${site}`,
     '',
+    emailInstagramFollowText(),
+    '',
     `Unsubscribe anytime: ${unsubscribeUrl}`,
     '',
     'Thank you again — happy learning!',
@@ -97,6 +101,7 @@ function buildSampleChapterFollowUpEmail({
                   '0 0 8px',
                 )}
                 ${emailSiteLink(site)}
+                ${emailInstagramFollow()}
                 ${emailMutedNote(
                   `You can <a href="${escapeHtml(unsubscribeUrl)}" style="color:#667085;font-weight:600;">unsubscribe</a> anytime.`,
                 )}
@@ -135,6 +140,8 @@ function buildSampleEducationEmail({ siteUrl }) {
     '',
     `Visit the Modern Java website: ${site}`,
     '',
+    emailInstagramFollowText(),
+    '',
     `Unsubscribe anytime: ${unsubscribeUrl}`,
     '',
     'Thank you again — happy learning!',
@@ -158,6 +165,7 @@ function buildSampleEducationEmail({ siteUrl }) {
                   label: 'Continue reading →',
                 })}
                 ${emailSiteLink(site)}
+                ${emailInstagramFollow()}
                 ${emailMutedNote(
                   `You can <a href="${escapeHtml(unsubscribeUrl)}" style="color:#667085;font-weight:600;">unsubscribe</a> anytime.`,
                 )}
@@ -199,6 +207,8 @@ function buildSampleReminderEmail({
     '',
     `Visit the Modern Java website: ${site}`,
     '',
+    emailInstagramFollowText(),
+    '',
     `Unsubscribe anytime: ${unsubscribeUrl}`,
     '',
     'Thank you again — happy learning!',
@@ -221,6 +231,7 @@ function buildSampleReminderEmail({
                   '0 0 8px',
                 )}
                 ${emailSiteLink(site)}
+                ${emailInstagramFollow()}
                 ${emailMutedNote(
                   `You can <a href="${escapeHtml(unsubscribeUrl)}" style="color:#667085;font-weight:600;">unsubscribe</a> anytime.`,
                 )}

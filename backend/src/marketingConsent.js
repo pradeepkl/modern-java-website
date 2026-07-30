@@ -168,6 +168,8 @@ function buildWelcomeEmail({ siteUrl }) {
     emailParagraph,
     emailBulletList,
     emailSiteLink,
+    emailInstagramFollowText,
+    emailInstagramFollow,
     emailClosing,
     emailMutedNote,
   } = require('./emailLayout');
@@ -192,9 +194,11 @@ function buildWelcomeEmail({ siteUrl }) {
     '',
     'We’ll only send occasional emails that are relevant to Classpath readers.',
     '',
-    `Unsubscribe anytime: ${unsubscribeUrl}`,
-    '',
     `Visit the Modern Java website: ${site}`,
+    '',
+    emailInstagramFollowText(),
+    '',
+    `Unsubscribe anytime: ${unsubscribeUrl}`,
     '',
     'Thank you again — happy learning!',
   ].join('\n');
@@ -210,6 +214,7 @@ function buildWelcomeEmail({ siteUrl }) {
                   '0 0 8px',
                 )}
                 ${emailSiteLink(site)}
+                ${emailInstagramFollow()}
                 ${emailMutedNote(
                   `You can <a href="${escapeHtml(unsubscribeUrl)}" style="color:#667085;font-weight:600;">unsubscribe</a> anytime.`,
                 )}
@@ -248,6 +253,8 @@ function buildAmazonReviewFollowUpEmail({
     emailParagraph,
     emailButton,
     emailSiteLink,
+    emailInstagramFollowText,
+    emailInstagramFollow,
     emailClosing,
     emailMutedNote,
   } = require('./emailLayout');
@@ -285,6 +292,8 @@ function buildAmazonReviewFollowUpEmail({
     '',
     `Visit the Modern Java website: ${site}`,
     '',
+    emailInstagramFollowText(),
+    '',
     `Unsubscribe anytime: ${unsubscribeUrl}`,
     '',
     'Thank you again — happy learning!',
@@ -319,6 +328,7 @@ function buildAmazonReviewFollowUpEmail({
                   '0 0 8px',
                 )}
                 ${emailSiteLink(site)}
+                ${emailInstagramFollow()}
                 ${emailMutedNote(
                   `You can <a href="${escapeHtml(unsubscribeUrl)}" style="color:#667085;font-weight:600;">unsubscribe</a> anytime.`,
                 )}
@@ -352,6 +362,8 @@ function buildAmazonEducationEmail({
     emailParagraph,
     emailButton,
     emailSiteLink,
+    emailInstagramFollowText,
+    emailInstagramFollow,
     emailClosing,
     emailMutedNote,
   } = require('./emailLayout');
@@ -387,6 +399,8 @@ function buildAmazonEducationEmail({
     '',
     `Visit the Modern Java website: ${site}`,
     '',
+    emailInstagramFollowText(),
+    '',
     `Unsubscribe anytime: ${unsubscribeUrl}`,
     '',
     'Thank you again — happy learning!',
@@ -419,6 +433,7 @@ function buildAmazonEducationEmail({
                   '0 0 8px',
                 )}
                 ${emailSiteLink(site)}
+                ${emailInstagramFollow()}
                 ${emailMutedNote(
                   `You can <a href="${escapeHtml(unsubscribeUrl)}" style="color:#667085;font-weight:600;">unsubscribe</a> anytime.`,
                 )}

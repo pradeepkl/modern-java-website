@@ -64,6 +64,7 @@ const {
 const {
   escapeHtml,
   BOOK_FULL_TITLE,
+  INSTAGRAM_URL,
   wrapTransactionalEmail,
   emailHeadline,
   emailParagraph,
@@ -72,6 +73,8 @@ const {
   emailButtonRow,
   emailCallout,
   emailSiteLink,
+  emailInstagramFollowText,
+  emailInstagramFollow,
   emailClosing,
   emailMutedNote,
 } = require('./emailLayout');
@@ -134,7 +137,6 @@ const loadCloudFrontPrivateKey = async () => {
 };
 
 const SITE_URL = String(WEBSITE_URL).replace(/\/$/, '');
-const INSTAGRAM_URL = 'https://www.instagram.com/classpath_publications/';
 const ALLOWED_ORIGINS = String(ALLOWED_ORIGIN)
   .split(',')
   .map((value) => value.trim())
@@ -655,6 +657,8 @@ const requestSampleChapter = async (event) => {
     '',
     marketingLine,
     '',
+    emailInstagramFollowText(),
+    '',
     'Thank you again — happy learning!',
   ].join('\n');
   const sampleHtml = wrapTransactionalEmail(`
@@ -671,6 +675,7 @@ const requestSampleChapter = async (event) => {
                 })}
                 ${emailSiteLink(SITE_URL)}
                 ${emailMutedNote(escapeHtml(marketingLine))}
+                ${emailInstagramFollow()}
                 ${emailClosing()}
   `);
 
@@ -1391,6 +1396,8 @@ const sendPaperbackConfirmationEmails = async (order, invoice = null) => {
     '',
     `Visit the Modern Java website: ${SITE_URL}`,
     '',
+    emailInstagramFollowText(),
+    '',
     'Thank you for your order — happy learning!',
   );
   const customerText = customerTextLines.join('\n');
@@ -1429,6 +1436,7 @@ const sendPaperbackConfirmationEmails = async (order, invoice = null) => {
                 }
                 ${invoiceCopy.html}
                 ${emailSiteLink(SITE_URL)}
+                ${emailInstagramFollow()}
                 ${emailClosing('Thank you for your order — happy learning!')}
   `);
 

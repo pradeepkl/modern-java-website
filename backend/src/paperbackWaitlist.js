@@ -129,6 +129,8 @@ function buildConfirmationEmail({
     emailHeadline,
     emailParagraph,
     emailSiteLink,
+    emailInstagramFollowText,
+    emailInstagramFollow,
     emailClosing,
   } = require('./emailLayout');
 
@@ -143,6 +145,8 @@ function buildConfirmationEmail({
     'No payment has been collected, and joining the priority list does not create any purchase obligation.',
     '',
     `Visit the Modern Java website: ${site}`,
+    '',
+    emailInstagramFollowText(),
     '',
     'Thank you again — happy learning!',
   ].join('\n');
@@ -160,6 +164,7 @@ function buildConfirmationEmail({
                   '0 0 8px',
                 )}
                 ${emailSiteLink(site)}
+                ${emailInstagramFollow()}
                 ${emailClosing()}
   `);
 

@@ -106,6 +106,22 @@ const emailSiteLink = (siteUrl) => `
                   </a>
                 </p>`;
 
+const INSTAGRAM_URL = 'https://www.instagram.com/classpath_publications/';
+
+const INSTAGRAM_FOLLOW_LINES = [
+  'Follow Classpath Publications on Instagram for updates and reader highlights:',
+  INSTAGRAM_URL,
+];
+
+/** Plain-text Instagram follow closer for customer emails. */
+const emailInstagramFollowText = () => INSTAGRAM_FOLLOW_LINES.join('\n');
+
+const emailInstagramFollow = (margin = '16px 0 0') =>
+  `<p style="margin:${margin};font-size:14px;line-height:1.55;color:#445066;">
+                  Follow Classpath Publications on Instagram for updates and reader highlights:<br/>
+                  <a href="${escapeHtml(INSTAGRAM_URL)}" style="color:#1a56db;text-decoration:none;">${escapeHtml(INSTAGRAM_URL)}</a>
+                </p>`;
+
 const emailClosing = (text = 'Thank you again — happy learning!') =>
   `<p style="margin:28px 0 0;font-size:15px;line-height:1.55;color:#1a2332;">${escapeHtml(text)}</p>`;
 
@@ -131,6 +147,7 @@ const emailBulletList = (items) => {
 
 module.exports = {
   BOOK_FULL_TITLE,
+  INSTAGRAM_URL,
   escapeHtml,
   wrapTransactionalEmail,
   emailHeadline,
@@ -140,6 +157,8 @@ module.exports = {
   emailButtonRow,
   emailCallout,
   emailSiteLink,
+  emailInstagramFollowText,
+  emailInstagramFollow,
   emailClosing,
   emailMutedNote,
   emailBulletList,

@@ -23,6 +23,7 @@ const {
 const {
   escapeHtml,
   BOOK_FULL_TITLE,
+  INSTAGRAM_URL,
   wrapTransactionalEmail,
   emailHeadline,
   emailParagraph,
@@ -31,13 +32,13 @@ const {
   emailButtonRow,
   emailCallout,
   emailSiteLink,
+  emailInstagramFollow,
   emailClosing,
   emailMutedNote,
 } = require('../src/emailLayout');
 
 const SITE = 'https://modern-java.classpath.in';
 const AMAZON = 'https://www.amazon.in/dp/B0H6R4334W';
-const INSTAGRAM = 'https://www.instagram.com/classpath_publications/';
 const REPLY = 'pradeep@classpath.in';
 
 const chapterPreview = (() => {
@@ -56,6 +57,7 @@ const chapterPreview = (() => {
                 ${emailButton({ href: url, label: 'Download PDF' })}
                 ${emailSiteLink(SITE)}
                 ${emailMutedNote(escapeHtml(marketingLine))}
+                ${emailInstagramFollow()}
                 ${emailClosing()}
   `);
   return {
@@ -96,11 +98,11 @@ const digital = (() => {
                   '0 0 16px',
                 )}
                 ${emailSmallParagraph(
-                  `<strong style="color:#1a2332;">Stay connected</strong><br/>Follow Classpath Publications on Instagram for updates and reader highlights:<br/><a href="${escapeHtml(INSTAGRAM)}" style="color:#1a56db;text-decoration:none;">${escapeHtml(INSTAGRAM)}</a>`,
+                  `<strong style="color:#1a2332;">Stay connected</strong><br/>Follow Classpath Publications on Instagram for updates and reader highlights:<br/><a href="${escapeHtml(INSTAGRAM_URL)}" style="color:#1a56db;text-decoration:none;">${escapeHtml(INSTAGRAM_URL)}</a>`,
                   '0 0 12px',
                 )}
                 ${emailSmallParagraph(
-                  `If the book helps you, please consider leaving an honest review or a short note on our <a href="${escapeHtml(INSTAGRAM)}" style="color:#1a56db;text-decoration:none;">Instagram page</a>. It helps other readers find the book.`,
+                  `If the book helps you, please consider leaving an honest review or a short note on our <a href="${escapeHtml(INSTAGRAM_URL)}" style="color:#1a56db;text-decoration:none;">Instagram page</a>. It helps other readers find the book.`,
                   '0 0 8px',
                 )}
                 ${emailSiteLink(SITE)}
@@ -141,6 +143,7 @@ const paperback = (() => {
                   '0 0 20px',
                 )}
                 ${emailSiteLink(SITE)}
+                ${emailInstagramFollow()}
                 ${emailClosing('Thank you for your order — happy learning!')}
   `);
   return {
