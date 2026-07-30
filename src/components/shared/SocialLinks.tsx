@@ -1,4 +1,4 @@
-import { Github, Linkedin } from 'lucide-react';
+import { Github, Instagram, Linkedin } from 'lucide-react';
 import { assets } from '../../data/assets';
 import { book } from '../../data/book';
 import { trackOutboundClick } from '../../lib/analytics';
@@ -18,6 +18,16 @@ export function SocialLinks({
 }: SocialLinksProps) {
   return (
     <div className={`social-links ${className}`}>
+      <a
+        href={book.instagramUrl}
+        className="social-links__link"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Follow Classpath Publications on Instagram"
+        onClick={() => trackOutboundClick(book.instagramUrl, 'instagram')}
+      >
+        <Instagram size={size} strokeWidth={1.75} aria-hidden="true" />
+      </a>
       <a
         href={book.linkedinUrl}
         className="social-links__link"

@@ -1,6 +1,7 @@
 import { assets } from '../../data/assets';
 import { book } from '../../data/book';
 import { navigation } from '../../data/navigation';
+import { SocialLinks } from '../shared/SocialLinks';
 import './Footer.css';
 
 export function Footer() {
@@ -18,6 +19,11 @@ export function Footer() {
             decoding="async"
           />
           <p className="site-footer__tagline">{book.tagline}</p>
+          <SocialLinks
+            className="site-footer__social"
+            size={20}
+            includeEmail={false}
+          />
         </div>
 
         <div className="site-footer__links">

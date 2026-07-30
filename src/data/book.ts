@@ -11,6 +11,7 @@ export const book = {
   email: 'admin@classpath.in',
   githubUrl: 'https://github.com/pradeepkl',
   linkedinUrl: 'https://www.linkedin.com/in/lpradeepk',
+  instagramUrl: 'https://www.instagram.com/classpath_publications/',
 
   copyrightYear: 2026,
 } as const;

@@ -27,6 +27,15 @@
   color: var(--color-muted);
 }
 
+.site-footer__social {
+  margin-top: 16px;
+  color: var(--color-blue-700);
+}
+
+.site-footer__social .social-links__link:hover {
+  color: var(--color-blue-800);
+}
+
 .site-footer__heading {
   margin: 0 0 14px;
   font-family: var(--font-body);
@@ -115,6 +124,10 @@
   .site-footer__tagline {
     max-width: none;
     margin-inline: auto;
+  }
+
+  .site-footer__social {
+    justify-content: center;
   }
 
   .site-footer__links {

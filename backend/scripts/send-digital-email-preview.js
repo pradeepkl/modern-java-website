@@ -35,8 +35,16 @@ const text = [
   `Order ID: ${ORDER_ID}`,
   'Please include this Order ID in any future communication about your purchase.',
   '',
-  'You will receive access to revised editions at this email address.',
-  `If a download link expires before you have saved the files, contact ${REPLY_TO}.`,
+  'Need the files again later?',
+  'Just reply to this email and we’ll resend your digital edition anytime — even after the download links expire.',
+  '',
+  'We’ll also notify you at this email address when revised editions become available.',
+  '',
+  'Stay connected',
+  'Follow Classpath Publications on Instagram for updates and reader highlights:',
+  'https://www.instagram.com/classpath_publications/',
+  '',
+  'If the book helps you, please consider leaving an honest review or a short note on our Instagram page. It helps other readers find the book.',
   '',
   `Visit the Modern Java website: ${SITE_URL}`,
   '',
@@ -98,10 +106,22 @@ const html = `
                     </td>
                   </tr>
                 </table>
+                <p style="margin:0 0 12px;font-size:14px;line-height:1.55;color:#445066;">
+                  <strong style="color:#1a2332;">Need the files again later?</strong><br/>
+                  Just reply to this email and we’ll resend your digital edition anytime — even after the download links expire.
+                </p>
+                <p style="margin:0 0 16px;font-size:14px;line-height:1.55;color:#445066;">
+                  We’ll also notify you at this email address when revised editions become available.
+                </p>
+                <p style="margin:0 0 12px;font-size:14px;line-height:1.55;color:#445066;">
+                  <strong style="color:#1a2332;">Stay connected</strong><br/>
+                  Follow Classpath Publications on Instagram for updates and reader highlights:<br/>
+                  <a href="https://www.instagram.com/classpath_publications/" style="color:#1a56db;text-decoration:none;">https://www.instagram.com/classpath_publications/</a>
+                </p>
                 <p style="margin:0 0 8px;font-size:14px;line-height:1.55;color:#445066;">
-                  You will receive access to revised editions at this email address.
-                  If a download link expires before you have saved the files, contact
-                  <a href="mailto:${escapeHtml(REPLY_TO)}" style="color:#1a56db;text-decoration:none;">${escapeHtml(REPLY_TO)}</a>.
+                  If the book helps you, please consider leaving an honest review or a short note on our
+                  <a href="https://www.instagram.com/classpath_publications/" style="color:#1a56db;text-decoration:none;">Instagram page</a>.
+                  It helps other readers find the book.
                 </p>
                 <p style="margin:16px 0 0;font-size:15px;line-height:1.55;">
                   <a href="${escapeHtml(SITE_URL)}" style="color:#1a56db;font-weight:600;text-decoration:none;">

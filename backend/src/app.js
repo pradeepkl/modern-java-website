@@ -134,6 +134,7 @@ const loadCloudFrontPrivateKey = async () => {
 };
 
 const SITE_URL = String(WEBSITE_URL).replace(/\/$/, '');
+const INSTAGRAM_URL = 'https://www.instagram.com/classpath_publications/';
 const ALLOWED_ORIGINS = String(ALLOWED_ORIGIN)
   .split(',')
   .map((value) => value.trim())
@@ -1501,8 +1502,16 @@ const sendDigitalConfirmationEmails = async (order, invoice = null) => {
     `Order ID: ${order.appOrderId}`,
     'Please quote this Order ID in any communication about your purchase.',
     '',
-    'We’ll notify you at this email address when revised editions become available.',
-    `If a download link expires before you have saved the files, contact ${REPLY_TO_EMAIL}.`,
+    'Need the files again later?',
+    'Just reply to this email and we’ll resend your digital edition anytime — even after the download links expire.',
+    '',
+    'We’ll also notify you at this email address when revised editions become available.',
+    '',
+    'Stay connected',
+    'Follow Classpath Publications on Instagram for updates and reader highlights:',
+    INSTAGRAM_URL,
+    '',
+    'If the book helps you, please consider leaving an honest review or a short note on our Instagram page. It helps other readers find the book.',
     '',
     `Visit the Modern Java website: ${SITE_URL}`,
     '',
@@ -1533,7 +1542,20 @@ const sendDigitalConfirmationEmails = async (order, invoice = null) => {
                   note: 'Please quote this Order ID in any communication about your purchase.',
                 })}
                 ${emailSmallParagraph(
-                  `We’ll notify you at this email address when revised editions become available. If a download link expires before you have saved the files, contact <a href="mailto:${escapeHtml(REPLY_TO_EMAIL)}" style="color:#1a56db;text-decoration:none;">${escapeHtml(REPLY_TO_EMAIL)}</a>.`,
+                  '<strong style="color:#1a2332;">Need the files again later?</strong><br/>Just reply to this email and we’ll resend your digital edition anytime — even after the download links expire.',
+                  '0 0 12px',
+                )}
+                ${emailSmallParagraph(
+                  'We’ll also notify you at this email address when revised editions become available.',
+                  '0 0 16px',
+                )}
+                ${emailSmallParagraph(
+                  `<strong style="color:#1a2332;">Stay connected</strong><br/>Follow Classpath Publications on Instagram for updates and reader highlights:<br/><a href="${escapeHtml(INSTAGRAM_URL)}" style="color:#1a56db;text-decoration:none;">${escapeHtml(INSTAGRAM_URL)}</a>`,
+                  '0 0 12px',
+                )}
+                ${emailSmallParagraph(
+                  `If the book helps you, please consider leaving an honest review or a short note on our <a href="${escapeHtml(INSTAGRAM_URL)}" style="color:#1a56db;text-decoration:none;">Instagram page</a>. It helps other readers find the book.`,
+                  '0 0 8px',
                 )}
                 ${emailSiteLink(SITE_URL)}
                 ${emailClosing()}
