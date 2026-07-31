@@ -68,16 +68,21 @@ export function PaperbackPurchaseCard({ format }: PaperbackPurchaseCardProps) {
               {format.listPrice !== format.price ? (
                 <span className="format-card__list-price">{format.listPrice}</span>
               ) : null}
-              <p className="format-card__price">{format.price}</p>
+              <p className="format-card__price" aria-label={format.price}>
+                <span className="format-card__currency" aria-hidden="true">
+                  ₹
+                </span>
+                {format.price.replace(/^₹/, '')}
+              </p>
               {format.discountLabel ? (
                 <span className="format-card__discount">{format.discountLabel}</span>
               ) : null}
             </div>
-            <div className="format-card__version-slot">
-              {format.versionLabel ? (
+            {format.versionLabel ? (
+              <div className="format-card__version-slot">
                 <span className="format-card__version">{format.versionLabel}</span>
-              ) : null}
-            </div>
+              </div>
+            ) : null}
             <p className="format-card__availability">{format.availability}</p>
           </div>
 

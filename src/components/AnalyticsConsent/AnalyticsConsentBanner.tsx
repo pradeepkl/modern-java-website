@@ -52,26 +52,28 @@ export function AnalyticsConsentBanner() {
             We use cookies
           </p>
           <p id="analytics-consent-desc" className="analytics-consent__text">
-            Cookies and similar tools help us understand how this site is used
-            and improve your experience. You can change your choice anytime by
-            clearing site data.{' '}
+            We use optional analytics cookies to understand how this site is
+            used and improve it. The site works with or without them—choose{' '}
+            <strong>Accept</strong> to allow analytics, or{' '}
+            <strong>Essential only</strong> to continue without. You can change
+            your choice later by clearing site data.{' '}
             <a href="/privacy-policy">Privacy policy</a>
           </p>
         </div>
         <div className="analytics-consent__actions">
           <button
             type="button"
+            className="button button-primary button-large analytics-consent__accept"
+            onClick={() => choose('granted')}
+          >
+            Accept
+          </button>
+          <button
+            type="button"
             className="button button-secondary analytics-consent__essential"
             onClick={() => choose('denied')}
           >
             Essential only
-          </button>
-          <button
-            type="button"
-            className="button button-primary"
-            onClick={() => choose('granted')}
-          >
-            Accept
           </button>
         </div>
       </div>

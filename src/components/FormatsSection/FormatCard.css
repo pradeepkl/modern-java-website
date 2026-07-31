@@ -143,33 +143,75 @@
 }
 
 .format-card__pricing {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
   margin: 0;
   text-align: center;
 }
 
 .format-card__price-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-bottom: 6px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: baseline;
+  column-gap: 8px;
+  width: 100%;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.format-card__price-row > .format-card__list-price {
+  grid-column: 1;
+  justify-self: end;
+}
+
+.format-card__price-row > .format-card__price {
+  grid-column: 2;
+  justify-self: center;
+}
+
+.format-card__price-row > .format-card__discount {
+  grid-column: 3;
+  justify-self: start;
+}
+
+/* Solo price (no list/discount): span the full row and center. */
+.format-card__price-row > .format-card__price:only-child {
+  grid-column: 1 / -1;
 }
 
 .format-card__list-price {
   color: var(--color-muted-light);
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   font-weight: 600;
   text-decoration: line-through;
   text-decoration-thickness: 1.5px;
 }
 
+/* Display-scale price — matches Purpose/Author section title clamp from
+   STYLE_GUIDE so the amount reads as the purchase decision anchor. */
 .format-card__price {
   margin: 0;
-  font-family: var(--font-heading);
-  font-size: 2.04rem;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 3.4vw, 3rem);
   font-weight: 700;
-  line-height: 1.1;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  text-align: center;
   color: var(--color-navy-900);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Hang ₹ so the digits sit on the optical center of the card. */
+.format-card__currency {
+  display: inline-block;
+  margin-right: 0.04em;
+  font-size: 0.58em;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+  vertical-align: 0.32em;
 }
 
 .format-card__discount {
@@ -204,7 +246,9 @@
 
 .format-card__availability {
   margin: 0;
+  width: 100%;
   font-size: 0.88rem;
+  text-align: center;
   color: var(--color-muted);
 }
 
