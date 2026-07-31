@@ -169,7 +169,9 @@ const main = async () => {
     const email = String(item.email || '')
       .trim()
       .toLowerCase();
-    const hasPurchased = purchasers.has(email);
+    const hasPurchased =
+      purchasers.has(email) ||
+      String(item.leadStatus || '').toUpperCase() === 'CUSTOMER';
     if (force && onlyEmail && email === onlyEmail) {
       return Boolean(item.sampleEducationEmailSentAt);
     }

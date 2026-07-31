@@ -2,7 +2,7 @@
  * Sample-chapter nurture sequence.
  *
  * Day 0  — transactional chapter-preview email (sent by sample request handler)
- * Day 4  — soft full-book follow-up (enough time to read two chapters)
+ * Day 4  — exclusive reader voucher (conversion email; site checkout only)
  * Day 10 — educational / philosophy email (not a sales pitch)
  * Day 18 — final gentle purchase reminder, then stop direct selling
  *
@@ -19,6 +19,7 @@ const {
   emailHeadline,
   emailParagraph,
   emailButton,
+  emailCallout,
   emailSiteLink,
   emailInstagramFollowText,
   emailInstagramFollow,
@@ -26,6 +27,10 @@ const {
   emailMutedNote,
 } = require('./emailLayout');
 const { isMarketingSendAllowed } = require('./emailDelivery');
+const {
+  formatExpiryForEmail,
+  canIssueVoucherForSample,
+} = require('./readerVoucher');
 
 const SAMPLE_FOLLOWUP_DAYS = 4;
 const SAMPLE_EDUCATION_DAYS = 10;
@@ -57,23 +62,50 @@ function isPastMinAge(timestampMs, now, minAgeDays) {
   return timestampMs <= now.getTime() - minAgeMs;
 }
 
+/**
+ * Day 4 — exclusive reader voucher conversion email.
+ * Requires voucherCode + pricing; Amazon is not offered (voucher is site-only).
+ */
 function buildSampleChapterFollowUpEmail({
   siteUrl,
-  amazonUrl = 'https://www.amazon.in/dp/B0H6R4334W',
+  voucherCode,
+  basisAmountInr,
+  discountAmountInr,
+  payableAmountInr,
+  expiresAt,
 }) {
   const site = normalizeSiteUrl(siteUrl);
   const formatsUrl = `${site}/#formats`;
-  const reviewAmazonUrl = normalizeAmazonUrl(amazonUrl);
   const unsubscribeUrl = `${site}/unsubscribe`;
+  const code = String(voucherCode || '').trim().toUpperCase();
+  const basis = Number(basisAmountInr);
+  const discount = Number(discountAmountInr);
+  const payable = Number(payableAmountInr);
+  const expiryLabel = formatExpiryForEmail(expiresAt);
+
+  if (!code) {
+    throw new Error('voucherCode is required for the Day 4 follow-up email');
+  }
+  if (![basis, discount, payable].every((n) => Number.isInteger(n) && n > 0)) {
+    throw new Error('Voucher pricing amounts must be positive integers');
+  }
 
   const text = [
-    `Hope you had a chance to explore the ${BOOK_FULL_TITLE} chapter preview.`,
+    `Hope you've had a chance to explore the first two chapters of ${BOOK_FULL_TITLE}.`,
     '',
-    `If the first two chapters resonated with you, the full book continues with the same practical, mindset-first approach—covering modern type design, pattern matching, modules, concurrency, collections, streams, and more.`,
+    `As a thank-you for downloading the sample, here's an exclusive reader benefit for the Classpath digital edition (PDF + ePub).`,
+    '',
+    `Your personal voucher: ${code}`,
+    `₹${basis} → ₹${payable}`,
+    `Valid until ${expiryLabel} (UTC).`,
+    '',
+    'Use this code at website checkout with the same email address you used for the sample. One-time use. Not valid on Amazon.',
+    '',
+    'The full book continues with the same practical, mindset-first approach—covering modern type design, pattern matching, modules, concurrency, collections, streams, and more.',
     '',
     `Get the full book: ${formatsUrl}`,
     '',
-    `Prefer Amazon? Continue here: ${reviewAmazonUrl}`,
+    'Reply to this email if you have questions.',
     '',
     `Visit the Modern Java website: ${site}`,
     '',
@@ -85,19 +117,30 @@ function buildSampleChapterFollowUpEmail({
   ].join('\n');
 
   const html = wrapTransactionalEmail(`
-                ${emailHeadline('How did you find the first chapters?')}
+                ${emailHeadline('An exclusive reader offer for you')}
                 ${emailParagraph(
-                  `Hope you had a chance to explore the <strong style="color:#1a2332;">${escapeHtml(BOOK_FULL_TITLE)}</strong> chapter preview.`,
+                  `Hope you've had a chance to explore the first two chapters of <strong style="color:#1a2332;">${escapeHtml(BOOK_FULL_TITLE)}</strong>.`,
                 )}
                 ${emailParagraph(
-                  'If the first two chapters resonated with you, the full book continues with the same practical, mindset-first approach—covering modern type design, pattern matching, modules, concurrency, collections, streams, and more.',
+                  'As a thank-you for downloading the sample, here\'s an exclusive reader benefit for the Classpath digital edition (PDF + ePub).',
+                )}
+                ${emailCallout({
+                  label: 'Your personal voucher',
+                  value: code,
+                  note: `₹${basis} → ₹${payable}. Valid until ${expiryLabel} (UTC).`,
+                })}
+                ${emailParagraph(
+                  'Use this code at website checkout with the same email address you used for the sample. One-time use. Not valid on Amazon.',
+                )}
+                ${emailParagraph(
+                  'The full book continues with the same practical, mindset-first approach—covering modern type design, pattern matching, modules, concurrency, collections, streams, and more.',
                 )}
                 ${emailButton({
                   href: formatsUrl,
                   label: 'Get the full book',
                 })}
                 ${emailParagraph(
-                  `Prefer Amazon? <a href="${escapeHtml(reviewAmazonUrl)}" style="color:#1a56db;font-weight:600;text-decoration:none;">Continue here →</a>`,
+                  'Reply to this email if you have questions.',
                   '0 0 8px',
                 )}
                 ${emailSiteLink(site)}
@@ -109,12 +152,12 @@ function buildSampleChapterFollowUpEmail({
   `);
 
   return {
-    subject: 'How did you find the first chapters?',
+    subject: 'Your exclusive Modern Java reader offer',
     text,
     html,
     unsubscribeUrl,
     formatsUrl,
-    amazonUrl: reviewAmazonUrl,
+    voucherCode: code,
   };
 }
 
@@ -261,7 +304,9 @@ function isEligibleForSampleChapterFollowUp(
   if (hasPurchased) return false;
   if (item.sampleFollowUpEmailSentAt) return false;
   if (hasMarketingSuppression(item)) return false;
-  return isPastMinAge(sampleRequestedAtMs(item), now, minAgeDays);
+  if (!isPastMinAge(sampleRequestedAtMs(item), now, minAgeDays)) return false;
+  // Day 4 is the voucher email — skip once the voucher window has closed.
+  return canIssueVoucherForSample(item, { now });
 }
 
 /**

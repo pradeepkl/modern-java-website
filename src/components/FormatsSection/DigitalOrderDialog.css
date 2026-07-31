@@ -150,6 +150,70 @@
   color: var(--color-muted);
 }
 
+.digital-order__promo {
+  margin-top: 12px;
+}
+
+.digital-order__promo-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.digital-order__promo-row input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 12px;
+  color: var(--color-text);
+  background: var(--color-white);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.digital-order__promo-row input:focus {
+  border-color: var(--color-blue-600);
+  box-shadow: 0 0 0 3px rgba(21, 86, 192, 0.12);
+  outline: 0;
+}
+
+.digital-order__promo-apply {
+  min-height: 48px;
+  white-space: nowrap;
+}
+
+.digital-order__voucher-applied {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--color-blue-050);
+  color: var(--color-navy-900);
+  font-size: 0.84rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.digital-order__voucher-applied p {
+  margin: 0;
+}
+
+.digital-order__voucher-title {
+  margin-bottom: 6px !important;
+  color: var(--color-blue-700);
+}
+
+.digital-order__voucher-error {
+  margin: 8px 0 0;
+  color: #b42318;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
 .digital-order__consent {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);

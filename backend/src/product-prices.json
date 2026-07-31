@@ -1,13 +1,13 @@
 {
   "currency": "INR",
-  "discountLabel": "20% off",
+  "discountLabel": "",
   "kindle": {
     "amountInr": 499,
     "listAmountInr": 624
   },
   "digital": {
-    "amountInr": 699,
-    "listAmountInr": 874
+    "amountInr": 899,
+    "listAmountInr": 899
   },
   "paperback": {
     "amountInr": 5,

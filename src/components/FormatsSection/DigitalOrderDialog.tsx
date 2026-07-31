@@ -2,6 +2,10 @@ import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 
 import { createPortal } from 'react-dom';
 import { CheckCircle2, CreditCard, Download, X } from 'lucide-react';
 import {
+  CAMPAIGN_VOUCHER_CODE,
+  getCampaignVoucherPricing,
+} from '../../config/campaignVoucher';
+import {
   formatInrAmount,
   getAmountInr,
   paiseToInr,
@@ -32,7 +36,6 @@ interface DigitalOrderDialogProps {
 }
 
 const DIGITAL_PRICE = getAmountInr('digital');
-const DIGITAL_PRICE_LABEL = formatInrAmount(DIGITAL_PRICE);
 const ORDER_API_URL = import.meta.env.VITE_ORDER_API_URL?.replace(/\/$/, '');
 const DIGITAL_CHECKOUT_BYPASS =
   import.meta.env.DEV &&
@@ -40,6 +43,12 @@ const DIGITAL_CHECKOUT_BYPASS =
   Boolean(import.meta.env.VITE_DIGITAL_CHECKOUT_BYPASS_SECRET);
 const SKIP_CHECKOUT_PAYMENT =
   DIGITAL_CHECKOUT_BYPASS || shouldSkipCheckoutPayment();
+
+type AppliedVoucher = {
+  voucherCode: string;
+  basisAmountInr: number;
+  payableAmountInr: number;
+};
 
 export function DigitalOrderDialog({
   open,
@@ -52,11 +61,21 @@ export function DigitalOrderDialog({
   const [confirmedOrderId, setConfirmedOrderId] = useState<string | null>(null);
   const [usedBypass, setUsedBypass] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [promoCode, setPromoCode] = useState('');
+  const [appliedVoucher, setAppliedVoucher] = useState<AppliedVoucher | null>(
+    null,
+  );
+  const [voucherError, setVoucherError] = useState('');
+  const [applyingVoucher, setApplyingVoucher] = useState(false);
   const completedRef = useRef(false);
   const turnstileRef = useRef<TurnstileWidgetHandle>(null);
+  const emailInputRef = useRef<HTMLInputElement>(null);
   const headingId = useId();
   const descriptionId = useId();
   useBodyScrollLock(open && !embed);
+
+  const payableInr = appliedVoucher?.payableAmountInr ?? DIGITAL_PRICE;
+  const payableLabel = formatInrAmount(payableInr);
 
   const requestClose = useCallback(() => {
     if (!completedRef.current) {
@@ -73,12 +92,24 @@ export function DigitalOrderDialog({
       setConfirmedOrderId('MJ-D-PREVIEW');
       setUsedBypass(false);
       completedRef.current = true;
+      setPromoCode('');
+      setAppliedVoucher(null);
     } else {
       setConfirmedOrderId(null);
       setUsedBypass(false);
       completedRef.current = false;
+      // Campaign-wide code is applied by default for direct site checkout.
+      const campaign = getCampaignVoucherPricing();
+      setPromoCode(campaign.voucherCode);
+      setAppliedVoucher({
+        voucherCode: campaign.voucherCode,
+        basisAmountInr: campaign.basisAmountInr,
+        payableAmountInr: campaign.payableAmountInr,
+      });
     }
     setCaptchaToken(null);
+    setVoucherError('');
+    setApplyingVoucher(false);
 
     if (embed) return undefined;
 
@@ -91,6 +122,80 @@ export function DigitalOrderDialog({
   }, [open, requestClose, previewState, embed]);
 
   if (!open) return null;
+
+  const handleApplyVoucher = async () => {
+    setVoucherError('');
+    setAppliedVoucher(null);
+
+    const code = promoCode.trim().toUpperCase();
+    const email = String(emailInputRef.current?.value || '')
+      .trim()
+      .toLowerCase();
+
+    if (!code) {
+      setVoucherError('Enter a promo code.');
+      return;
+    }
+
+    // Campaign code can be applied without email (multi-use site offer).
+    if (code === CAMPAIGN_VOUCHER_CODE) {
+      const campaign = getCampaignVoucherPricing();
+      setAppliedVoucher({
+        voucherCode: campaign.voucherCode,
+        basisAmountInr: campaign.basisAmountInr,
+        payableAmountInr: campaign.payableAmountInr,
+      });
+      setPromoCode(campaign.voucherCode);
+      track('voucher_applied', {
+        format: 'digital',
+        voucher_kind: 'campaign',
+        payable_inr: campaign.payableAmountInr,
+      });
+      return;
+    }
+
+    if (!ORDER_API_URL) {
+      setVoucherError('Digital checkout is not configured yet.');
+      return;
+    }
+    if (!email) {
+      setVoucherError('Enter your email address before applying a promo code.');
+      return;
+    }
+
+    setApplyingVoucher(true);
+    try {
+      const result = await fetch(`${ORDER_API_URL}/vouchers/validate`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email, voucherCode: code }),
+      });
+      const payload = await result.json();
+      if (!result.ok) {
+        throw new Error(payload.message || 'Invalid or expired voucher.');
+      }
+      setAppliedVoucher({
+        voucherCode: String(payload.voucherCode || code),
+        basisAmountInr: Number(payload.basisAmountInr),
+        payableAmountInr: Number(payload.payableAmountInr),
+      });
+      setPromoCode(String(payload.voucherCode || code));
+      track('voucher_applied', {
+        format: 'digital',
+        voucher_kind: 'personal',
+        payable_inr: Number(payload.payableAmountInr),
+      });
+    } catch (error) {
+      setVoucherError(
+        error instanceof Error
+          ? error.message
+          : 'Invalid or expired voucher.',
+      );
+      track('voucher_apply_fail', { format: 'digital' });
+    } finally {
+      setApplyingVoucher(false);
+    }
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -106,6 +211,9 @@ export function DigitalOrderDialog({
       marketingConsent,
       consentVersion: '2026-07-21',
       captchaToken: captchaToken || undefined,
+      ...(appliedVoucher
+        ? { voucherCode: appliedVoucher.voucherCode }
+        : {}),
     };
 
     track('checkout_submit', {
@@ -171,10 +279,13 @@ export function DigitalOrderDialog({
         trackPurchase({
           format: 'digital',
           // Order amount is paise; Pixel/GA expect INR rupees.
-          value: paiseToInr(bypassOrder.amount ?? DIGITAL_PRICE * 100),
+          value: paiseToInr(bypassOrder.amount ?? payableInr * 100),
           transactionId: bypassOrder.appOrderId,
           paymentMethod: 'bypass',
         });
+        if (appliedVoucher) {
+          track('voucher_redeemed', { format: 'digital' });
+        }
         setProcessing(false);
         return;
       }
@@ -246,10 +357,13 @@ export function DigitalOrderDialog({
             trackPurchase({
               format: 'digital',
               // Order amount is paise; Pixel/GA expect INR rupees.
-              value: paiseToInr(order.amount ?? DIGITAL_PRICE * 100),
+              value: paiseToInr(order.amount ?? payableInr * 100),
               transactionId: verification.appOrderId,
               paymentMethod: 'razorpay',
             });
+            if (appliedVoucher || order.voucherCode) {
+              track('voucher_redeemed', { format: 'digital' });
+            }
           } catch (error) {
             setErrorMessage(
               error instanceof Error
@@ -317,7 +431,7 @@ export function DigitalOrderDialog({
             <p id={descriptionId} className="order-dialog__description">
               {SKIP_CHECKOUT_PAYMENT
                 ? 'Dev mode — submit to receive download links without Razorpay.'
-                : `Pay ${DIGITAL_PRICE_LABEL} securely and receive both formats by email.`}
+                : `Pay ${payableLabel} securely and receive both formats by email.`}
             </p>
           </div>
           <button
@@ -394,11 +508,22 @@ export function DigitalOrderDialog({
             <label className="digital-order__field">
               <span>Email address</span>
               <input
+                ref={emailInputRef}
                 type="email"
                 name="email"
                 placeholder="you@example.com"
                 autoComplete="email"
                 required
+                onChange={() => {
+                  // Personal vouchers are email-bound; campaign codes are not.
+                  if (
+                    appliedVoucher &&
+                    appliedVoucher.voucherCode !== CAMPAIGN_VOUCHER_CODE
+                  ) {
+                    setAppliedVoucher(null);
+                    setVoucherError('');
+                  }
+                }}
                 onBlur={(event) => {
                   if (!event.currentTarget.value.trim()) {
                     track('form_field_abandon', {
@@ -409,6 +534,54 @@ export function DigitalOrderDialog({
                 }}
               />
             </label>
+
+            <div className="digital-order__promo">
+              <label className="digital-order__field" htmlFor="digital-promo-code">
+                <span>Promo code</span>
+              </label>
+              <div className="digital-order__promo-row">
+                <input
+                  id="digital-promo-code"
+                  type="text"
+                  name="promoCode"
+                  value={promoCode}
+                  autoComplete="off"
+                  spellCheck={false}
+                  placeholder={CAMPAIGN_VOUCHER_CODE}
+                  onChange={(event) => {
+                    setPromoCode(event.target.value.toUpperCase());
+                    setAppliedVoucher(null);
+                    setVoucherError('');
+                  }}
+                />
+                <button
+                  type="button"
+                  className="button button-secondary digital-order__promo-apply"
+                  onClick={handleApplyVoucher}
+                  disabled={applyingVoucher || processing}
+                >
+                  {applyingVoucher ? 'Applying…' : 'Apply'}
+                </button>
+              </div>
+              {appliedVoucher ? (
+                <div className="digital-order__voucher-applied" role="status">
+                  <p className="digital-order__voucher-title">
+                    ✓ Voucher applied
+                  </p>
+                  <p>
+                    {formatInrAmount(appliedVoucher.basisAmountInr)} →{' '}
+                    <strong>
+                      {formatInrAmount(appliedVoucher.payableAmountInr)}
+                    </strong>
+                  </p>
+                </div>
+              ) : null}
+              {voucherError ? (
+                <p className="digital-order__voucher-error" role="alert">
+                  {voucherError}
+                </p>
+              ) : null}
+            </div>
 
             <TurnstileWidget
               ref={turnstileRef}
@@ -460,7 +633,7 @@ export function DigitalOrderDialog({
                   : 'Starting payment…'
                 : SKIP_CHECKOUT_PAYMENT
                   ? 'Send download links (no payment)'
-                  : `Pay ${DIGITAL_PRICE_LABEL} securely`}
+                  : `Pay ${payableLabel} securely`}
             </button>
           </form>
         )}

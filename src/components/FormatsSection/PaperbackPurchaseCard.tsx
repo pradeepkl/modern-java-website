@@ -65,9 +65,13 @@ export function PaperbackPurchaseCard({ format }: PaperbackPurchaseCardProps) {
         <div className="format-card__footer">
           <div className="format-card__pricing">
             <div className="format-card__price-row">
-              <span className="format-card__list-price">{format.listPrice}</span>
+              {format.listPrice !== format.price ? (
+                <span className="format-card__list-price">{format.listPrice}</span>
+              ) : null}
               <p className="format-card__price">{format.price}</p>
-              <span className="format-card__discount">{format.discountLabel}</span>
+              {format.discountLabel ? (
+                <span className="format-card__discount">{format.discountLabel}</span>
+              ) : null}
             </div>
             <div className="format-card__version-slot">
               {format.versionLabel ? (

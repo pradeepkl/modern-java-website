@@ -21,23 +21,37 @@ describe('sample nurture delays', () => {
 });
 
 describe('buildSampleChapterFollowUpEmail', () => {
-  it('soft-sells the full book with website primary and Amazon secondary', () => {
+  it('sends an exclusive reader voucher conversion email (site-only)', () => {
     const email = buildSampleChapterFollowUpEmail({
       siteUrl: 'https://modern-java.classpath.in',
-      amazonUrl: 'https://www.amazon.in/dp/B0H6R4334W',
+      voucherCode: 'MJ-7X9K-PL42',
+      basisAmountInr: 899,
+      discountAmountInr: 200,
+      payableAmountInr: 699,
+      expiresAt: '2026-08-07T10:00:00.000Z',
     });
-    assert.equal(email.subject, 'How did you find the first chapters?');
-    assert.match(email.text, /explore the Modern Java - The Mindset Shift chapter preview/);
-    assert.match(email.text, /modern type design, pattern matching, modules/);
-    assert.match(email.text, /Get the full book/);
-    assert.match(email.text, /Prefer Amazon\? Continue here:/);
+    assert.equal(email.subject, 'Your exclusive Modern Java reader offer');
+    assert.match(email.text, /exclusive reader benefit/);
+    assert.match(email.text, /MJ-7X9K-PL42/);
+    assert.match(email.text, /₹899 → ₹699/);
+    assert.doesNotMatch(email.text, /You save|%|percent/i);
+    assert.match(email.text, /Not valid on Amazon/);
+    assert.match(email.text, /Reply to this email if you have questions/);
     assert.match(email.text, /https:\/\/modern-java\.classpath\.in\/#formats/);
-    assert.match(email.text, /https:\/\/www\.amazon\.in\/dp\/B0H6R4334W/);
+    assert.doesNotMatch(email.text, /Prefer Amazon|amazon\.in\/dp/i);
+    assert.match(email.html, /Your personal voucher/);
+    assert.match(email.html, /MJ-7X9K-PL42/);
     assert.match(email.html, /Get the full book/);
-    assert.match(email.html, /Prefer Amazon\?/);
-    assert.match(email.html, /happy learning/i);
-    assert.doesNotMatch(email.text, /companion ideas|treating you/i);
-    assert.doesNotMatch(email.text, /discount|coupon|reward|must buy/i);
+  });
+
+  it('requires voucher fields', () => {
+    assert.throws(
+      () =>
+        buildSampleChapterFollowUpEmail({
+          siteUrl: 'https://modern-java.classpath.in',
+        }),
+      /voucherCode is required/,
+    );
   });
 });
 
@@ -79,7 +93,7 @@ describe('isEligibleForSampleChapterFollowUp', () => {
     marketingConsent: true,
   };
 
-  it('requires age, no prior send, and no purchase', () => {
+  it('requires age, open voucher window, no prior send, and no purchase', () => {
     assert.equal(isEligibleForSampleChapterFollowUp(base, { now }), true);
     assert.equal(
       isEligibleForSampleChapterFollowUp(
@@ -97,6 +111,19 @@ describe('isEligibleForSampleChapterFollowUp', () => {
     );
     assert.equal(
       isEligibleForSampleChapterFollowUp(base, { now, hasPurchased: true }),
+      false,
+    );
+  });
+
+  it('skips leads whose voucher window has already closed', () => {
+    assert.equal(
+      isEligibleForSampleChapterFollowUp(
+        {
+          ...base,
+          lastRequestedAt: '2026-07-10T12:00:00.000Z',
+        },
+        { now },
+      ),
       false,
     );
   });

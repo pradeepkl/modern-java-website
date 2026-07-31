@@ -310,14 +310,31 @@ Trust-first cadence for chapter-preview downloads (not maximum frequency):
 
 | Day | Email | Script |
 | --: | ----- | ------ |
-| 4 | Soft full-book follow-up | `send:sample-followup` |
+| 4 | Exclusive reader voucher (site digital checkout) | `send:sample-followup` |
 | 10 | Educational / philosophy | `send:sample-education` |
 | 18 | Final gentle format reminder | `send:sample-reminder` |
 
 After Day 18, stop direct selling; keep readers on the Classpath Reader List
 editorial cadence instead.
 
-Primary CTA is the website formats section; Amazon is offered as an alternative.
+#### Day 4 reader vouchers
+
+- Issued idempotently when Day 4 is sent (`VOUCHERS_TABLE`).
+- Cryptographically random codes (`MJ-XXXX-XXXX`), one-time, email-bound.
+- Fixed exclusive payable amount (`READER_VOUCHER_PAYABLE_INR`, default
+  **₹699**) against the current Classpath digital price (`amountInr`, ₹899).
+  No percentage is stored or shown in customer-facing copy.
+- Campaign-wide multi-use code (`CAMPAIGN_VOUCHER_CODE`, default
+  **`MODERNJAVA`**) is pre-applied on digital checkout for direct site buyers
+  (same ₹899 → ₹699). Personal Day-4 codes remain one-time and email-bound.
+- Expiry = sample request timestamp + `READER_VOUCHER_VALIDITY_DAYS` × 24h (UTC),
+  default 7 days from download — not from email send time.
+- Checkout: `POST /vouchers/validate`, then `POST /digital-orders` with
+  `voucherCode`. Amount is always computed server-side; voucher is reserved on
+  order create and redeemed only after successful payment verification.
+- Site digital checkout only (not Amazon / not paperback).
+- Paid buyers become `leadStatus = CUSTOMER` on the sample-request record and
+  are excluded from remaining Modern Java sample/voucher acquisition emails.
 
 Skips:
 
@@ -325,6 +342,7 @@ Skips:
 - anyone who already received that step’s sent timestamp
 - unsubscribed leads (`marketingUnsubscribedAt`) or withdrawn marketing consent
   (`marketingConsent === false`)
+- Day 4 leads whose voucher window has already closed
 
 Later steps require the previous step’s timestamp
 (`sampleFollowUpEmailSentAt` → `sampleEducationEmailSentAt` →
@@ -335,6 +353,7 @@ email is already known from a site order or lead record.
 
 ```bash
 SAMPLE_REQUESTS_TABLE=<table> ORDERS_TABLE=<orders-table> \
+  VOUCHERS_TABLE=<vouchers-table> \
   npm run send:sample-followup -- --dry-run
 
 SAMPLE_REQUESTS_TABLE=<table> ORDERS_TABLE=<orders-table> \

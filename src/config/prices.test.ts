@@ -13,7 +13,9 @@ import {
 describe('product prices config', () => {
   it('loads Kindle, digital, and paperback amounts from config', () => {
     expect(productPrices.currency).toBe('INR');
-    expect(productPrices.discountLabel).toBe('20% off');
+    expect(productPrices.discountLabel).toBe('');
+    expect(productPrices.digital.amountInr).toBe(899);
+    expect(productPrices.digital.listAmountInr).toBe(899);
     expect(getAmountInr('kindle')).toBe(productPrices.kindle.amountInr);
     expect(getAmountInr('digital')).toBe(productPrices.digital.amountInr);
     expect(getAmountInr('paperback')).toBe(productPrices.paperback.amountInr);

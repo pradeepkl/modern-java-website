@@ -24,6 +24,18 @@ const {
   getPaperbackUnitPricePaise,
   getPaperbackTotalPaise,
 } = require('./productPrices');
+const {
+  normalizeVoucherCode,
+  evaluateCheckoutVoucherCode,
+  publicVoucherPricing,
+  getVoucherByCode,
+  reserveVoucher,
+  releaseVoucherReservation,
+  redeemVoucher,
+  isCampaignVoucherCode,
+  VOUCHER_KIND,
+  INVALID_VOUCHER_MESSAGE,
+} = require('./readerVoucher');
 const { joinPaperbackWaitlist } = require('./paperbackWaitlist');
 const {
   CREATED_MESSAGE: MARKETING_CREATED_MESSAGE,
@@ -94,6 +106,7 @@ const {
   ORDERS_TABLE,
   SAMPLE_REQUESTS_TABLE,
   PAPERBACK_WAITLIST_TABLE,
+  VOUCHERS_TABLE,
   DIGITAL_ASSETS_BUCKET,
   SAMPLE_PDF_KEY = 'sample/modern-java-preview.pdf',
   DIGITAL_PDF_KEY = 'digital/modern-java-drm-free_v1.0.pdf',
@@ -238,6 +251,68 @@ const loadLeadRecord = async (email) => {
     }),
   );
   return result.Item || null;
+};
+
+const isCustomerLead = (lead) =>
+  String(lead?.leadStatus || '').toUpperCase() === 'CUSTOMER';
+
+/**
+ * Convert a sample lead to CUSTOMER after a paid Modern Java website order.
+ * Stops sample/voucher acquisition emails via hasPurchased + leadStatus checks.
+ */
+const markLeadAsCustomer = async (email, { appOrderId } = {}) => {
+  if (!SAMPLE_REQUESTS_TABLE || !email) return;
+  const normalized = String(email).trim().toLowerCase();
+  const now = new Date().toISOString();
+  try {
+    await dynamo.send(
+      new UpdateCommand({
+        TableName: SAMPLE_REQUESTS_TABLE,
+        Key: { email: normalized },
+        UpdateExpression:
+          'SET leadStatus = :customer, customerAt = if_not_exists(customerAt, :now), ' +
+          'customerAppOrderId = :orderId, updatedAt = :now',
+        ConditionExpression: 'attribute_exists(email)',
+        ExpressionAttributeValues: {
+          ':customer': 'CUSTOMER',
+          ':now': now,
+          ':orderId': appOrderId || null,
+        },
+      }),
+    );
+  } catch (error) {
+    if (isMarketingConditionalCheckFailed(error)) return;
+    console.error('mark_lead_as_customer_failed', {
+      email: normalized,
+      appOrderId,
+      errorName: error?.name || 'Error',
+    });
+  }
+};
+
+const redeemOrderVoucherIfPresent = async (order) => {
+  const code = normalizeVoucherCode(order?.voucherCode);
+  if (!code || !order?.email || !order?.appOrderId) {
+    return;
+  }
+  // Campaign codes are multi-use and are not stored / redeemed per lead.
+  if (isCampaignVoucherCode(code) || order.voucherKind === VOUCHER_KIND.CAMPAIGN) {
+    return;
+  }
+  if (!VOUCHERS_TABLE) return;
+  const redeemed = await redeemVoucher({
+    dynamo,
+    tableName: VOUCHERS_TABLE,
+    code,
+    email: order.email,
+    appOrderId: order.appOrderId,
+  });
+  if (!redeemed) {
+    console.error('voucher_redeem_failed', {
+      appOrderId: order.appOrderId,
+      voucherCode: code,
+    });
+  }
 };
 
 /**
@@ -643,7 +718,7 @@ const requestSampleChapter = async (event) => {
   const marketingConsent = json.marketingConsent === true;
   const now = new Date().toISOString();
   const marketingLine = marketingConsent
-    ? `You also asked to receive occasional Modern Java articles and book updates. Unsubscribe anytime: ${SITE_URL}/unsubscribe`
+    ? `You also asked to receive occasional Modern Java articles and book updates. If you stay opted in, I may send a few short follow-up notes about the book. Unsubscribe anytime: ${SITE_URL}/unsubscribe`
     : 'You have not been subscribed to marketing updates.';
   const sampleText = [
     `Thank you for your interest in ${BOOK_FULL_TITLE}.`,
@@ -1164,10 +1239,139 @@ const validateDigitalCustomer = (input) => {
   return { name, email };
 };
 
+const resolveDigitalCheckoutPricing = async ({
+  email,
+  voucherCode,
+  appOrderId = null,
+}) => {
+  const fullAmountPaise = getDigitalBundlePricePaise();
+  const code = normalizeVoucherCode(voucherCode);
+  if (!code) {
+    return {
+      amountPaise: fullAmountPaise,
+      voucherCode: null,
+      voucherKind: null,
+      voucherFields: {},
+      pricing: null,
+    };
+  }
+
+  if (isCampaignVoucherCode(code)) {
+    const evaluation = evaluateCheckoutVoucherCode(code);
+    if (!evaluation.ok) {
+      const error = new Error(evaluation.message);
+      error.code = 'VOUCHER_INVALID';
+      throw error;
+    }
+    return {
+      amountPaise: evaluation.pricing.payableAmountPaise,
+      voucherCode: code,
+      voucherKind: VOUCHER_KIND.CAMPAIGN,
+      voucherFields: {
+        voucherCode: code,
+        voucherKind: VOUCHER_KIND.CAMPAIGN,
+        originalAmount: evaluation.pricing.basisAmountPaise,
+        discountAmount: evaluation.pricing.discountAmountPaise,
+      },
+      pricing: evaluation.pricing,
+    };
+  }
+
+  if (!VOUCHERS_TABLE) {
+    const error = new Error(INVALID_VOUCHER_MESSAGE);
+    error.code = 'VOUCHER_INVALID';
+    throw error;
+  }
+
+  const lead = await loadLeadRecord(email);
+  const voucher = await getVoucherByCode(dynamo, VOUCHERS_TABLE, code);
+  const evaluation = evaluateCheckoutVoucherCode(code, {
+    voucher,
+    email,
+    appOrderId,
+    hasPurchased: isCustomerLead(lead),
+  });
+  if (!evaluation.ok) {
+    const error = new Error(evaluation.message);
+    error.code = 'VOUCHER_INVALID';
+    throw error;
+  }
+
+  return {
+    amountPaise: evaluation.pricing.payableAmountPaise,
+    voucherCode: code,
+    voucherKind: VOUCHER_KIND.PERSONAL,
+    voucherFields: {
+      voucherCode: code,
+      voucherKind: VOUCHER_KIND.PERSONAL,
+      originalAmount: evaluation.pricing.basisAmountPaise,
+      discountAmount: evaluation.pricing.discountAmountPaise,
+    },
+    pricing: evaluation.pricing,
+  };
+};
+
+const validateReaderVoucher = async (event) => {
+  const { json } = parseBody(event);
+  const email = String(json.email || '')
+    .trim()
+    .toLowerCase();
+  const voucherCode = normalizeVoucherCode(json.voucherCode || json.code);
+
+  if (!voucherCode) {
+    return response(400, { message: INVALID_VOUCHER_MESSAGE });
+  }
+
+  if (isCampaignVoucherCode(voucherCode)) {
+    const evaluation = evaluateCheckoutVoucherCode(voucherCode);
+    if (!evaluation.ok) {
+      return response(400, { message: evaluation.message });
+    }
+    return response(200, {
+      valid: true,
+      voucherCode,
+      voucherKind: VOUCHER_KIND.CAMPAIGN,
+      ...publicVoucherPricing(evaluation.pricing),
+    });
+  }
+
+  if (!EMAIL_PATTERN.test(email)) {
+    throw new Error('Invalid email address');
+  }
+  if (!VOUCHERS_TABLE) {
+    return response(503, {
+      message: 'Reader vouchers are not configured yet.',
+    });
+  }
+
+  const lead = await loadLeadRecord(email);
+  const voucher = await getVoucherByCode(dynamo, VOUCHERS_TABLE, voucherCode);
+  const evaluation = evaluateCheckoutVoucherCode(voucherCode, {
+    voucher,
+    email,
+    hasPurchased: isCustomerLead(lead),
+  });
+
+  if (!evaluation.ok) {
+    return response(400, { message: evaluation.message });
+  }
+
+  return response(200, {
+    valid: true,
+    voucherCode,
+    voucherKind: VOUCHER_KIND.PERSONAL,
+    ...publicVoucherPricing(evaluation.pricing),
+    expiresAt: voucher?.expiresAt,
+  });
+};
+
 const createDigitalOrder = async (event) => {
   const { json } = parseBody(event);
   const { name, email } = validateDigitalCustomer(json);
   const metaAttribution = readMetaAttribution(event, json);
+  const requestedVoucherCode = normalizeVoucherCode(
+    json.voucherCode || json.promoCode,
+  );
 
   await verifyTurnstileCaptcha(event, json.captchaToken);
 
@@ -1220,6 +1424,44 @@ const createDigitalOrder = async (event) => {
   const marketingConsent = json.marketingConsent === true;
   const customerFields = { name, email };
 
+  let checkoutPricing;
+  try {
+    checkoutPricing = await resolveDigitalCheckoutPricing({
+      email,
+      voucherCode: requestedVoucherCode,
+      appOrderId,
+    });
+  } catch (error) {
+    if (error.code === 'VOUCHER_INVALID' || error.code === 'VOUCHER_RESERVED') {
+      return response(400, { message: error.message });
+    }
+    throw error;
+  }
+
+  const amountPaise = checkoutPricing.amountPaise;
+  const voucherFields = checkoutPricing.voucherFields;
+
+  if (
+    checkoutPricing.voucherCode &&
+    checkoutPricing.voucherKind === VOUCHER_KIND.PERSONAL
+  ) {
+    try {
+      await reserveVoucher({
+        dynamo,
+        tableName: VOUCHERS_TABLE,
+        code: checkoutPricing.voucherCode,
+        email,
+        appOrderId,
+        hasPurchased: isCustomerLead(await loadLeadRecord(email)),
+      });
+    } catch (error) {
+      if (error.code === 'VOUCHER_INVALID' || error.code === 'VOUCHER_RESERVED') {
+        return response(400, { message: error.message });
+      }
+      throw error;
+    }
+  }
+
   if (marketingConsent) {
     try {
       await upsertMarketingPreference({
@@ -1250,11 +1492,12 @@ const createDigitalOrder = async (event) => {
       razorpayOrderId: `order_bypass_${appOrderId}`,
       productType: 'digital_bundle',
       ...customerFields,
-      amount: getDigitalBundlePricePaise(),
+      amount: amountPaise,
       currency: 'INR',
       status: 'paid',
       paymentId,
       ...paymentMeta,
+      ...voucherFields,
       revisionUpdates: true,
       marketingConsent,
       marketingConsentAt: marketingConsent ? now : null,
@@ -1274,15 +1517,19 @@ const createDigitalOrder = async (event) => {
       }),
     );
 
+    await redeemOrderVoucherIfPresent(paidOrder);
+    await markLeadAsCustomer(email, { appOrderId });
+
     const order = {
       appOrderId,
       paymentId,
-      amount: getDigitalBundlePricePaise(),
+      amount: amountPaise,
       ...customerFields,
       marketingConsent,
       productType: 'digital_bundle',
       checkoutBypass: true,
       metaAttribution,
+      ...voucherFields,
     };
     const downloads = await createDigitalDownloadLinks();
     try {
@@ -1295,50 +1542,88 @@ const createDigitalOrder = async (event) => {
     return response(201, {
       appOrderId,
       skippedPayment: true,
+      amount: amountPaise,
+      currency: 'INR',
       downloads,
+      ...(checkoutPricing.pricing
+        ? publicVoucherPricing(checkoutPricing.pricing)
+        : {}),
     });
   }
 
-  const razorpayConfig = getRazorpayConfig();
-  const razorpayOrder = await createRazorpayOrder({
-    amount: getDigitalBundlePricePaise(),
-    receipt: appOrderId,
-    notes: { appOrderId, productType: 'digital_bundle' },
-  }, razorpayConfig);
-
-  await dynamo.send(
-    new PutCommand({
-      TableName: ORDERS_TABLE,
-      Item: {
+  let razorpayOrder;
+  try {
+    const razorpayConfig = getRazorpayConfig();
+    razorpayOrder = await createRazorpayOrder({
+      amount: amountPaise,
+      receipt: appOrderId,
+      notes: {
         appOrderId,
-        razorpayOrderId: razorpayOrder.id,
         productType: 'digital_bundle',
-        ...customerFields,
-        amount: getDigitalBundlePricePaise(),
-        currency: 'INR',
-        status: 'payment_pending',
-        ...persistedPaymentFields(razorpayConfig),
-        revisionUpdates: true,
-        marketingConsent,
-        marketingConsentAt: marketingConsent ? now : null,
-        consentVersion: marketingConsent
-          ? String(json.consentVersion || 'unknown')
-          : null,
-        metaAttribution,
-        createdAt: now,
-        updatedAt: now,
+        ...(checkoutPricing.voucherCode
+          ? { voucherCode: checkoutPricing.voucherCode }
+          : {}),
       },
-      ConditionExpression: 'attribute_not_exists(appOrderId)',
-    }),
-  );
+    }, razorpayConfig);
 
-  return response(201, {
-    appOrderId,
-    razorpayOrderId: razorpayOrder.id,
-    amount: getDigitalBundlePricePaise(),
-    currency: 'INR',
-    ...publicOrderPaymentFields(razorpayConfig),
-  });
+    await dynamo.send(
+      new PutCommand({
+        TableName: ORDERS_TABLE,
+        Item: {
+          appOrderId,
+          razorpayOrderId: razorpayOrder.id,
+          productType: 'digital_bundle',
+          ...customerFields,
+          amount: amountPaise,
+          currency: 'INR',
+          status: 'payment_pending',
+          ...persistedPaymentFields(razorpayConfig),
+          ...voucherFields,
+          revisionUpdates: true,
+          marketingConsent,
+          marketingConsentAt: marketingConsent ? now : null,
+          consentVersion: marketingConsent
+            ? String(json.consentVersion || 'unknown')
+            : null,
+          metaAttribution,
+          createdAt: now,
+          updatedAt: now,
+        },
+        ConditionExpression: 'attribute_not_exists(appOrderId)',
+      }),
+    );
+
+    return response(201, {
+      appOrderId,
+      razorpayOrderId: razorpayOrder.id,
+      amount: amountPaise,
+      currency: 'INR',
+      ...(checkoutPricing.pricing
+        ? {
+            voucherCode: checkoutPricing.voucherCode,
+            ...publicVoucherPricing(checkoutPricing.pricing),
+          }
+        : {}),
+      ...publicOrderPaymentFields(razorpayConfig),
+    });
+  } catch (error) {
+    if (
+      checkoutPricing.voucherCode &&
+      checkoutPricing.voucherKind === VOUCHER_KIND.PERSONAL
+    ) {
+      try {
+        await releaseVoucherReservation({
+          dynamo,
+          tableName: VOUCHERS_TABLE,
+          code: checkoutPricing.voucherCode,
+          appOrderId,
+        });
+      } catch (releaseError) {
+        console.error('voucher_release_after_order_failure', releaseError);
+      }
+    }
+    throw error;
+  }
 };
 
 const formatOrderEmail = (order) => [
@@ -1800,6 +2085,7 @@ const createOrder = async (event) => {
         error,
       );
     }
+    await markLeadAsCustomer(orderInput.email, { appOrderId });
     await maybeSendPurchaseConversion(paidOrder, 'paperback_bypass');
 
     return response(201, {
@@ -1903,6 +2189,8 @@ const verifyOrder = async (event) => {
   );
 
   if (order.status !== 'paid') {
+    await redeemOrderVoucherIfPresent(updated.Attributes);
+    await markLeadAsCustomer(updated.Attributes?.email, { appOrderId });
     try {
       await sendConfirmationEmails(updated.Attributes);
     } catch (error) {
@@ -1957,6 +2245,10 @@ const processWebhook = async (event) => {
             ReturnValues: 'ALL_NEW',
           }),
         );
+        await redeemOrderVoucherIfPresent(updated.Attributes);
+        await markLeadAsCustomer(updated.Attributes?.email, {
+          appOrderId: order.appOrderId,
+        });
         try {
           await sendConfirmationEmails(updated.Attributes);
         } catch (error) {
@@ -2018,6 +2310,9 @@ exports.handler = async (event) => {
     }
     if (method === 'POST' && path === '/digital-orders') {
       return await createDigitalOrder(event);
+    }
+    if (method === 'POST' && path === '/vouchers/validate') {
+      return await validateReaderVoucher(event);
     }
     if (method === 'POST' && path === '/orders') {
       return await createOrder(event);

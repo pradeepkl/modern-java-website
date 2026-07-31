@@ -135,6 +135,20 @@ Parameters:
       - 'false'
     Default: 'true'
     Description: Kill switch for Meta Conversions API (Lead/Purchase)
+  ReaderVoucherPayableAmountInr:
+    Type: Number
+    Default: 699
+    MinValue: 1
+    Description: Exclusive reader voucher payable amount in INR (fixed; not a percentage)
+  CampaignVoucherCode:
+    Type: String
+    Default: MODERNJAVA
+    Description: Multi-use campaign promo code pre-applied on digital checkout (₹899 → configured payable)
+  ReaderVoucherValidityDays:
+    Type: Number
+    Default: 7
+    MinValue: 1
+    Description: Voucher validity in days from sample chapter request timestamp (UTC)
 
 Globals:
   Function:
@@ -146,6 +160,10 @@ Globals:
         ORDERS_TABLE: !Ref OrdersTable
         SAMPLE_REQUESTS_TABLE: !Ref SampleRequestsTable
         PAPERBACK_WAITLIST_TABLE: !Ref PaperbackWaitlistTable
+        VOUCHERS_TABLE: !Ref VouchersTable
+        READER_VOUCHER_PAYABLE_INR: !Ref ReaderVoucherPayableAmountInr
+        READER_VOUCHER_VALIDITY_DAYS: !Ref ReaderVoucherValidityDays
+        CAMPAIGN_VOUCHER_CODE: !Ref CampaignVoucherCode
         DIGITAL_ASSETS_BUCKET: !Ref DigitalAssetsBucket
         SAMPLE_PDF_KEY: !Ref SamplePdfKey
         DIGITAL_PDF_KEY: !Ref DigitalPdfKey
@@ -210,6 +228,8 @@ Resources:
             TableName: !Ref SampleRequestsTable
         - DynamoDBCrudPolicy:
             TableName: !Ref PaperbackWaitlistTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref VouchersTable
         - S3ReadPolicy:
             BucketName: !Ref DigitalAssetsBucket
         - Statement:
@@ -283,6 +303,12 @@ Resources:
             ApiId: !Ref OrderApi
             Path: /digital-orders
             Method: POST
+        ValidateReaderVoucher:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref OrderApi
+            Path: /vouchers/validate
+            Method: POST
         VerifyOrder:
           Type: HttpApi
           Properties:
@@ -352,6 +378,28 @@ Resources:
               KeyType: HASH
             - AttributeName: createdAt
               KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  VouchersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: code
+          AttributeType: S
+        - AttributeName: email
+          AttributeType: S
+      KeySchema:
+        - AttributeName: code
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: EmailIndex
+          KeySchema:
+            - AttributeName: email
+              KeyType: HASH
           Projection:
             ProjectionType: ALL
       PointInTimeRecoverySpecification:
@@ -495,3 +543,6 @@ Outputs:
   DigitalEpubObjectKey:
     Description: Object key for the paid digital ePub
     Value: !Ref DigitalEpubKey
+  VouchersTableName:
+    Description: DynamoDB table for exclusive sample-chapter reader vouchers
+    Value: !Ref VouchersTable

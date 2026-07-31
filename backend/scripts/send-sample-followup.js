@@ -1,16 +1,19 @@
 #!/usr/bin/env node
 /**
- * Send the sample-chapter Day 4 nurture follow-up.
+ * Send the sample-chapter Day 4 exclusive reader voucher email.
  *
- * Default delay: 4 days after lastRequestedAt (time to read two chapters,
- * including a weekend / busy work week). Skips anyone who already purchased
- * (paid digital/paperback) or already received sampleFollowUpEmailSentAt.
+ * Default delay: 4 days after lastRequestedAt. Issues (or reuses) a unique
+ * one-time voucher, then emails the code. Skips purchasers, prior sends,
+ * marketing-suppressed leads, and leads whose voucher window has expired
+ * (sample request timestamp + 7 days UTC).
  *
  * Usage:
- *   SAMPLE_REQUESTS_TABLE=... ORDERS_TABLE=... node scripts/send-sample-followup.js --dry-run
- *   SAMPLE_REQUESTS_TABLE=... ORDERS_TABLE=... node scripts/send-sample-followup.js
- *   SAMPLE_REQUESTS_TABLE=... ORDERS_TABLE=... node scripts/send-sample-followup.js --days 4
- *   SAMPLE_REQUESTS_TABLE=... ORDERS_TABLE=... node scripts/send-sample-followup.js --email reader@example.com --force
+ *   SAMPLE_REQUESTS_TABLE=... ORDERS_TABLE=... VOUCHERS_TABLE=... \
+ *     node scripts/send-sample-followup.js --dry-run
+ *   SAMPLE_REQUESTS_TABLE=... ORDERS_TABLE=... VOUCHERS_TABLE=... \
+ *     node scripts/send-sample-followup.js
+ *   SAMPLE_REQUESTS_TABLE=... ORDERS_TABLE=... VOUCHERS_TABLE=... \
+ *     node scripts/send-sample-followup.js --email reader@example.com --force
  */
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const {
@@ -24,6 +27,7 @@ const {
   buildSampleChapterFollowUpEmail,
   isEligibleForSampleChapterFollowUp,
 } = require('../src/sampleChapterFollowUp');
+const { issueVoucherForSampleLead } = require('../src/readerVoucher');
 const { createSesClient, sendMarketingEmail } = require('./nurtureSend');
 
 const sampleTable =
@@ -32,12 +36,11 @@ const sampleTable =
   '';
 const ordersTable =
   process.env.ORDERS_TABLE || process.env.ORDERS_TABLE_NAME || '';
+const vouchersTable =
+  process.env.VOUCHERS_TABLE || process.env.VOUCHERS_TABLE_NAME || '';
 const siteUrl = (
   process.env.WEBSITE_URL || 'https://modern-java.classpath.in'
 ).replace(/\/$/, '');
-const amazonUrl =
-  process.env.AMAZON_URL || 'https://www.amazon.in/dp/B0H6R4334W';
-const sesRegion = process.env.SES_REGION || 'us-east-1';
 
 const argv = process.argv.slice(2);
 const dryRun = argv.includes('--dry-run');
@@ -55,6 +58,10 @@ if (!sampleTable) {
   console.error(
     'Set SAMPLE_REQUESTS_TABLE to the deployed DynamoDB table name.',
   );
+  process.exit(1);
+}
+if (!vouchersTable) {
+  console.error('Set VOUCHERS_TABLE to the deployed DynamoDB table name.');
   process.exit(1);
 }
 
@@ -102,9 +109,16 @@ const loadPurchaserEmails = async () => {
   return purchased;
 };
 
-const deliver = async (item) => {
+const deliver = async (item, voucher) => {
   const toEmail = String(item.email).trim().toLowerCase();
-  const email = buildSampleChapterFollowUpEmail({ siteUrl, amazonUrl });
+  const email = buildSampleChapterFollowUpEmail({
+    siteUrl,
+    voucherCode: voucher.code,
+    basisAmountInr: voucher.basisAmountInr,
+    discountAmountInr: voucher.discountAmountInr,
+    payableAmountInr: voucher.payableAmountInr,
+    expiresAt: voucher.expiresAt,
+  });
   await sendMarketingEmail({
     ses,
     to: toEmail,
@@ -112,35 +126,47 @@ const deliver = async (item) => {
     text: email.text,
     html: email.html,
     recipientRecord: item,
-    tags: { funnel: 'sample', sequenceDay: '4' },
+    tags: {
+      funnel: 'sample',
+      sequenceDay: '4',
+      voucherCode: voucher.code,
+    },
   });
 };
 
-
-const markSent = async (email, { requireUnset = true } = {}) => {
+const markSent = async (email, voucherCode, { requireUnset = true } = {}) => {
   const now = new Date().toISOString();
   await dynamo.send(
     new UpdateCommand({
       TableName: sampleTable,
       Key: { email },
-      UpdateExpression: 'SET sampleFollowUpEmailSentAt = :now',
+      UpdateExpression:
+        'SET sampleFollowUpEmailSentAt = :now, readerVoucherCode = :code',
       ...(requireUnset
         ? {
-            ConditionExpression: 'attribute_not_exists(sampleFollowUpEmailSentAt)',
-            ExpressionAttributeValues: { ':now': now },
+            ConditionExpression:
+              'attribute_not_exists(sampleFollowUpEmailSentAt)',
+            ExpressionAttributeValues: {
+              ':now': now,
+              ':code': voucherCode,
+            },
           }
         : {
-            ExpressionAttributeValues: { ':now': now },
+            ExpressionAttributeValues: {
+              ':now': now,
+              ':code': voucherCode,
+            },
           }),
     }),
   );
 };
 
 const main = async () => {
-  console.log('Sample chapter nurture follow-up');
-  console.log('================================');
+  console.log('Sample chapter Day 4 reader voucher');
+  console.log('===================================');
   console.log(`Sample table: ${sampleTable}`);
   console.log(`Orders table: ${ordersTable || '(not set)'}`);
+  console.log(`Vouchers table: ${vouchersTable}`);
   console.log(`Min age days: ${minAgeDays} (default ${SAMPLE_FOLLOWUP_DAYS})`);
   console.log(`Dry run: ${dryRun}`);
   console.log(`Force single: ${force && onlyEmail ? onlyEmail : 'no'}`);
@@ -169,7 +195,9 @@ const main = async () => {
     const email = String(item.email || '')
       .trim()
       .toLowerCase();
-    const hasPurchased = purchasers.has(email);
+    const hasPurchased =
+      purchasers.has(email) ||
+      String(item.leadStatus || '').toUpperCase() === 'CUSTOMER';
     if (force && onlyEmail && email === onlyEmail) {
       return Boolean(item.lastRequestedAt || item.firstRequestedAt);
     }
@@ -192,6 +220,8 @@ const main = async () => {
 
   let sent = 0;
   let failed = 0;
+  let reused = 0;
+  let created = 0;
 
   for (const item of eligible) {
     const email = String(item.email).trim().toLowerCase();
@@ -203,17 +233,28 @@ const main = async () => {
       : '?';
     if (dryRun) {
       console.log(
-        `[dry-run] would send to ${email} (last preview ${ageDays}d ago)`,
+        `[dry-run] would issue voucher + send to ${email} (last preview ${ageDays}d ago)`,
       );
       continue;
     }
     try {
-      await deliver(item);
-      await markSent(email, {
+      const issued = await issueVoucherForSampleLead({
+        dynamo,
+        tableName: vouchersTable,
+        sampleItem: item,
+        now,
+      });
+      if (issued.created) created += 1;
+      else reused += 1;
+
+      await deliver(item, issued.voucher);
+      await markSent(email, issued.voucher.code, {
         requireUnset: !(force && onlyEmail === email),
       });
       sent += 1;
-      console.log(`Sent to ${email}`);
+      console.log(
+        `Sent to ${email} (${issued.created ? 'new' : 'reused'} ${issued.voucher.code})`,
+      );
     } catch (error) {
       failed += 1;
       console.error(`Failed for ${email}:`, error.message || error);
@@ -223,6 +264,8 @@ const main = async () => {
   if (!dryRun) {
     console.log('');
     console.log(`Sent: ${sent}`);
+    console.log(`Vouchers created: ${created}`);
+    console.log(`Vouchers reused: ${reused}`);
     console.log(`Failed: ${failed}`);
   }
 };

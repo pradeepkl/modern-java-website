@@ -171,7 +171,11 @@ const reviewNamed = buildAmazonReviewFollowUpEmail({
 });
 const sampleFollowUp = buildSampleChapterFollowUpEmail({
   siteUrl: SITE,
-  amazonUrl: AMAZON,
+  voucherCode: 'MJ-7X9K-PL42',
+  basisAmountInr: 899,
+  discountAmountInr: 200,
+  payableAmountInr: 699,
+  expiresAt: '2026-08-07T10:00:00.000Z',
 });
 const sampleEducation = buildSampleEducationEmail({ siteUrl: SITE });
 const sampleReminder = buildSampleReminderEmail({
@@ -218,7 +222,7 @@ const emails = [
   },
   {
     id: 'sample-followup',
-    label: '7. Sample chapter nurture (day 4)',
+    label: '7. Sample chapter reader voucher (day 4)',
     subject: sampleFollowUp.subject,
     html: sampleFollowUp.html,
   },
