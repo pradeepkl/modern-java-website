@@ -66,7 +66,6 @@ export const formatOptions: FormatOption[] = [
     listPrice: getFormattedListPrice('digital'),
     discountLabel: productPrices.discountLabel,
     availability: 'Delivered directly by email',
-    versionLabel: 'Current version - 1',
     ctaLabel: 'Buy direct',
     ctaVariant: 'primary',
   },
