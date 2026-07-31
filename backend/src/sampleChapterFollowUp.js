@@ -75,9 +75,10 @@ function buildSampleChapterFollowUpEmail({
   expiresAt,
 }) {
   const site = normalizeSiteUrl(siteUrl);
-  const formatsUrl = `${site}/#formats`;
-  const unsubscribeUrl = `${site}/unsubscribe`;
   const code = String(voucherCode || '').trim().toUpperCase();
+  // Query params survive email clients that strip #hash fragments.
+  const checkoutUrl = `${site}/?voucher=${encodeURIComponent(code)}&checkout=digital#digital-checkout`;
+  const unsubscribeUrl = `${site}/unsubscribe`;
   const basis = Number(basisAmountInr);
   const discount = Number(discountAmountInr);
   const payable = Number(payableAmountInr);
@@ -97,19 +98,19 @@ function buildSampleChapterFollowUpEmail({
     '',
     `Your personal voucher: ${code}`,
     `₹${basis} → ₹${payable}`,
-    `Valid until ${expiryLabel} (UTC).`,
+    `Valid until ${expiryLabel}.`,
     '',
-    'Use this code at website checkout with the same email address you used for the sample. One-time use. Not valid on Amazon.',
+    'Continue to checkout and enter the same email address you used for the sample. Your voucher will be ready — one-time use, not valid on Amazon.',
     '',
     'The full book continues with the same practical, mindset-first approach—covering modern type design, pattern matching, modules, concurrency, collections, streams, and more.',
     '',
-    `Get the full book: ${formatsUrl}`,
+    `Continue to checkout: ${checkoutUrl}`,
     '',
     'Reply to this email if you have questions.',
     '',
-    `Visit the Modern Java website: ${site}`,
-    '',
     emailInstagramFollowText(),
+    '',
+    `Visit the Modern Java website: ${site}`,
     '',
     `Unsubscribe anytime: ${unsubscribeUrl}`,
     '',
@@ -127,24 +128,24 @@ function buildSampleChapterFollowUpEmail({
                 ${emailCallout({
                   label: 'Your personal voucher',
                   value: code,
-                  note: `₹${basis} → ₹${payable}. Valid until ${expiryLabel} (UTC).`,
+                  note: `₹${basis} → ₹${payable}. Valid until ${expiryLabel}.`,
                 })}
                 ${emailParagraph(
-                  'Use this code at website checkout with the same email address you used for the sample. One-time use. Not valid on Amazon.',
+                  'Continue to checkout and enter the same email address you used for the sample. Your voucher will be ready — one-time use, not valid on Amazon.',
                 )}
                 ${emailParagraph(
                   'The full book continues with the same practical, mindset-first approach—covering modern type design, pattern matching, modules, concurrency, collections, streams, and more.',
                 )}
                 ${emailButton({
-                  href: formatsUrl,
-                  label: 'Get the full book',
+                  href: checkoutUrl,
+                  label: 'Continue to checkout',
                 })}
                 ${emailParagraph(
                   'Reply to this email if you have questions.',
                   '0 0 8px',
                 )}
+                ${emailInstagramFollow('16px 0 0')}
                 ${emailSiteLink(site)}
-                ${emailInstagramFollow()}
                 ${emailMutedNote(
                   `You can <a href="${escapeHtml(unsubscribeUrl)}" style="color:#667085;font-weight:600;">unsubscribe</a> anytime.`,
                 )}
@@ -156,7 +157,8 @@ function buildSampleChapterFollowUpEmail({
     text,
     html,
     unsubscribeUrl,
-    formatsUrl,
+    checkoutUrl,
+    formatsUrl: checkoutUrl,
     voucherCode: code,
   };
 }

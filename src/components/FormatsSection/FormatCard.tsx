@@ -4,6 +4,11 @@ import { getPaperbackMode } from '../../config/features';
 import { getAmountInr } from '../../config/prices';
 import { type FormatOption } from '../../data/formats';
 import { track, trackMetaConversion } from '../../lib/analytics';
+import {
+  clearCapturedDigitalCheckoutIntent,
+  clearDigitalCheckoutHash,
+  hasCapturedDigitalCheckoutIntent,
+} from '../../lib/digitalCheckoutDeepLink';
 import { AmazonConsentLink } from '../shared/AmazonConsentLink';
 import { BrandButtonLogo } from '../shared/BrandButtonLogo';
 import { DigitalOrderDialog } from './DigitalOrderDialog';
@@ -29,10 +34,13 @@ export function FormatCard({ format }: FormatCardProps) {
 }
 
 function StandardFormatCard({ format }: FormatCardProps) {
-  const [orderFormOpen, setOrderFormOpen] = useState(false);
+  const isDirectDigital = format.id === 'digital';
+  const [orderFormOpen, setOrderFormOpen] = useState(
+    () => isDirectDigital && hasCapturedDigitalCheckoutIntent(),
+  );
   const cardRef = useRef<HTMLElement>(null);
   const viewed = useRef(false);
-  const isDirectDigital = format.id === 'digital';
+  const deepLinkTracked = useRef(false);
   const ctaClass =
     format.ctaVariant === 'amazon'
       ? 'button button-amazon'
@@ -59,9 +67,9 @@ function StandardFormatCard({ format }: FormatCardProps) {
     return () => observer.disconnect();
   }, [format.id]);
 
-  const openCheckout = () => {
-    track('format_cta_click', { format: format.id });
-    track('checkout_open', { format: format.id });
+  const openCheckout = (source: 'format_card' | 'deep_link' = 'format_card') => {
+    track('format_cta_click', { format: format.id, source });
+    track('checkout_open', { format: format.id, source });
     trackMetaConversion(`initiate-checkout:${format.id}`, 'InitiateCheckout', {
       content_name: `modern_java_${format.id}`,
       content_category: 'book_purchase',
@@ -72,6 +80,37 @@ function StandardFormatCard({ format }: FormatCardProps) {
     });
     setOrderFormOpen(true);
   };
+
+  useEffect(() => {
+    if (!isDirectDigital) return undefined;
+
+    const openFromDeepLink = () => {
+      if (!hasCapturedDigitalCheckoutIntent()) return;
+      setOrderFormOpen(true);
+      clearDigitalCheckoutHash();
+      if (!deepLinkTracked.current) {
+        deepLinkTracked.current = true;
+        track('checkout_open', { format: 'digital', source: 'deep_link' });
+        trackMetaConversion('initiate-checkout:digital', 'InitiateCheckout', {
+          content_name: 'modern_java_digital',
+          content_category: 'book_purchase',
+          content_ids: ['modern_java_digital'],
+          content_type: 'product',
+          currency: 'INR',
+          value: getAmountInr('digital'),
+        });
+      }
+      document.getElementById('formats')?.scrollIntoView({ block: 'start' });
+    };
+
+    openFromDeepLink();
+    window.addEventListener('hashchange', openFromDeepLink);
+    window.addEventListener('popstate', openFromDeepLink);
+    return () => {
+      window.removeEventListener('hashchange', openFromDeepLink);
+      window.removeEventListener('popstate', openFromDeepLink);
+    };
+  }, [isDirectDigital]);
 
   return (
     <>
@@ -107,7 +146,7 @@ function StandardFormatCard({ format }: FormatCardProps) {
             <button
               type="button"
               className={`${ctaClass} format-card__cta`}
-              onClick={openCheckout}
+              onClick={() => openCheckout('format_card')}
             >
               <Download size={18} strokeWidth={2} aria-hidden="true" />
               {format.ctaLabel}
@@ -131,7 +170,10 @@ function StandardFormatCard({ format }: FormatCardProps) {
       {isDirectDigital ? (
         <DigitalOrderDialog
           open={orderFormOpen}
-          onClose={() => setOrderFormOpen(false)}
+          onClose={() => {
+            clearCapturedDigitalCheckoutIntent();
+            setOrderFormOpen(false);
+          }}
         />
       ) : null}
     </>

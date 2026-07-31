@@ -206,6 +206,45 @@
   color: var(--color-blue-700);
 }
 
+.digital-order__voucher-price-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+
+.digital-order__voucher-basis {
+  color: var(--color-muted);
+  font-weight: 500;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.digital-order__voucher-arrow {
+  color: var(--color-muted-light);
+  font-weight: 500;
+}
+
+.digital-order__voucher-payable {
+  color: var(--color-navy-900);
+  font-weight: 700;
+}
+
+.digital-order__savings-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 2px;
+  padding: 2px 8px;
+  border: 1px solid rgba(22, 101, 52, 0.16);
+  border-radius: 999px;
+  background: rgba(22, 101, 52, 0.08);
+  color: #166534;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.35;
+}
+
 .digital-order__voucher-error {
   margin: 8px 0 0;
   color: #b42318;

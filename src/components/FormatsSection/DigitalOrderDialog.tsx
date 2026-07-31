@@ -12,6 +12,7 @@ import {
 } from '../../config/prices';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { track, trackPurchase, buildMetaAttributionPayload } from '../../lib/analytics';
+import { readCheckoutVoucherFromUrl } from '../../lib/digitalCheckoutDeepLink';
 import { loadRazorpayCheckout } from '../../lib/razorpay';
 import { isTurnstileConfigured, shouldSkipCheckoutPayment } from '../../lib/turnstile';
 import {
@@ -98,11 +99,13 @@ export function DigitalOrderDialog({
       setConfirmedOrderId(null);
       setUsedBypass(false);
       completedRef.current = false;
-      // Campaign-wide code is applied by default for direct site checkout.
+      // Prefer ?voucher= from email deep links; otherwise campaign default.
       const campaign = getCampaignVoucherPricing();
-      setPromoCode(campaign.voucherCode);
+      const urlVoucher = readCheckoutVoucherFromUrl();
+      const initialCode = urlVoucher || campaign.voucherCode;
+      setPromoCode(initialCode);
       setAppliedVoucher({
-        voucherCode: campaign.voucherCode,
+        voucherCode: initialCode,
         basisAmountInr: campaign.basisAmountInr,
         payableAmountInr: campaign.payableAmountInr,
       });
@@ -568,11 +571,26 @@ export function DigitalOrderDialog({
                   <p className="digital-order__voucher-title">
                     ✓ Voucher applied
                   </p>
-                  <p>
-                    {formatInrAmount(appliedVoucher.basisAmountInr)} →{' '}
-                    <strong>
+                  <p className="digital-order__voucher-price-row">
+                    <span className="digital-order__voucher-basis">
+                      {formatInrAmount(appliedVoucher.basisAmountInr)}
+                    </span>
+                    <span className="digital-order__voucher-arrow" aria-hidden="true">
+                      →
+                    </span>
+                    <strong className="digital-order__voucher-payable">
                       {formatInrAmount(appliedVoucher.payableAmountInr)}
                     </strong>
+                    {appliedVoucher.basisAmountInr >
+                    appliedVoucher.payableAmountInr ? (
+                      <span className="digital-order__savings-badge">
+                        Save{' '}
+                        {formatInrAmount(
+                          appliedVoucher.basisAmountInr -
+                            appliedVoucher.payableAmountInr,
+                        )}
+                      </span>
+                    ) : null}
                   </p>
                 </div>
               ) : null}

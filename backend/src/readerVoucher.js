@@ -217,15 +217,16 @@ function isReservationActive(voucher, now = new Date()) {
 function formatExpiryForEmail(expiresAtIso) {
   const date = new Date(expiresAtIso);
   if (Number.isNaN(date.getTime())) return String(expiresAtIso || '');
-  return new Intl.DateTimeFormat('en-IN', {
-    timeZone: 'UTC',
+  const formatted = new Intl.DateTimeFormat('en-IN', {
+    timeZone: 'Asia/Kolkata',
     year: 'numeric',
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-    timeZoneName: 'short',
+    hour12: true,
   }).format(date);
+  return `${formatted} IST`;
 }
 
 /**

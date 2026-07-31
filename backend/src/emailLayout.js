@@ -117,9 +117,9 @@ const INSTAGRAM_FOLLOW_LINES = [
 const emailInstagramFollowText = () => INSTAGRAM_FOLLOW_LINES.join('\n');
 
 const emailInstagramFollow = (margin = '16px 0 0') =>
-  `<p style="margin:${margin};font-size:14px;line-height:1.55;color:#445066;">
+  `<p style="margin:${margin};font-size:15px;line-height:1.55;color:#445066;">
                   Follow Classpath Publications on Instagram for updates and reader highlights:<br/>
-                  <a href="${escapeHtml(INSTAGRAM_URL)}" style="color:#1a56db;text-decoration:none;">${escapeHtml(INSTAGRAM_URL)}</a>
+                  <a href="${escapeHtml(INSTAGRAM_URL)}" style="color:#1a56db;font-weight:600;text-decoration:none;">Follow on Instagram →</a>
                 </p>`;
 
 const emailClosing = (text = 'Thank you again — happy learning!') =>

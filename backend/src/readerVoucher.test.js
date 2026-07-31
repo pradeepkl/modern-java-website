@@ -16,6 +16,7 @@ const {
   isCampaignVoucherCode,
   normalizeVoucherCode,
   getConfiguredPayableAmountInr,
+  formatExpiryForEmail,
 } = require('./readerVoucher');
 const { getAmountInr } = require('./productPrices');
 
@@ -54,6 +55,17 @@ describe('computeVoucherExpiryIso', () => {
       computeVoucherExpiryIso('2026-07-31T10:00:00.000Z', { validityDays: 7 }),
       '2026-08-07T10:00:00.000Z',
     );
+  });
+});
+
+describe('formatExpiryForEmail', () => {
+  it('formats expiry in IST for reader-facing copy', () => {
+    const label = formatExpiryForEmail('2026-08-07T10:00:00.000Z');
+    assert.match(label, /IST$/);
+    assert.doesNotMatch(label, /UTC|GMT/);
+    // 10:00 UTC = 3:30 pm IST
+    assert.match(label, /7\s*Aug(ust)?\s*2026/i);
+    assert.match(label, /3:30/i);
   });
 });
 

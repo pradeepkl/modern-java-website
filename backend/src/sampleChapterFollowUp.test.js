@@ -35,13 +35,24 @@ describe('buildSampleChapterFollowUpEmail', () => {
     assert.match(email.text, /MJ-7X9K-PL42/);
     assert.match(email.text, /₹899 → ₹699/);
     assert.doesNotMatch(email.text, /You save|%|percent/i);
-    assert.match(email.text, /Not valid on Amazon/);
+    assert.match(email.text, /not valid on Amazon/i);
     assert.match(email.text, /Reply to this email if you have questions/);
-    assert.match(email.text, /https:\/\/modern-java\.classpath\.in\/#formats/);
+    assert.match(
+      email.text,
+      /https:\/\/modern-java\.classpath\.in\/\?voucher=MJ-7X9K-PL42&checkout=digital#digital-checkout/,
+    );
     assert.doesNotMatch(email.text, /Prefer Amazon|amazon\.in\/dp/i);
     assert.match(email.html, /Your personal voucher/);
     assert.match(email.html, /MJ-7X9K-PL42/);
-    assert.match(email.html, /Get the full book/);
+    assert.match(email.html, /Continue to checkout/);
+    assert.match(email.html, /#digital-checkout/);
+    assert.match(email.text, /IST/);
+    assert.doesNotMatch(email.text, /\(UTC\)/);
+    assert.match(email.html, /Follow on Instagram/);
+    assert.match(
+      email.html,
+      /https:\/\/www\.instagram\.com\/classpath_publications\//,
+    );
   });
 
   it('requires voucher fields', () => {
