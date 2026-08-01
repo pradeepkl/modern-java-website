@@ -273,6 +273,12 @@ Resources:
             ApiId: !Ref OrderApi
             Path: /sample-requests
             Method: POST
+        RecordAnalyticsConsent:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref OrderApi
+            Path: /analytics-consents
+            Method: POST
         RecordMarketingConsent:
           Type: HttpApi
           Properties:
