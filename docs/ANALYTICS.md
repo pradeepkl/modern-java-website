@@ -48,18 +48,29 @@ third-party scripts load.
 - The HTML `<noscript>` Meta image fallback is **omitted** because analytics
   are consent-gated and static HTML cannot evaluate consent without JavaScript
   (same approach as GA4/Clarity).
-- Fired standard Meta events:
-  - `ViewContent`: first `#formats` section view after analytics consent
-    (`content_name`, `content_category`, `content_ids`, `content_type`)
-  - `Lead`: successful chapter preview signup, Amazon modal signup, and
-    paperback waitlist success (`content_name`, `content_category`,
-    `content_ids`, `source`). Sample-preview Lead uses
-    `eventID = sampleRequestId` returned by the API.
-  - `InitiateCheckout`: first digital/paperback checkout open after analytics
-    consent (`content_name`, `content_category`, `content_ids`, `content_type`,
-    `currency`, `value`)
-  - `Purchase`: only after verified Razorpay success or approved local bypass,
-    deduped by app order id (`eventID = appOrderId`)
+- Fired standard Meta events (browser Pixel; production + analytics consent):
+  - `ViewContent`: once when `#formats` first reaches ≥50% visibility
+    (`content_name=Modern Java`, `content_category=Book`,
+    `content_ids`, `content_type=product`, `value`, `currency=INR`).
+    Deduped by `view-content:formats` (not every IntersectionObserver tick).
+  - `Lead`: only after the sample-chapter API returns `accepted: true`
+    (not form open, submit click, validation failure, duplicate/cooldown
+    rejection, or API failure). Params:
+    `content_name=Modern Java Sample Chapter`,
+    `content_category=Book sample`, `eventID = sampleRequestId`.
+    Amazon modal / paperback waitlist may also emit browser `Lead` with
+    their own content names.
+  - `InitiateCheckout`: only after the backend successfully creates a
+    Razorpay order and immediately before `razorpay.open()` (not on CTA /
+    dialog open). Params: `content_ids`, `content_name`,
+    `content_type=product`, `value`, `currency=INR`, `num_items=1`,
+    `eventID = razorpayOrderId`. Deduped by
+    `initiate-checkout:{razorpayOrderId}`.
+  - `Purchase`: only after `/orders/verify` succeeds (or approved local
+    bypass). Never from the Razorpay browser success callback alone.
+    Params: `content_ids`, `content_name`, `content_type=product`,
+    `value`, `currency=INR`, `num_items`, `eventID = appOrderId`.
+    Deduped by `purchase:{appOrderId}` (one Purchase per verified order).
 - Fired custom Meta events:
   - `AmazonClick`: exactly once at the **final** Amazon outbound
     (`window.location.assign` to the Kindle URL), after either “Continue
@@ -195,13 +206,13 @@ include access tokens, raw emails, `_fbp`, `_fbc`, or hashed identifiers.
 
 | # | Action on the live site | Expect in Test Events | Expected params (non-PII) |
 |---|-------------------------|------------------------|---------------------------|
-| 1 | Scroll to **Formats** (`#formats`) | one `ViewContent` | `content_name=formats`, `content_category=book_formats`, `content_type=product_group`, `content_ids` includes Kindle/digital ids |
-| 2 | Click **Buy direct** / open DRM-free checkout | one `InitiateCheckout` | `content_name=modern_java_digital`, `content_category=book_purchase`, `content_type=product`, `currency=INR`, `value` = catalog digital amount in **rupees** (from `product-prices.json`, currently ₹699) |
-| 3 | Close and reopen the same checkout | **no** second `InitiateCheckout` | dedupe key is per format for the session |
-| 4 | Submit chapter preview with a real inbox you control | one logical `Lead` (Browser + Server) | shared `event_id` / `sampleRequestId`; browser params include `content_name=sample_chapter` |
+| 1 | Scroll to **Formats** (`#formats`) | one `ViewContent` | `content_name=Modern Java`, `content_category=Book`, `content_type=product`, `content_ids` includes Kindle/digital ids, `currency=INR`, `value` = digital catalog amount in **rupees** |
+| 2 | Open DRM-free checkout, submit form, wait until Razorpay Checkout opens | one `InitiateCheckout` | `content_name=Modern Java PDF + ePub`, `content_ids=["modern_java_digital"]`, `content_type=product`, `currency=INR`, `value` = order amount in **rupees**, `num_items=1`, `event_id` / `eventID` = Razorpay order id |
+| 3 | Dismiss Razorpay, reopen checkout, create another order | one new `InitiateCheckout` for the new Razorpay order id | opening the dialog alone must **not** fire `InitiateCheckout` |
+| 4 | Submit chapter preview with a real inbox you control | one logical `Lead` (Browser + Server) | shared `event_id` / `sampleRequestId`; browser params: `content_name=Modern Java Sample Chapter`, `content_category=Book sample` |
 | 5 | (Optional) Join Amazon exit signup, then close without buying | one more browser `Lead` | `content_name=amazon_exit_signup` (browser-only in this phase) |
 | 5b | Click **Continue without joining** *or* **Continue to Amazon** after signup | one browser custom `AmazonClick` | `content_name=Modern Java Kindle`, `content_ids=["modern_java_kindle"]`, `content_type=product`, `destination=amazon`, `event_id` / `eventID` starts with `AMZ-`. Do **not** treat Meta auto button events (buttonText / classList) as this conversion. |
-| 6 | Complete one real Razorpay payment (current digital amount) **or** a known bypass order only if you intentionally use that path | one logical `Purchase` (Browser + Server) | shared `event_id` = `appOrderId`; `currency=INR`, `value` = **charged order total in rupees** (`order.amount` paise ÷ 100 — never a stale catalog hardcode) |
+| 6 | Complete one real Razorpay payment (current digital amount) **or** a known bypass order only if you intentionally use that path | one logical `Purchase` (Browser + Server) | shared `event_id` = `appOrderId`; `currency=INR`, `value` = **charged order total in rupees** (`order.amount` paise ÷ 100 — never a stale catalog hardcode); `content_name=Modern Java PDF + ePub` |
 | 7 | Refresh the homepage | exactly one new `PageView` | no extra `ViewContent` / `InitiateCheckout` / `Purchase` from the refresh alone |
 
 **Pass / fail notes**

@@ -89,9 +89,8 @@ export function SampleChapterSection() {
           `lead:sample-preview:${sampleRequestId}`,
           'Lead',
           {
-            content_name: 'sample_chapter',
-            content_category: 'book_preview',
-            source: 'sample_preview_form',
+            content_name: 'Modern Java Sample Chapter',
+            content_category: 'Book sample',
           },
           { eventID: sampleRequestId },
         );

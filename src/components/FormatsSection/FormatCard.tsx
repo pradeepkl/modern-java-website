@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Download } from 'lucide-react';
 import { getPaperbackMode } from '../../config/features';
-import { getAmountInr } from '../../config/prices';
 import { type FormatOption } from '../../data/formats';
-import { track, trackMetaConversion } from '../../lib/analytics';
+import { track } from '../../lib/analytics';
 import {
   clearCapturedDigitalCheckoutIntent,
   clearDigitalCheckoutHash,
@@ -70,14 +69,7 @@ function StandardFormatCard({ format }: FormatCardProps) {
   const openCheckout = (source: 'format_card' | 'deep_link' = 'format_card') => {
     track('format_cta_click', { format: format.id, source });
     track('checkout_open', { format: format.id, source });
-    trackMetaConversion(`initiate-checkout:${format.id}`, 'InitiateCheckout', {
-      content_name: `modern_java_${format.id}`,
-      content_category: 'book_purchase',
-      content_ids: [`modern_java_${format.id}`],
-      content_type: 'product',
-      currency: 'INR',
-      value: format.id === 'digital' ? getAmountInr('digital') : undefined,
-    });
+    // InitiateCheckout fires in DigitalOrderDialog after Razorpay order create.
     setOrderFormOpen(true);
   };
 
@@ -91,14 +83,6 @@ function StandardFormatCard({ format }: FormatCardProps) {
       if (!deepLinkTracked.current) {
         deepLinkTracked.current = true;
         track('checkout_open', { format: 'digital', source: 'deep_link' });
-        trackMetaConversion('initiate-checkout:digital', 'InitiateCheckout', {
-          content_name: 'modern_java_digital',
-          content_category: 'book_purchase',
-          content_ids: ['modern_java_digital'],
-          content_type: 'product',
-          currency: 'INR',
-          value: getAmountInr('digital'),
-        });
       }
       document.getElementById('formats')?.scrollIntoView({ block: 'start' });
     };

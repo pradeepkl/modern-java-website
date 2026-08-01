@@ -7,7 +7,7 @@ import {
 } from '../../config/prices';
 import { book } from '../../data/book';
 import { paperbackWaitlistCopy } from '../../data/paperbackWaitlistCopy';
-import { track, trackCtaClick, trackMetaConversion } from '../../lib/analytics';
+import { track, trackCtaClick } from '../../lib/analytics';
 import { DigitalOrderDialog } from '../FormatsSection/DigitalOrderDialog';
 import { PaperbackOrderDialog } from '../FormatsSection/PaperbackOrderDialog';
 import { PaperbackWaitlistDialog } from '../FormatsSection/PaperbackWaitlistDialog';
@@ -16,10 +16,8 @@ import { BrandButtonLogo } from './BrandButtonLogo';
 import './shared.css';
 
 const KINDLE_PRICE_LABEL = formatInrAmount(getAmountInr('kindle'));
-const DIGITAL_PRICE = getAmountInr('digital');
-const DIGITAL_PRICE_LABEL = formatInrAmount(DIGITAL_PRICE);
-const PAPERBACK_PRICE = getAmountInr('paperback');
-const PAPERBACK_PRICE_LABEL = formatInrAmount(PAPERBACK_PRICE);
+const DIGITAL_PRICE_LABEL = formatInrAmount(getAmountInr('digital'));
+const PAPERBACK_PRICE_LABEL = formatInrAmount(getAmountInr('paperback'));
 
 interface PurchaseButtonsProps {
   size?: 'default' | 'large';
@@ -105,14 +103,6 @@ export function PurchaseButtons({
           onClick={() => {
             track('format_cta_click', { format: 'digital' });
             track('checkout_open', { format: 'digital' });
-            trackMetaConversion('initiate-checkout:digital', 'InitiateCheckout', {
-              content_name: 'modern_java_digital',
-              content_category: 'book_purchase',
-              content_ids: ['modern_java_digital'],
-              content_type: 'product',
-              currency: 'INR',
-              value: DIGITAL_PRICE,
-            });
             setDigitalOrderFormOpen(true);
           }}
           aria-label="Buy the Modern Java PDF and ePub bundle"
@@ -128,14 +118,6 @@ export function PurchaseButtons({
           onClick={() => {
             track('format_cta_click', { format: 'paperback' });
             track('checkout_open', { format: 'paperback' });
-            trackMetaConversion('initiate-checkout:paperback', 'InitiateCheckout', {
-              content_name: 'modern_java_paperback',
-              content_category: 'book_purchase',
-              content_ids: ['modern_java_paperback'],
-              content_type: 'product',
-              currency: 'INR',
-              value: PAPERBACK_PRICE,
-            });
             setOrderFormOpen(true);
           }}
           aria-label="Place an order for the Modern Java paperback"

@@ -490,14 +490,17 @@ export function trackPurchase(params: {
   }
 
   // eventID must match server Conversions API event_id (app order id).
+  const contentName =
+    params.format === 'paperback'
+      ? 'Modern Java Paperback'
+      : 'Modern Java PDF + ePub';
   trackMetaConversion(
     `purchase:${params.transactionId}`,
     'Purchase',
     {
       currency: 'INR',
       value: params.value,
-      content_name: `modern_java_${params.format}`,
-      content_category: 'book_purchase',
+      content_name: contentName,
       content_ids: [`modern_java_${params.format}`],
       content_type: 'product',
       num_items: quantity,

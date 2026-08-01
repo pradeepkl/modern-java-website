@@ -14,7 +14,12 @@ import {
   paiseToInr,
 } from '../../config/prices';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
-import { track, trackPurchase, buildMetaAttributionPayload } from '../../lib/analytics';
+import {
+  track,
+  trackMetaConversion,
+  trackPurchase,
+  buildMetaAttributionPayload,
+} from '../../lib/analytics';
 import { loadRazorpayCheckout } from '../../lib/razorpay';
 import { isTurnstileConfigured, shouldSkipCheckoutPayment } from '../../lib/turnstile';
 import { CityInput } from '../shared/CityInput';
@@ -305,6 +310,28 @@ export function PaperbackOrderDialog({
         });
         setProcessing(false);
       });
+
+      const razorpayOrderId =
+        typeof order.razorpayOrderId === 'string'
+          ? order.razorpayOrderId.trim()
+          : '';
+      if (razorpayOrderId) {
+        trackMetaConversion(
+          `initiate-checkout:${razorpayOrderId}`,
+          'InitiateCheckout',
+          {
+            content_ids: ['modern_java_paperback'],
+            content_name: 'Modern Java Paperback',
+            content_type: 'product',
+            value: paiseToInr(
+              order.amount ?? PAPERBACK_PRICE * orderInput.quantity * 100,
+            ),
+            currency: 'INR',
+            num_items: 1,
+          },
+          { eventID: razorpayOrderId },
+        );
+      }
 
       razorpay.open();
     } catch (error) {

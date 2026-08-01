@@ -76,13 +76,16 @@ function PrivacyPolicy() {
           Google Analytics 4 and, when configured, Microsoft Clarity and Meta
           Pixel. These tools may set cookies or similar identifiers and
           collect page URL, device and browser type, approximate location,
-          scroll and click behaviour, and conversion events such as formats
-          views, lead captures, checkout starts, and completed checkouts. Those
-          events may include non-identifying metadata such as the format viewed
-          or purchased, order value, quantity, content category, referral source,
-          and broad campaign tags. We do not send your email address, name,
-          phone number, delivery address, city, state, postal code, or payment
-          card details to these analytics providers.
+          scroll and click behaviour, and Meta conversion events such as
+          formats section views (`ViewContent`), successful chapter-preview
+          requests (`Lead`), payment checkout starts after an order is created
+          (`InitiateCheckout`), and verified purchases (`Purchase`). Those
+          events may include non-identifying metadata such as content name,
+          content category, product identifiers, order value, quantity,
+          currency, referral source, and broad campaign tags. We do not send
+          your email address, name, phone number, delivery address, city,
+          state, postal code, or payment card details to these analytics
+          providers. Meta Pixel runs only on production builds when configured.
         </p>
         <p>
           Analytics consent is separate from marketing email consent. You can

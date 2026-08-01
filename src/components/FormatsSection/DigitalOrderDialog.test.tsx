@@ -8,6 +8,7 @@ const DIGITAL_PRICE_PAISE = DIGITAL_PRICE * 100;
 
 const analyticsMocks = vi.hoisted(() => ({
   track: vi.fn(),
+  trackMetaConversion: vi.fn(),
   trackPurchase: vi.fn(),
   buildMetaAttributionPayload: vi.fn(() => ({
     analyticsConsent: true,
@@ -29,6 +30,7 @@ let razorpayOptions:
 
 vi.mock('../../lib/analytics', () => ({
   track: analyticsMocks.track,
+  trackMetaConversion: analyticsMocks.trackMetaConversion,
   trackPurchase: analyticsMocks.trackPurchase,
   buildMetaAttributionPayload: analyticsMocks.buildMetaAttributionPayload,
 }));
@@ -119,6 +121,64 @@ describe('DigitalOrderDialog purchase tracking', () => {
     Reflect.deleteProperty(window as unknown as Record<string, unknown>, 'Razorpay');
   });
 
+  it('fires InitiateCheckout after order create and before Razorpay opens', async () => {
+    const user = userEvent.setup();
+    vi.resetModules();
+    const { DigitalOrderDialog } = await loadDigitalOrderDialog();
+    render(<DigitalOrderDialog open onClose={() => {}} />);
+
+    await user.type(screen.getByPlaceholderText(/your full name/i), 'Pradeep Kumar');
+    await user.type(screen.getByPlaceholderText(/you@example.com/i), 'reader@example.com');
+    await user.click(screen.getByRole('button', { name: /pay .* securely/i }));
+
+    await waitFor(() => {
+      expect(analyticsMocks.trackMetaConversion).toHaveBeenCalledWith(
+        'initiate-checkout:order_123',
+        'InitiateCheckout',
+        {
+          content_ids: ['modern_java_digital'],
+          content_name: 'Modern Java PDF + ePub',
+          content_type: 'product',
+          value: DIGITAL_PRICE,
+          currency: 'INR',
+          num_items: 1,
+        },
+        { eventID: 'order_123' },
+      );
+    });
+
+    expect(analyticsMocks.trackPurchase).not.toHaveBeenCalled();
+  });
+
+  it('does not fire InitiateCheckout when order creation fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => ({ message: 'Unable to create the digital order' }),
+      }),
+    );
+
+    const user = userEvent.setup();
+    vi.resetModules();
+    const { DigitalOrderDialog } = await loadDigitalOrderDialog();
+    render(<DigitalOrderDialog open onClose={() => {}} />);
+
+    await user.type(screen.getByPlaceholderText(/your full name/i), 'Pradeep Kumar');
+    await user.type(screen.getByPlaceholderText(/you@example.com/i), 'reader@example.com');
+    await user.click(screen.getByRole('button', { name: /pay .* securely/i }));
+
+    await waitFor(() => {
+      expect(analyticsMocks.track).toHaveBeenCalledWith('checkout_fail', {
+        format: 'digital',
+        reason: 'start_failed',
+      });
+    });
+
+    expect(analyticsMocks.trackMetaConversion).not.toHaveBeenCalled();
+    expect(analyticsMocks.trackPurchase).not.toHaveBeenCalled();
+  });
+
   it('tracks purchase only after successful payment verification', async () => {
     const user = userEvent.setup();
     vi.resetModules();
@@ -132,6 +192,8 @@ describe('DigitalOrderDialog purchase tracking', () => {
     await waitFor(() => {
       expect(razorpayOptions).not.toBeNull();
     });
+
+    expect(analyticsMocks.trackPurchase).not.toHaveBeenCalled();
 
     await razorpayOptions?.handler({
       razorpay_order_id: 'order_123',

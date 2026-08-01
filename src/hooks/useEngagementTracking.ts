@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { getAmountInr } from '../config/prices';
 import { getConsent, track, trackMetaConversion } from '../lib/analytics';
 
 const SECTION_TRACK_IDS = [
@@ -45,11 +46,14 @@ export function useEngagementTracking(enabled: boolean): void {
               seenSections.current.add(id);
               track('section_view', { section_id: id });
               if (id === 'formats') {
+                // Once per session via trackMetaEventOnce + local seenSections.
                 trackMetaConversion('view-content:formats', 'ViewContent', {
-                  content_name: 'formats',
-                  content_category: 'book_formats',
+                  content_name: 'Modern Java',
+                  content_category: 'Book',
                   content_ids: ['modern_java_kindle', 'modern_java_digital'],
-                  content_type: 'product_group',
+                  content_type: 'product',
+                  value: getAmountInr('digital'),
+                  currency: 'INR',
                 });
               }
             }

@@ -73,9 +73,8 @@ describe('SampleChapterSection Meta lead tracking', () => {
       'lead:sample-preview:SR-TEST1234',
       'Lead',
       {
-        content_name: 'sample_chapter',
-        content_category: 'book_preview',
-        source: 'sample_preview_form',
+        content_name: 'Modern Java Sample Chapter',
+        content_category: 'Book sample',
       },
       { eventID: 'SR-TEST1234' },
     );

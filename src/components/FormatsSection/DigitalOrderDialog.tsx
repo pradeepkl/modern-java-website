@@ -11,7 +11,12 @@ import {
   paiseToInr,
 } from '../../config/prices';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
-import { track, trackPurchase, buildMetaAttributionPayload } from '../../lib/analytics';
+import {
+  track,
+  trackMetaConversion,
+  trackPurchase,
+  buildMetaAttributionPayload,
+} from '../../lib/analytics';
 import { readCheckoutVoucherFromUrl } from '../../lib/digitalCheckoutDeepLink';
 import { loadRazorpayCheckout } from '../../lib/razorpay';
 import { isTurnstileConfigured, shouldSkipCheckoutPayment } from '../../lib/turnstile';
@@ -394,6 +399,26 @@ export function DigitalOrderDialog({
         });
         setProcessing(false);
       });
+
+      const razorpayOrderId =
+        typeof order.razorpayOrderId === 'string'
+          ? order.razorpayOrderId.trim()
+          : '';
+      if (razorpayOrderId) {
+        trackMetaConversion(
+          `initiate-checkout:${razorpayOrderId}`,
+          'InitiateCheckout',
+          {
+            content_ids: ['modern_java_digital'],
+            content_name: 'Modern Java PDF + ePub',
+            content_type: 'product',
+            value: paiseToInr(order.amount ?? payableInr * 100),
+            currency: 'INR',
+            num_items: 1,
+          },
+          { eventID: razorpayOrderId },
+        );
+      }
 
       razorpay.open();
     } catch (error) {

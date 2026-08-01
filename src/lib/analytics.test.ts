@@ -64,10 +64,9 @@ describe('analytics Meta payload sanitization', () => {
     const { trackMetaConversion } = await loadAnalytics();
 
     trackMetaConversion('lead:sample-preview', 'Lead', {
-      content_name: 'sample_chapter',
-      content_category: 'book_preview',
+      content_name: 'Modern Java Sample Chapter',
+      content_category: 'Book sample',
       content_ids: ['modern_java_digital'],
-      source: 'sample_preview_form',
       email: 'reader@example.com',
       name: 'Pradeep Kumar',
       phone: '9999999999',
@@ -78,10 +77,9 @@ describe('analytics Meta payload sanitization', () => {
       'lead:sample-preview',
       'Lead',
       {
-        content_name: 'sample_chapter',
-        content_category: 'book_preview',
+        content_name: 'Modern Java Sample Chapter',
+        content_category: 'Book sample',
         content_ids: ['modern_java_digital'],
-        source: 'sample_preview_form',
       },
       undefined,
     );
@@ -104,8 +102,7 @@ describe('analytics Meta payload sanitization', () => {
       {
         currency: 'INR',
         value: 699,
-        content_name: 'modern_java_digital',
-        content_category: 'book_purchase',
+        content_name: 'Modern Java PDF + ePub',
         content_ids: ['modern_java_digital'],
         content_type: 'product',
         num_items: 1,
