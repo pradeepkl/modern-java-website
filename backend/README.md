@@ -183,6 +183,11 @@ PDF, and attach it to the SES confirmation email (no Zoho branding in the
 customer message). Invoice failures are logged only — downloads and order
 confirmation still succeed.
 
+All website orders share one Zoho customer named **Website Purchase**. Each
+invoice still carries the buyer name and email on the Bill To / terms block,
+with the app order id in `reference_number` for tracking. Optionally pin the
+shared contact with `ZOHO_WEBSITE_CONTACT_ID` in the Lambda environment.
+
 1. Open [Zoho API Console (India)](https://api-console.zoho.in/) and create a
    **Self Client**.
 2. Generate a code with scope `ZohoInvoice.fullaccess.all` (or contacts +

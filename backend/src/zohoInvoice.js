@@ -1,12 +1,18 @@
 /**
  * Zoho Invoice (India) helpers for paid Modern Java orders.
  * No-ops when OAuth/org env vars are incomplete, or when APP_ENV=dev.
+ *
+ * All website orders share one Zoho customer ("Website Purchase"). Buyer
+ * name/email go on each invoice's billing address; order id stays in
+ * reference_number for tracking.
  */
 
 const { isDevAppEnvironment } = require('./razorpayConfig');
 
 const ZOHO_ACCOUNTS_URL = 'https://accounts.zoho.in/oauth/v2/token';
 const ZOHO_API_BASE = 'https://www.zohoapis.in/invoice/v3';
+
+const WEBSITE_PURCHASE_CONTACT_NAME = 'Website Purchase';
 
 const {
   ZOHO_CLIENT_ID = '',
@@ -20,6 +26,7 @@ const {
 
 let cachedToken = null;
 let cachedTokenExpiresAt = 0;
+let cachedWebsiteContactId = null;
 
 const isConfigured = () =>
   Boolean(
@@ -119,173 +126,102 @@ const contactDisplayName = ({ email, name }) =>
     .trim() ||
   'Modern Java customer';
 
-const billingAddressPayload = ({ city, postalCode }) => {
-  const cityValue = String(city || '').trim();
+/**
+ * Per-invoice Bill To block: buyer name (attention) + email (address line).
+ * City defaults to "Online" for digital orders (Zoho requires a city).
+ */
+const buildInvoiceBuyerBillingAddress = ({
+  email,
+  name,
+  city,
+  postalCode,
+}) => {
+  const emailValue = String(email || '')
+    .trim()
+    .toLowerCase()
+    .slice(0, 100);
+  const attention = contactDisplayName({ email, name }).slice(0, 100);
+  const cityValue = String(city || '').trim() || 'Online';
   const zipValue = String(postalCode || '').trim();
-  // Zoho India rejects country-only billing addresses ("City is required").
-  // Omit billing_address entirely when we have no city (digital checkout).
-  if (!cityValue) return null;
   const payload = {
-    country: 'India',
+    attention,
+    address: emailValue,
     city: cityValue.slice(0, 50),
+    country: 'India',
   };
   if (zipValue) payload.zip = zipValue.slice(0, 20);
   return payload;
 };
 
-const findContactByEmailOrName = async ({ email, name }) => {
-  const emailValue = String(email).trim().toLowerCase();
-  const contactName = String(name || '').trim();
+const findWebsitePurchaseContact = async () => {
+  const pinnedId = String(process.env.ZOHO_WEBSITE_CONTACT_ID || '').trim();
+  if (pinnedId) {
+    return { contact_id: pinnedId, contact_name: WEBSITE_PURCHASE_CONTACT_NAME };
+  }
 
-  const byEmail = await zohoRequest('/contacts', {
-    query: { email: emailValue },
+  const byName = await zohoRequest('/contacts', {
+    query: { contact_name: WEBSITE_PURCHASE_CONTACT_NAME },
   });
-  if (byEmail.contacts?.[0]?.contact_id) {
-    return byEmail.contacts[0];
+  const exact = (byName.contacts || []).find(
+    (contact) =>
+      String(contact.contact_name || '').trim().toLowerCase() ===
+      WEBSITE_PURCHASE_CONTACT_NAME.toLowerCase(),
+  );
+  if (exact?.contact_id) {
+    return exact;
   }
 
   const bySearch = await zohoRequest('/contacts', {
-    query: { search_text: emailValue },
+    query: { search_text: WEBSITE_PURCHASE_CONTACT_NAME },
   });
-  const searchMatch = (bySearch.contacts || []).find((contact) => {
-    if (String(contact.email || '').toLowerCase() === emailValue) {
-      return true;
-    }
-    return (contact.contact_persons || []).some(
-      (person) => String(person.email || '').toLowerCase() === emailValue,
-    );
-  });
-  if (searchMatch?.contact_id) {
-    return searchMatch;
-  }
-
-  if (contactName) {
-    const byName = await zohoRequest('/contacts', {
-      query: { contact_name: contactName },
-    });
-    if (byName.contacts?.[0]?.contact_id) {
-      return byName.contacts[0];
-    }
-  }
-
-  return null;
+  const searchMatch = (bySearch.contacts || []).find(
+    (contact) =>
+      String(contact.contact_name || '').trim().toLowerCase() ===
+      WEBSITE_PURCHASE_CONTACT_NAME.toLowerCase(),
+  );
+  return searchMatch || null;
 };
 
-const findOrCreateContact = async ({ email, name, city, postalCode }) => {
-  const contactName = contactDisplayName({ email, name }).slice(0, 100);
-  const emailValue = String(email).trim().toLowerCase();
-  const billingAddress = billingAddressPayload({ city, postalCode });
-  const existing = await findContactByEmailOrName({
-    email: emailValue,
-    name: contactName,
-  });
+const findOrCreateWebsitePurchaseContact = async () => {
+  if (cachedWebsiteContactId) {
+    return { contactId: cachedWebsiteContactId };
+  }
 
+  const existing = await findWebsitePurchaseContact();
   if (existing?.contact_id) {
-    const updatePayload = {};
-    if (billingAddress) {
-      updatePayload.billing_address = billingAddress;
-    }
-    // Avoid renaming into a duplicate contact_name when another record owns it.
-    if (
-      !existing.contact_name ||
-      String(existing.contact_name).toLowerCase() === contactName.toLowerCase()
-    ) {
-      updatePayload.contact_name = contactName;
-    }
-    const personId = existing.contact_persons?.[0]?.contact_person_id;
-    if (personId) {
-      updatePayload.contact_persons = [
-        {
-          contact_person_id: personId,
-          first_name: contactName.slice(0, 50),
-          email: emailValue,
-          is_primary_contact: true,
-        },
-      ];
-    }
-
-    if (Object.keys(updatePayload).length > 0) {
-      try {
-        await zohoRequest(`/contacts/${existing.contact_id}`, {
-          method: 'PUT',
-          json: updatePayload,
-        });
-      } catch (error) {
-        console.error(
-          'Zoho contact update failed; continuing with existing contact',
-          error,
-        );
-      }
-    }
-
-    return {
-      contactId: existing.contact_id,
-      contactName: existing.contact_name || contactName,
-    };
+    cachedWebsiteContactId = existing.contact_id;
+    return { contactId: existing.contact_id };
   }
 
   try {
-    const createPayload = {
-      contact_name: contactName,
-      contact_type: 'customer',
-      email: emailValue,
-      contact_persons: [
-        {
-          first_name: contactName.slice(0, 50),
-          email: emailValue,
-          is_primary_contact: true,
-        },
-      ],
-    };
-    if (billingAddress) {
-      createPayload.billing_address = billingAddress;
-    }
     const created = await zohoRequest('/contacts', {
       method: 'POST',
-      json: createPayload,
-    });
-
-    return {
-      contactId: created.contact.contact_id,
-      contactName: created.contact.contact_name,
-    };
-  } catch (error) {
-    // Name collision: reuse the existing customer with that display name.
-    if (error?.zoho?.code === 3062 || /already exists/i.test(error.message || '')) {
-      const collided = await findContactByEmailOrName({
-        email: emailValue,
-        name: contactName,
-      });
-      if (collided?.contact_id) {
-        return {
-          contactId: collided.contact_id,
-          contactName: collided.contact_name || contactName,
-        };
-      }
-      const uniqueName = `${contactName} (${emailValue})`.slice(0, 100);
-      const uniquePayload = {
-        contact_name: uniqueName,
+      json: {
+        contact_name: WEBSITE_PURCHASE_CONTACT_NAME,
         contact_type: 'customer',
-        email: emailValue,
+        company_name: 'Classpath',
         contact_persons: [
           {
-            first_name: contactName.slice(0, 50),
-            email: emailValue,
+            first_name: 'Website',
+            last_name: 'Purchase',
             is_primary_contact: true,
           },
         ],
-      };
-      if (billingAddress) {
-        uniquePayload.billing_address = billingAddress;
+      },
+    });
+    cachedWebsiteContactId = created.contact.contact_id;
+    return { contactId: created.contact.contact_id };
+  } catch (error) {
+    // Race / name collision: another request created it first.
+    if (
+      error?.zoho?.code === 3062 ||
+      /already exists/i.test(error.message || '')
+    ) {
+      const collided = await findWebsitePurchaseContact();
+      if (collided?.contact_id) {
+        cachedWebsiteContactId = collided.contact_id;
+        return { contactId: collided.contact_id };
       }
-      const createdUnique = await zohoRequest('/contacts', {
-        method: 'POST',
-        json: uniquePayload,
-      });
-      return {
-        contactId: createdUnique.contact.contact_id,
-        contactName: createdUnique.contact.contact_name,
-      };
     }
     throw error;
   }
@@ -371,12 +307,7 @@ const createAndSendInvoice = async ({
     return null;
   }
 
-  const { contactId } = await findOrCreateContact({
-    email,
-    name,
-    city,
-    postalCode,
-  });
+  const { contactId } = await findOrCreateWebsitePurchaseContact();
   const items = lineItems.map((item) => {
     const line = {
       name: item.name,
@@ -404,6 +335,11 @@ const createAndSendInvoice = async ({
     return line;
   });
 
+  const buyerName = contactDisplayName({ email, name });
+  const buyerEmail = String(email || '')
+    .trim()
+    .toLowerCase();
+
   const invoicePayload = {
     customer_id: contactId,
     reference_number: String(referenceNumber || '').slice(0, 100),
@@ -414,13 +350,20 @@ const createAndSendInvoice = async ({
     // Leave notes empty so the Standard Template "Authorized Signature"
     // block is shown instead of a "no signature needed" note.
     notes: '',
-    terms: 'Thank you for your purchase of Modern Java - The Mindset Shift.',
+    terms: [
+      buyerName && buyerEmail ? `Customer: ${buyerName} <${buyerEmail}>` : null,
+      'Thank you for your purchase of Modern Java - The Mindset Shift.',
+    ]
+      .filter(Boolean)
+      .join('. '),
     line_items: items,
+    billing_address: buildInvoiceBuyerBillingAddress({
+      email,
+      name,
+      city,
+      postalCode,
+    }),
   };
-  const billingAddress = billingAddressPayload({ city, postalCode });
-  if (billingAddress) {
-    invoicePayload.billing_address = billingAddress;
-  }
 
   if (ZOHO_INVOICE_TEMPLATE_ID) {
     invoicePayload.template_id = ZOHO_INVOICE_TEMPLATE_ID;
@@ -480,4 +423,7 @@ const createAndSendInvoice = async ({
 module.exports = {
   isConfigured,
   createAndSendInvoice,
+  WEBSITE_PURCHASE_CONTACT_NAME,
+  buildInvoiceBuyerBillingAddress,
+  contactDisplayName,
 };
