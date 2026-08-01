@@ -9,7 +9,7 @@ export const book = {
   amazonUrl: 'https://www.amazon.in/dp/B0H6R4334W',
 
   email: 'admin@classpath.in',
-  githubUrl: 'https://github.com/pradeepkl',
+  githubUrl: 'https://github.com/pradeepkl/modern-java-book',
   linkedinUrl: 'https://www.linkedin.com/in/lpradeepk',
   instagramUrl: 'https://www.instagram.com/classpath_publications/',
 
