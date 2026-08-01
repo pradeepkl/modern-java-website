@@ -132,22 +132,48 @@ purchase confirmation.
 
 ### Meta Test Events validation
 
-1. Open Meta Events Manager → Pixel → **Test events**.
-2. Copy the test code into `MetaTestEventCode` for the **dev** stack, redeploy.
-3. Accept analytics on the live/dev site (ad blockers off).
-4. Submit a chapter preview → expect **one** logical `Lead` (Browser + Server
-   rows sharing the same `event_id` / `sampleRequestId`).
-5. Complete a verified payment (or intentional bypass) → expect **one** logical
-   `Purchase` with `event_id = appOrderId`.
-6. Clear `MetaTestEventCode` before relying on production reporting.
+**Browser Pixel (production-safe intentional test)**
 
-**Production must never send `test_event_code`.** Browser Pixel strips
-`?test_event_code=…` from the URL before `fbq('init')` so leftover Test Events
-links (e.g. `TEST25149`) do not tag live traffic. CAPI `MetaTestEventCode` is
-empty on the prod stack. Events viewed inside the **Test events** tab may still
-*display* the session’s test code in the UI even when the payload omitted it —
-for clean prod verification use **Overview / Activity**, a private window, and
-a URL **without** `test_event_code`.
+1. Open Meta Events Manager → **Classpath Publications Pixel** (`1844493498903023`)
+   → **Test events**.
+2. Copy the test code (e.g. `TEST12345`).
+3. In a private window (ad blockers off), open:
+
+   `https://modern-java.classpath.in/?mj_meta_test=1&test_event_code=TEST12345`
+
+   `mj_meta_test=1` opts this tab into Test Events tagging. Without it, the
+   site strips leftover `test_event_code` so shared Test Events links do not
+   pollute live traffic.
+4. Click **Accept** on the cookie banner → expect **PageView**.
+5. Scroll to **Formats** → expect **ViewContent**.
+6. (Optional) Submit a chapter preview → expect browser + CAPI **Lead** with
+   shared `event_id` / `sampleRequestId`. CAPI only appears under Test events
+   when `MetaTestEventCode` is set on the **dev** stack (keep prod empty).
+
+**Server CAPI (dev stack only)**
+
+1. Copy the test code into `MetaTestEventCode` for the **dev** stack, redeploy.
+2. Accept analytics and submit a chapter preview / purchase on the matching site.
+3. Clear `MetaTestEventCode` before relying on production reporting.
+
+**Production must keep CAPI `MetaTestEventCode` empty.** Casual
+`?test_event_code=…` links (without `mj_meta_test=1`) are stripped before
+`fbq('init')`. For clean prod reporting use **Overview / Activity** and a URL
+without test codes.
+
+### Analytics consent rate (first-party)
+
+Every banner choice posts to `POST /analytics-consents` with only
+`choice` (`granted` | `denied`), `path`, and optional `utm_*` tags. No email
+or contact PII. CloudWatch log key: `analytics_consent_choice`.
+
+Example Insights query (prod Order Lambda log group):
+
+```
+fields @timestamp, choice, path, utm_source, utm_campaign
+| filter @message like /analytics_consent_choice/
+| stats count(*) as n by choice
+```
 
 Operational logs use keys like `meta_capi_sent` / `meta_capi_skipped` and never
 include access tokens, raw emails, `_fbp`, `_fbc`, or hashed identifiers.
@@ -157,11 +183,13 @@ include access tokens, raw emails, `_fbp`, `_fbc`, or hashed identifiers.
 **Setup**
 
 1. Open Meta Events Manager → **Classpath Publications Pixel**.
-2. Open **Test events** and keep that tab open.
-3. Visit `https://modern-java.classpath.in` in a private window (ad blockers
-   off for the test).
-4. Choose **Accept analytics**.
-5. Confirm one `PageView`.
+2. Open **Test events**, copy the test code, and keep that tab open.
+3. In a private window (ad blockers off), visit  
+   `https://modern-java.classpath.in/?mj_meta_test=1&test_event_code=YOUR_CODE`.
+4. Choose **Accept**.
+5. Confirm one `PageView` in Test events.
+6. In Pixel **Settings → Traffic permissions**, allowlist `classpath.in` (or
+   `modern-java.classpath.in`) if Diagnostics asks to confirm the domain.
 
 **Safe live checklist for funnel events**
 

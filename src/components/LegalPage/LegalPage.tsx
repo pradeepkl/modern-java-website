@@ -90,6 +90,13 @@ function PrivacyPolicy() {
           analytics cookies. Clearing site data for this domain resets the
           banner so you can change your choice.
         </p>
+        <p>
+          When you make a banner choice, we may record an anonymous first-party
+          event (Accept or Essential only, page path, and any campaign tags
+          already on the URL) so we can measure consent rates. That event does
+          not include your email, name, or other contact details, and it is not
+          used to load third-party analytics if you chose Essential only.
+        </p>
       </section>
 
       <section>

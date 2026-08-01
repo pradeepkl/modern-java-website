@@ -52,11 +52,12 @@ export function AnalyticsConsentBanner() {
             We use cookies
           </p>
           <p id="analytics-consent-desc" className="analytics-consent__text">
-            We use optional analytics cookies to understand how this site is
-            used and improve it. The site works with or without them—choose{' '}
-            <strong>Accept</strong> to allow analytics, or{' '}
-            <strong>Essential only</strong> to continue without. You can change
-            your choice later by clearing site data.{' '}
+            Optional analytics help us see which pages and ads help readers find
+            this book—so we can improve the site. Choose{' '}
+            <strong>Accept</strong> to allow analytics cookies, or{' '}
+            <strong>Essential only</strong> to continue without them. Either way
+            the site works the same. You can change your choice later by clearing
+            site data.{' '}
             <a href="/privacy-policy">Privacy policy</a>
           </p>
         </div>

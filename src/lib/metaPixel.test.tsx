@@ -70,6 +70,24 @@ describe('metaPixel', () => {
     expect(window.location.search).toBe('');
   });
 
+  it('keeps test_event_code when intentional Meta test mode is enabled', async () => {
+    window.history.replaceState(
+      {},
+      '',
+      '/?utm_source=meta&test_event_code=TEST25149&mj_meta_test=1',
+    );
+    const { initializeMetaPixel, isIntentionalMetaTestMode, __resetMetaPixelForTests } =
+      await loadMetaPixel();
+    __resetMetaPixelForTests();
+
+    initializeMetaPixel(PIXEL_ID);
+
+    expect(isIntentionalMetaTestMode()).toBe(true);
+    expect(window.location.search).toContain('test_event_code=TEST25149');
+    expect(window.location.search).toContain('utm_source=meta');
+    expect(window.location.search).not.toContain('mj_meta_test');
+  });
+
   it('does nothing when the Pixel ID is missing', async () => {
     const { initializeMetaPixel, isMetaPixelAvailable } = await loadMetaPixel();
 

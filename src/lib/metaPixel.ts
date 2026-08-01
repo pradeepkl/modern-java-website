@@ -64,17 +64,58 @@ function currentLocationKey(): string {
   return `${window.location.pathname}${window.location.search}`;
 }
 
+const META_TEST_SESSION_KEY = 'mj_meta_test';
+const META_TEST_QUERY_FLAG = 'mj_meta_test';
+
+/**
+ * Intentional Test Events mode: `?mj_meta_test=1` (optionally with
+ * `test_event_code=TESTxxxx` from Events Manager). Persists for the tab
+ * session so SPA navigations keep tagging; normal visits stay untagged.
+ */
+export function isIntentionalMetaTestMode(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get(META_TEST_QUERY_FLAG) === '1') {
+      try {
+        sessionStorage.setItem(META_TEST_SESSION_KEY, '1');
+      } catch {
+        /* private mode */
+      }
+      return true;
+    }
+    return sessionStorage.getItem(META_TEST_SESSION_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Meta's Pixel auto-picks up ?test_event_code=TESTxxxx from the page URL
  * (often left by Events Manager → Test events → open website). That tags
- * real browser hits as test traffic. Strip it in production before init.
+ * real browser hits as test traffic. Strip it in production before init
+ * unless intentional Test Events mode is active.
  */
 export function stripMetaTestEventCodeFromUrl(): boolean {
   if (typeof window === 'undefined') return false;
   try {
+    // Capture ?mj_meta_test=1 into sessionStorage before mutating the URL.
+    const intentional = isIntentionalMetaTestMode();
     const url = new URL(window.location.href);
-    if (!url.searchParams.has('test_event_code')) return false;
-    url.searchParams.delete('test_event_code');
+    let changed = false;
+
+    // Always drop the intentional-test flag from the visible URL once captured.
+    if (url.searchParams.has(META_TEST_QUERY_FLAG)) {
+      url.searchParams.delete(META_TEST_QUERY_FLAG);
+      changed = true;
+    }
+
+    if (url.searchParams.has('test_event_code') && !intentional) {
+      url.searchParams.delete('test_event_code');
+      changed = true;
+    }
+
+    if (!changed) return false;
     const next = `${url.pathname}${url.search}${url.hash}`;
     window.history.replaceState(window.history.state, '', next || '/');
     return true;
@@ -160,7 +201,9 @@ export function initializeMetaPixel(pixelId: string): void {
   insertMetaPixelScript();
 
   try {
-    // Must run before init so fbevents.js never sees a leftover test code.
+    // Strip leftover Test Events codes so casual shared links do not tag
+    // live traffic. When ?mj_meta_test=1 is present, test_event_code is kept
+    // for Events Manager → Test events.
     stripMetaTestEventCodeFromUrl();
     fbq('init', id);
     initializedPixelId = id;
@@ -311,6 +354,11 @@ export function __resetMetaPixelForTests(): void {
   if (typeof window !== 'undefined') {
     delete window.fbq;
     delete window._fbq;
+    try {
+      sessionStorage.removeItem(META_TEST_SESSION_KEY);
+    } catch {
+      /* ignore */
+    }
   }
   if (typeof document !== 'undefined') {
     document

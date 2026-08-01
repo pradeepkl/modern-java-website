@@ -73,6 +73,7 @@ const {
   sendLeadConversion,
   sendPurchaseConversion,
 } = require('./metaConversionsApi');
+const { recordAnalyticsConsentChoice } = require('./analyticsConsent');
 const {
   escapeHtml,
   BOOK_FULL_TITLE,
@@ -2291,6 +2292,13 @@ exports.handler = async (event) => {
     }
     if (method === 'POST' && path === '/sample-requests') {
       return await requestSampleChapter(event);
+    }
+    if (method === 'POST' && path === '/analytics-consents') {
+      return await recordAnalyticsConsentChoice({
+        event,
+        parseBody,
+        response,
+      });
     }
     if (method === 'POST' && path === '/marketing-consents/unsubscribe') {
       return await unsubscribeMarketing(event);

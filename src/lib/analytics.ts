@@ -83,12 +83,45 @@ export function getConsent(): ConsentStatus | null {
   return null;
 }
 
+/**
+ * First-party Accept / Essential-only measurement. Works for both choices
+ * (denied visitors never load GA/Meta). No email or other PII.
+ */
+export function reportAnalyticsConsentChoice(status: ConsentStatus): void {
+  if (typeof window === 'undefined') return;
+  const apiBase = import.meta.env.VITE_ORDER_API_URL?.replace(/\/$/, '');
+  if (!apiBase) return;
+
+  captureUtmParams();
+  const body = JSON.stringify({
+    choice: status,
+    path: window.location.pathname || '/',
+    ...getUtmProps(),
+  });
+
+  try {
+    void fetch(`${apiBase}/analytics-consents`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body,
+      keepalive: true,
+      mode: 'cors',
+    }).catch(() => {
+      /* never block the banner */
+    });
+  } catch {
+    /* ignore */
+  }
+}
+
 export function setConsent(status: ConsentStatus): void {
   try {
     localStorage.setItem(CONSENT_STORAGE_KEY, status);
   } catch {
     /* ignore */
   }
+
+  reportAnalyticsConsentChoice(status);
 
   if (status === 'granted') {
     initAnalytics();

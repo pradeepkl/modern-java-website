@@ -182,6 +182,24 @@ describe('analytics Meta payload sanitization', () => {
     vi.useRealTimers();
   });
 
+  it('reports Accept and Essential-only choices to the first-party API', async () => {
+    vi.stubEnv('VITE_ORDER_API_URL', 'https://api.example.com');
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { setConsent } = await loadAnalytics();
+    setConsent('denied');
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.example.com/analytics-consents',
+      expect.objectContaining({
+        method: 'POST',
+        keepalive: true,
+        body: expect.stringContaining('"choice":"denied"'),
+      }),
+    );
+  });
+
   it('navigateToAmazon still assigns when Meta tracking throws', async () => {
     vi.useFakeTimers();
     metaPixelMocks.trackMetaCustomEvent.mockImplementationOnce(() => {
