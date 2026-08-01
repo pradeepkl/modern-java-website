@@ -153,8 +153,13 @@ if [[ ! -d "$ROOT_DIR/dist" ]]; then
   exit 1
 fi
 
-echo "==> Packaging dist/"
+echo "==> Packaging dist/ (include customHttp.yml for Amplify cache headers)"
 rm -f "$ZIP_PATH"
+if [[ -f "$ROOT_DIR/customHttp.yml" ]]; then
+  cp "$ROOT_DIR/customHttp.yml" "$ROOT_DIR/dist/customHttp.yml"
+else
+  echo "Warning: customHttp.yml missing; Amplify zip will not carry cache headers." >&2
+fi
 (
   cd "$ROOT_DIR/dist"
   zip -r "$ZIP_PATH" . \
@@ -162,6 +167,7 @@ rm -f "$ZIP_PATH"
     -x '.DS_Store' \
     >/dev/null
 )
+rm -f "$ROOT_DIR/dist/customHttp.yml"
 
 echo "==> Creating Amplify deployment"
 CREATE_JSON="$(

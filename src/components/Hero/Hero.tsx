@@ -64,6 +64,8 @@ export function Hero() {
         <div className="hero-visual">
           <img
             src={assets.hero.paperback}
+            srcSet={assets.hero.paperbackSrcSet}
+            sizes={assets.hero.paperbackSizes}
             alt="Modern Java: The Mindset Shift — 3D book cover"
             width={1200}
             height={1200}

@@ -11,7 +11,11 @@ export const assets = {
     radial: '/assets/hero/hero-radial.svg',
     circuitLeft: '/assets/hero/hero-circuit-left.svg',
     circuitRight: '/assets/hero/hero-circuit-right.svg',
-    paperback: '/assets/hero/modern-java-3D.webp',
+    /** Default/fallback src; prefer 768w to match HTML preload href. */
+    paperback: '/assets/hero/modern-java-3D-768.webp',
+    paperbackSrcSet:
+      '/assets/hero/modern-java-3D-480.webp 480w, /assets/hero/modern-java-3D-768.webp 768w, /assets/hero/modern-java-3D.webp 1200w',
+    paperbackSizes: '(max-width: 820px) 90vw, 620px',
     paperbackEdition: '/assets/hero/paperback-3D.webp',
   },
 
@@ -32,7 +36,10 @@ export const assets = {
 
   formats: {
     devices: '/assets/formats/formats.webp',
-    guideMockup: '/assets/formats/3Dmockup-tp.webp',
+    guideMockup: '/assets/formats/3Dmockup-tp-768.webp',
+    guideMockupSrcSet:
+      '/assets/formats/3Dmockup-tp-480.webp 480w, /assets/formats/3Dmockup-tp-768.webp 768w, /assets/formats/3Dmockup-tp-1200.webp 1200w, /assets/formats/3Dmockup-tp.webp 1600w',
+    guideMockupSizes: '(max-width: 820px) 92vw, 640px',
     pdf: '/assets/icons/formats/pdf.png',
     epub: '/assets/icons/formats/epub.png',
     mobi: '/assets/icons/formats/mobi.png',
