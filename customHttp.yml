@@ -1,21 +1,23 @@
 customHeaders:
-  - pattern: '/assets/*.js'
+  # Hashed Vite bundles (filenames change every build).
+  - pattern: '/assets/index-*.js'
     headers:
       - key: 'Cache-Control'
         value: 'public, max-age=31536000, immutable'
-  - pattern: '/assets/*.css'
+  - pattern: '/assets/index-*.css'
     headers:
       - key: 'Cache-Control'
         value: 'public, max-age=31536000, immutable'
+  # Stable public assets (not content-hashed) — moderate browser TTL.
   - pattern: '/assets/**'
     headers:
       - key: 'Cache-Control'
-        value: 'public, max-age=604800, s-maxage=31536000'
+        value: 'public, max-age=86400, s-maxage=604800'
   - pattern: '/index.html'
     headers:
       - key: 'Cache-Control'
-        value: 'public, max-age=0, must-revalidate'
+        value: 'no-cache'
   - pattern: '/'
     headers:
       - key: 'Cache-Control'
-        value: 'public, max-age=0, must-revalidate'
+        value: 'no-cache'
