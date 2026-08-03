@@ -254,7 +254,7 @@ behaves as before.
   + ePub bundle. Customer fields are name and email only (city/ZIP are not
   collected). The normal verification endpoint emails time-limited
   CloudFront signed download links after payment (and creates a Zoho Invoice
-  when configured; billing address may be country-only).
+  when configured; billing address is buyer name + email only).
 - `POST /paperback-waitlist` records a unique consented waitlist entry
   (DynamoDB `PaperbackWaitlistTable`, email as primary key). Duplicate emails
   update name/city/promotional consent without creating a second row or

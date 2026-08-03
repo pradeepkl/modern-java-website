@@ -211,6 +211,7 @@ const sendEmail = async ({
   tags = {},
   category,
   recipientRecord = null,
+  bcc,
 }) => {
   if (attachments.length > 0) {
     console.info('Sending SES raw email with attachments', {
@@ -236,6 +237,8 @@ const sendEmail = async ({
     listUnsubscribeUrl,
     category,
     recipientRecord,
+    // Default archive BCC is ADMIN_EMAIL (pradeep@classpath.in) inside sesMail.
+    bcc: bcc === undefined ? ADMIN_EMAIL : bcc,
     tags: {
       environment: APP_ENV,
       ...tags,
@@ -1927,8 +1930,6 @@ const createInvoiceForOrder = async (order) => {
   const invoice = await createAndSendInvoice({
     email: order.email,
     name: customerNameFromOrder(order),
-    city: isDigital ? undefined : order.city,
-    postalCode: isDigital ? undefined : order.postalCode,
     lineItems,
     referenceNumber: order.appOrderId,
     paymentId: order.paymentId,

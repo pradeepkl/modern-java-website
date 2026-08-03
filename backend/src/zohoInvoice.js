@@ -3,8 +3,8 @@
  * No-ops when OAuth/org env vars are incomplete, or when APP_ENV=dev.
  *
  * All website orders share one Zoho customer ("Website Purchase"). Buyer
- * name/email go on each invoice's billing address; order id stays in
- * reference_number for tracking.
+ * name/email go on each invoice's billing address (name + email only); order
+ * id stays in reference_number for tracking.
  */
 
 const { isDevAppEnvironment } = require('./razorpayConfig');
@@ -128,29 +128,34 @@ const contactDisplayName = ({ email, name }) =>
 
 /**
  * Per-invoice Bill To block: buyer name (attention) + email (address line).
- * City defaults to "Online" for digital orders (Zoho requires a city).
+ * Name and email only — Zoho invoice create treats the whole billing_address
+ * JSON as a single string capped at 100 characters (API code 15).
  */
-const buildInvoiceBuyerBillingAddress = ({
-  email,
-  name,
-  city,
-  postalCode,
-}) => {
-  const emailValue = String(email || '')
+const ZOHO_BILLING_ADDRESS_MAX_CHARS = 100;
+
+const buildInvoiceBuyerBillingAddress = ({ email, name }) => {
+  let attention = contactDisplayName({ email, name });
+  let address = String(email || '')
     .trim()
-    .toLowerCase()
-    .slice(0, 100);
-  const attention = contactDisplayName({ email, name }).slice(0, 100);
-  const cityValue = String(city || '').trim() || 'Online';
-  const zipValue = String(postalCode || '').trim();
-  const payload = {
-    attention,
-    address: emailValue,
-    city: cityValue.slice(0, 50),
-    country: 'India',
-  };
-  if (zipValue) payload.zip = zipValue.slice(0, 20);
-  return payload;
+    .toLowerCase();
+
+  const serializedLength = () =>
+    JSON.stringify({ attention, address }).length;
+
+  while (
+    serializedLength() > ZOHO_BILLING_ADDRESS_MAX_CHARS &&
+    (attention.length > 1 || address.length > 1)
+  ) {
+    if (address.length >= attention.length && address.length > 1) {
+      address = address.slice(0, -1);
+    } else if (attention.length > 1) {
+      attention = attention.slice(0, -1);
+    } else {
+      break;
+    }
+  }
+
+  return { attention, address };
 };
 
 const findWebsitePurchaseContact = async () => {
@@ -290,8 +295,6 @@ const downloadInvoicePdf = async (invoiceId) => {
 const createAndSendInvoice = async ({
   email,
   name,
-  city,
-  postalCode,
   lineItems,
   referenceNumber,
   paymentId,
@@ -360,8 +363,6 @@ const createAndSendInvoice = async ({
     billing_address: buildInvoiceBuyerBillingAddress({
       email,
       name,
-      city,
-      postalCode,
     }),
   };
 

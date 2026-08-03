@@ -29,7 +29,7 @@ describe('contactDisplayName', () => {
 });
 
 describe('buildInvoiceBuyerBillingAddress', () => {
-  it('puts buyer name and email on the invoice Bill To block', () => {
+  it('puts only buyer name and email on the invoice Bill To block', () => {
     assert.deepEqual(
       buildInvoiceBuyerBillingAddress({
         name: 'Ada Lovelace',
@@ -40,21 +40,41 @@ describe('buildInvoiceBuyerBillingAddress', () => {
       {
         attention: 'Ada Lovelace',
         address: 'ada@example.com',
-        city: 'Bengaluru',
-        country: 'India',
-        zip: '560001',
       },
     );
   });
 
-  it('uses Online as city when digital checkout has none', () => {
+  it('omits city and country even when digital checkout has none', () => {
     const address = buildInvoiceBuyerBillingAddress({
       name: 'Ada Lovelace',
       email: 'ada@example.com',
     });
-    assert.equal(address.city, 'Online');
-    assert.equal(address.attention, 'Ada Lovelace');
-    assert.equal(address.address, 'ada@example.com');
+    assert.deepEqual(address, {
+      attention: 'Ada Lovelace',
+      address: 'ada@example.com',
+    });
+    assert.equal(address.city, undefined);
+    assert.equal(address.country, undefined);
     assert.equal(address.zip, undefined);
+  });
+
+  it('keeps the serialized billing_address under Zoho’s 100-char limit', () => {
+    const address = buildInvoiceBuyerBillingAddress({
+      name: 'Balagopal Ramavarma',
+      email: 'balagopal.ramavarmausb@gmail.com',
+    });
+    assert.equal(JSON.stringify(address).length <= 100, true);
+    assert.equal(address.attention, 'Balagopal Ramavarma');
+    assert.equal(address.address, 'balagopal.ramavarmausb@gmail.com');
+  });
+
+  it('truncates long name/email so the JSON stays under 100 chars', () => {
+    const address = buildInvoiceBuyerBillingAddress({
+      name: 'A'.repeat(80),
+      email: `${'b'.repeat(60)}@example.com`,
+    });
+    assert.equal(JSON.stringify(address).length <= 100, true);
+    assert.ok(address.attention.length >= 1);
+    assert.ok(address.address.length >= 1);
   });
 });

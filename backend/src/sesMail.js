@@ -54,6 +54,45 @@ function normalizeCategory(category) {
   return value;
 }
 
+function normalizeEmailAddress(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase();
+}
+
+/**
+ * Resolve BCC recipients. Default archive copy goes to MAIL_BCC_EMAIL /
+ * ADMIN_EMAIL (pradeep@classpath.in). Pass `bcc: false` or `[]` to disable.
+ * Addresses matching `to` are dropped so admin-only mail is not doubled.
+ */
+function resolveBccAddresses(bcc, to) {
+  const toAddress = normalizeEmailAddress(to);
+  let candidates;
+  if (bcc === false) {
+    candidates = [];
+  } else if (bcc === undefined || bcc === null) {
+    const fallback =
+      process.env.MAIL_BCC_EMAIL ||
+      process.env.ADMIN_EMAIL ||
+      DEFAULT_REPLY_TO;
+    candidates = [fallback];
+  } else if (Array.isArray(bcc)) {
+    candidates = bcc;
+  } else {
+    candidates = [bcc];
+  }
+
+  const seen = new Set();
+  const addresses = [];
+  for (const entry of candidates) {
+    const email = normalizeEmailAddress(entry);
+    if (!email || email === toAddress || seen.has(email)) continue;
+    seen.add(email);
+    addresses.push(email);
+  }
+  return addresses;
+}
+
 function buildRawMimeEmail({
   mailFrom,
   to,
@@ -147,6 +186,7 @@ function buildRawMimeEmail({
  * @param {string} [options.configurationSetName]
  * @param {string} [options.listUnsubscribeUrl] RFC 8058 URL (marketing only)
  * @param {Record<string, string>} [options.tags]
+ * @param {string|string[]|false} [options.bcc] Archive copies; default ADMIN_EMAIL
  */
 async function sendEmail({
   category,
@@ -162,6 +202,7 @@ async function sendEmail({
   configurationSetName = process.env.SES_CONFIGURATION_SET || DEFAULT_CONFIG_SET,
   listUnsubscribeUrl,
   tags = {},
+  bcc,
 }) {
   const resolvedCategory = normalizeCategory(category);
   const record =
@@ -179,6 +220,7 @@ async function sendEmail({
   const mailFrom = formatMailFrom(mailFromEmail);
   const replyToAddress =
     String(replyTo || DEFAULT_REPLY_TO).trim() || DEFAULT_REPLY_TO;
+  const bccAddresses = resolveBccAddresses(bcc, to);
   const marketingUnsubscribe =
     resolvedCategory === EMAIL_CATEGORY.MARKETING
       ? String(listUnsubscribeUrl || '').trim() || undefined
@@ -195,7 +237,10 @@ async function sendEmail({
       new SendEmailCommand({
         Source: mailFrom,
         ReplyToAddresses: [replyToAddress],
-        Destination: { ToAddresses: [to] },
+        Destination: {
+          ToAddresses: [to],
+          ...(bccAddresses.length ? { BccAddresses: bccAddresses } : {}),
+        },
         Message: {
           Subject: { Data: subject },
           Body: {
@@ -209,10 +254,12 @@ async function sendEmail({
     );
   }
 
+  // SES raw: list BCC only in Destinations — do not add a Bcc MIME header,
+  // so the primary recipient never sees the archive address.
   return client.send(
     new SendRawEmailCommand({
       Source: mailFrom,
-      Destinations: [to],
+      Destinations: [to, ...bccAddresses],
       RawMessage: {
         Data: buildRawMimeEmail({
           mailFrom,
@@ -237,5 +284,6 @@ module.exports = {
   EMAIL_CATEGORY,
   formatMailFrom,
   buildRawMimeEmail,
+  resolveBccAddresses,
   sendEmail,
 };
