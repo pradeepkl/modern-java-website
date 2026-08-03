@@ -102,6 +102,30 @@ VITE_PAPERBACK_WAITLIST_ENABLED=false
 
 If both flags are `true`, sales wins.
 
+### Direct digital UI
+
+DRM-free PDF + ePub checkout is gated by `VITE_DIGITAL_SALES_ENABLED`
+(`isDigitalSalesEnabled()` in `src/config/features.ts`). Dialog, Razorpay
+`POST /digital-orders`, emails, and download fulfillment stay deployed either
+way — only the UI surface is flagged.
+
+Production sets this in gitignored `.env.prod`:
+
+```env
+VITE_DIGITAL_SALES_ENABLED=true
+```
+
+Script/Amplify defaults are `false` if the env file omits the flag. Hide later:
+
+```bash
+VITE_DIGITAL_SALES_ENABLED=false \
+npm run deploy:prod
+```
+
+Also set the same value in `.env.local` if that file is used for local builds.
+After deploy with `true`, the Direct Digital card and deep-link checkout
+(`#digital-checkout`) are shown.
+
 **1. Local / one-off Amplify zip deploy**
 
 Also set the same values in gitignored `.env.prod` (and `.env.local` if used),
@@ -117,6 +141,10 @@ npm run deploy:prod
 VITE_PAPERBACK_SALES_ENABLED=true \
 VITE_PAPERBACK_WAITLIST_ENABLED=false \
 npm run deploy:prod
+
+# Hide digital (PDF + ePub) checkout
+VITE_DIGITAL_SALES_ENABLED=false \
+npm run deploy:prod
 ```
 
 **2. Amplify Console (if env vars are set there)**
@@ -124,13 +152,16 @@ npm run deploy:prod
 Amplify Hosting → app → Environment variables (or branch variables):
 
 - Set `VITE_PAPERBACK_WAITLIST_ENABLED` / `VITE_PAPERBACK_SALES_ENABLED` as above
+- Set `VITE_DIGITAL_SALES_ENABLED=true` to show digital checkout (or `false` to hide)
 - Trigger a new frontend build for `main`
 
 **3. Confirm after deploy**
 
 - Waitlist: `#paperback-waitlist` section and join CTA visible
 - Sales: paperback option in `#formats` and purchase buttons
-- Backend waitlist (`POST /paperback-waitlist`) and order APIs stay deployed either way
+- Digital: Direct Digital card in `#formats`; `#digital-checkout` opens the dialog
+- Backend waitlist (`POST /paperback-waitlist`), digital (`POST /digital-orders`),
+  and order APIs stay deployed either way
 
 Existing Razorpay/order APIs remain deployed; only the frontend surface switches.
 
@@ -221,6 +252,7 @@ Defaults (overridable via env / `.env.<APP_ENV>`):
 | `VITE_META_PIXEL_ID` | Meta Pixel ID (optional; production + consent-gated) |
 | `VITE_PAPERBACK_SALES_ENABLED` | Build-time flag (default `false` on deploy) |
 | `VITE_PAPERBACK_WAITLIST_ENABLED` | Build-time flag (default `false` on deploy; paperback UI hidden) |
+| `VITE_DIGITAL_SALES_ENABLED` | Build-time flag (script default `false`; production `.env.prod` sets `true`) |
 | `DEPLOY_SITE_URL` | Printed after success |
 
 Analytics setup, conversion events, and GA4 key-event configuration are documented in [`docs/ANALYTICS.md`](./docs/ANALYTICS.md).

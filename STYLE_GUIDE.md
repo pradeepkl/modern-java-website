@@ -179,7 +179,7 @@ Mobile (≤800px): hamburger (22×2px bars), overlay menu Inter 1rem / 500.
 
 ## 6. Sections inventory
 
-Default landing order (from `App.tsx`). **Paperback Waitlist** renders only when `VITE_PAPERBACK_WAITLIST_ENABLED=true` and sales is off.
+Default landing order (from `App.tsx`). **Paperback Waitlist** renders only when `VITE_PAPERBACK_WAITLIST_ENABLED=true` and sales is off. Direct Digital (PDF + ePub) in Formats is gated by `VITE_DIGITAL_SALES_ENABLED` (production: on).
 
 | # | Section | ID / role | Background | Heading font / size / color | Body |
 |---|---------|-----------|------------|-----------------------------|------|

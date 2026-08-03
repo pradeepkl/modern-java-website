@@ -1,16 +1,41 @@
 import { formatBulkOrder, formatOptions } from '../../data/formats';
-import { getPaperbackMode } from '../../config/features';
+import {
+  getPaperbackMode,
+  isDigitalSalesEnabled,
+} from '../../config/features';
 import { track, trackOutboundClick } from '../../lib/analytics';
 import { SectionEyebrow } from '../shared/SectionEyebrow';
 import { FormatCard } from './FormatCard';
 import './FormatsSection.css';
 
+function formatsCopy(options: {
+  digitalEnabled: boolean;
+  paperbackSales: boolean;
+}): string {
+  if (options.digitalEnabled && options.paperbackSales) {
+    return 'All editions include the full content, code examples, and figures from Modern Java.';
+  }
+  if (options.digitalEnabled) {
+    return 'Kindle and DRM-free PDF editions include the full content, code examples, and figures from Modern Java.';
+  }
+  return 'The Kindle edition includes the full content, code examples, and figures from Modern Java.';
+}
+
+function formatsGridClass(count: number): string {
+  if (count <= 1) return 'formats-grid formats-grid--single';
+  if (count === 2) return 'formats-grid formats-grid--available';
+  return 'formats-grid';
+}
+
 export function FormatsSection() {
   const paperbackMode = getPaperbackMode();
-  const availableOnly = paperbackMode !== 'sales';
-  const availableFormats = availableOnly
-    ? formatOptions.filter((format) => format.id !== 'paperback')
-    : formatOptions;
+  const digitalEnabled = isDigitalSalesEnabled();
+  const availableOnly = paperbackMode !== 'sales' || !digitalEnabled;
+  const availableFormats = formatOptions.filter((format) => {
+    if (format.id === 'paperback') return paperbackMode === 'sales';
+    if (format.id === 'digital') return digitalEnabled;
+    return true;
+  });
 
   return (
     <section
@@ -32,20 +57,15 @@ export function FormatsSection() {
               Choose the format that works best for you
             </h2>
             <p className="formats-header__copy">
-              {availableOnly
-                ? 'Kindle and DRM-free PDF editions include the full content, code examples, and figures from Modern Java.'
-                : 'All editions include the full content, code examples, and figures from Modern Java.'}
+              {formatsCopy({
+                digitalEnabled,
+                paperbackSales: paperbackMode === 'sales',
+              })}
             </p>
           </div>
         </div>
 
-        <div
-          className={
-            availableOnly
-              ? 'formats-grid formats-grid--available'
-              : 'formats-grid'
-          }
-        >
+        <div className={formatsGridClass(availableFormats.length)}>
           {availableFormats.map((format) => (
             <FormatCard key={format.id} format={format} />
           ))}

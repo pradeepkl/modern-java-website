@@ -14,6 +14,16 @@
  *   VITE_PAPERBACK_SALES_ENABLED=true
  *   VITE_PAPERBACK_WAITLIST_ENABLED=false
  * then rebuild and redeploy the frontend.
+ *
+ * Direct digital (DRM-free PDF + ePub) checkout is gated by a build-time
+ * flag. Code, API, and dialogs remain intact either way.
+ *
+ * Show digital sales (production):
+ *   VITE_DIGITAL_SALES_ENABLED=true
+ *
+ * Hide digital sales:
+ *   VITE_DIGITAL_SALES_ENABLED=false
+ * then rebuild and redeploy the frontend.
  */
 
 export type PaperbackMode = 'sales' | 'waitlist' | 'unavailable';
@@ -33,6 +43,8 @@ export const features = {
     import.meta.env.VITE_PAPERBACK_SALES_ENABLED === 'true',
   paperbackWaitlistEnabled:
     import.meta.env.VITE_PAPERBACK_WAITLIST_ENABLED === 'true',
+  digitalSalesEnabled:
+    import.meta.env.VITE_DIGITAL_SALES_ENABLED === 'true',
 };
 
 if (features.paperbackSalesEnabled && features.paperbackWaitlistEnabled) {
@@ -47,4 +59,9 @@ export function getPaperbackMode(): PaperbackMode {
     features.paperbackSalesEnabled,
     features.paperbackWaitlistEnabled,
   );
+}
+
+/** Direct digital (PDF + ePub) checkout UI. Backend stays deployed either way. */
+export function isDigitalSalesEnabled(): boolean {
+  return features.digitalSalesEnabled;
 }

@@ -1,5 +1,8 @@
 import { ArrowRight } from 'lucide-react';
-import { getPaperbackMode } from '../../config/features';
+import {
+  getPaperbackMode,
+  isDigitalSalesEnabled,
+} from '../../config/features';
 import { assets } from '../../data/assets';
 import { trackCtaClick } from '../../lib/analytics';
 import { DecorativeImage } from '../shared/Icon';
@@ -7,10 +10,12 @@ import { SectionEyebrow } from '../shared/SectionEyebrow';
 import './Hero.css';
 
 export function Hero() {
-  const formatLine =
-    getPaperbackMode() === 'sales'
-      ? 'Kindle · PDF + ePub · Paperback'
-      : 'Kindle · PDF + ePub';
+  const formats = [
+    'Kindle',
+    ...(isDigitalSalesEnabled() ? ['PDF + ePub'] : []),
+    ...(getPaperbackMode() === 'sales' ? ['Paperback'] : []),
+  ];
+  const formatLine = formats.join(' · ');
 
   return (
     <section id="top" className="hero" aria-labelledby="hero-heading">

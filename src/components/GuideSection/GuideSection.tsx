@@ -11,7 +11,10 @@ import {
   Terminal,
   Users,
 } from 'lucide-react';
-import { getPaperbackMode } from '../../config/features';
+import {
+  getPaperbackMode,
+  isDigitalSalesEnabled,
+} from '../../config/features';
 import { assets } from '../../data/assets';
 import {
   guideAvailability,
@@ -62,9 +65,11 @@ function AvailabilityIcon({
 }
 
 export function GuideSection() {
-  const availabilityItems = guideAvailability.filter(
-    (item) => item.id !== 'paperback' || getPaperbackMode() === 'sales',
-  );
+  const availabilityItems = guideAvailability.filter((item) => {
+    if (item.id === 'paperback') return getPaperbackMode() === 'sales';
+    if (item.id === 'digital') return isDigitalSalesEnabled();
+    return true;
+  });
 
   return (
     <section

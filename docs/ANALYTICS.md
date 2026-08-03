@@ -20,6 +20,7 @@ Set these in `.env.local` (local) and they are loaded automatically by
 | `VITE_META_PIXEL_ID` | `1844493498903023` | Meta (Facebook) Pixel ID (optional; production builds only) |
 | `VITE_PAPERBACK_SALES_ENABLED` | `false` | Build-time flag (rebuild + redeploy to change) |
 | `VITE_PAPERBACK_WAITLIST_ENABLED` | `false` | Build-time flag (rebuild + redeploy to change; paperback UI hidden when false) |
+| `VITE_DIGITAL_SALES_ENABLED` | `true` in prod `.env.prod` | Build-time flag (rebuild + redeploy to change; digital checkout UI hidden when false) |
 
 You can also export them in the shell before deploy; non-empty values are baked
 into the Vite bundle. Empty values are skipped so they do not wipe `.env.local`.

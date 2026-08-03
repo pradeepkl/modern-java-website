@@ -62,6 +62,11 @@
   max-width: 760px;
 }
 
+.formats-grid--single {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 380px;
+}
+
 .formats-bulk {
   margin: 22px 0 0;
   text-align: center;

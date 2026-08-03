@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { Bell, Download, ShoppingCart } from 'lucide-react';
-import { getPaperbackMode } from '../../config/features';
+import {
+  getPaperbackMode,
+  isDigitalSalesEnabled,
+} from '../../config/features';
 import {
   formatInrAmount,
   getAmountInr,
@@ -40,6 +43,7 @@ export function PurchaseButtons({
   const sizeClass = size === 'large' ? 'button-large' : '';
   const layoutClass = layout === 'stacked' ? 'purchase-buttons--stacked' : '';
   const paperbackMode = getPaperbackMode();
+  const showDigital = includeDigital && isDigitalSalesEnabled();
 
   if (linkToFormats) {
     return (
@@ -52,7 +56,7 @@ export function PurchaseButtons({
           <BrandButtonLogo brand="amazon" />
           Kindle
         </a>
-        {includeDigital ? (
+        {showDigital ? (
           <a
             href="#formats"
             className={`button button-primary ${sizeClass}`}
@@ -96,7 +100,7 @@ export function PurchaseButtons({
         <BrandButtonLogo brand="amazon" />
         {`Buy Kindle — ${KINDLE_PRICE_LABEL}`}
       </AmazonConsentLink>
-      {includeDigital ? (
+      {showDigital ? (
         <button
           type="button"
           className={`button button-primary ${sizeClass}`}
@@ -151,7 +155,7 @@ export function PurchaseButtons({
         onClose={() => setWaitlistOpen(false)}
         source="purchase_buttons"
       />
-      {includeDigital ? (
+      {showDigital ? (
         <DigitalOrderDialog
           open={digitalOrderFormOpen}
           onClose={() => setDigitalOrderFormOpen(false)}

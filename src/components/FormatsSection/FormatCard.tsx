@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Download } from 'lucide-react';
-import { getPaperbackMode } from '../../config/features';
+import {
+  getPaperbackMode,
+  isDigitalSalesEnabled,
+} from '../../config/features';
 import { type FormatOption } from '../../data/formats';
 import { track } from '../../lib/analytics';
 import {
@@ -26,6 +29,11 @@ export function FormatCard({ format }: FormatCardProps) {
     if (getPaperbackMode() === 'sales') {
       return <PaperbackPurchaseCard format={format} />;
     }
+    return null;
+  }
+
+  // Digital checkout stays implemented; flag only hides the UI surface.
+  if (format.id === 'digital' && !isDigitalSalesEnabled()) {
     return null;
   }
 

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { resolvePaperbackMode } from './features';
 
 describe('resolvePaperbackMode', () => {
@@ -16,5 +16,21 @@ describe('resolvePaperbackMode', () => {
 
   it('prefers sales when both are enabled', () => {
     expect(resolvePaperbackMode(true, true)).toBe('sales');
+  });
+});
+
+describe('isDigitalSalesEnabled', () => {
+  it('is false unless VITE_DIGITAL_SALES_ENABLED is the string true', async () => {
+    vi.stubEnv('VITE_DIGITAL_SALES_ENABLED', undefined);
+    vi.resetModules();
+    expect((await import('./features')).isDigitalSalesEnabled()).toBe(false);
+
+    vi.stubEnv('VITE_DIGITAL_SALES_ENABLED', 'false');
+    vi.resetModules();
+    expect((await import('./features')).isDigitalSalesEnabled()).toBe(false);
+
+    vi.stubEnv('VITE_DIGITAL_SALES_ENABLED', 'true');
+    vi.resetModules();
+    expect((await import('./features')).isDigitalSalesEnabled()).toBe(true);
   });
 });

@@ -15,6 +15,8 @@ interface ImportMetaEnv {
   readonly VITE_PAPERBACK_SALES_ENABLED?: string;
   /** Build-time flag. Requires rebuild + redeploy to change. */
   readonly VITE_PAPERBACK_WAITLIST_ENABLED?: string;
+  /** Build-time flag. Direct digital (PDF + ePub) checkout UI. */
+  readonly VITE_DIGITAL_SALES_ENABLED?: string;
   /** Multi-use campaign promo code pre-filled on digital checkout. */
   readonly VITE_CAMPAIGN_VOUCHER_CODE?: string;
   /** Campaign payable amount in INR (must match backend READER_VOUCHER_PAYABLE_INR). */
