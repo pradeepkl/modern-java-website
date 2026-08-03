@@ -61,21 +61,15 @@ function normalizeEmailAddress(value) {
 }
 
 /**
- * Resolve BCC recipients. Default archive copy goes to MAIL_BCC_EMAIL /
- * ADMIN_EMAIL (pradeep@classpath.in). Pass `bcc: false` or `[]` to disable.
+ * Resolve BCC recipients. Opt-in only — no default archive copy.
+ * Pass a string/list to BCC; `false` / `[]` / omitted means none.
  * Addresses matching `to` are dropped so admin-only mail is not doubled.
  */
 function resolveBccAddresses(bcc, to) {
   const toAddress = normalizeEmailAddress(to);
   let candidates;
-  if (bcc === false) {
+  if (bcc === false || bcc === undefined || bcc === null) {
     candidates = [];
-  } else if (bcc === undefined || bcc === null) {
-    const fallback =
-      process.env.MAIL_BCC_EMAIL ||
-      process.env.ADMIN_EMAIL ||
-      DEFAULT_REPLY_TO;
-    candidates = [fallback];
   } else if (Array.isArray(bcc)) {
     candidates = bcc;
   } else {
@@ -186,7 +180,7 @@ function buildRawMimeEmail({
  * @param {string} [options.configurationSetName]
  * @param {string} [options.listUnsubscribeUrl] RFC 8058 URL (marketing only)
  * @param {Record<string, string>} [options.tags]
- * @param {string|string[]|false} [options.bcc] Archive copies; default ADMIN_EMAIL
+ * @param {string|string[]|false} [options.bcc] Optional archive copies (opt-in)
  */
 async function sendEmail({
   category,

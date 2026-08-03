@@ -1,4 +1,4 @@
-const { describe, it, beforeEach, afterEach } = require('node:test');
+const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 const {
   resolveBccAddresses,
@@ -8,40 +8,16 @@ const {
 } = require('./sesMail');
 
 describe('resolveBccAddresses', () => {
-  const previous = {
-    MAIL_BCC_EMAIL: process.env.MAIL_BCC_EMAIL,
-    ADMIN_EMAIL: process.env.ADMIN_EMAIL,
-  };
-
-  beforeEach(() => {
-    delete process.env.MAIL_BCC_EMAIL;
-    delete process.env.ADMIN_EMAIL;
-  });
-
-  afterEach(() => {
-    for (const [key, value] of Object.entries(previous)) {
-      if (value === undefined) delete process.env[key];
-      else process.env[key] = value;
-    }
-  });
-
-  it('defaults to pradeep@classpath.in when env is unset', () => {
-    assert.deepEqual(resolveBccAddresses(undefined, 'buyer@example.com'), [
-      'pradeep@classpath.in',
-    ]);
-  });
-
-  it('prefers MAIL_BCC_EMAIL over ADMIN_EMAIL', () => {
-    process.env.ADMIN_EMAIL = 'admin@classpath.in';
-    process.env.MAIL_BCC_EMAIL = 'archive@classpath.in';
-    assert.deepEqual(resolveBccAddresses(undefined, 'buyer@example.com'), [
-      'archive@classpath.in',
-    ]);
+  it('defaults to no BCC when omitted', () => {
+    assert.deepEqual(resolveBccAddresses(undefined, 'buyer@example.com'), []);
+    assert.deepEqual(resolveBccAddresses(null, 'buyer@example.com'), []);
   });
 
   it('skips BCC when it matches the primary recipient', () => {
-    process.env.ADMIN_EMAIL = 'pradeep@classpath.in';
-    assert.deepEqual(resolveBccAddresses(undefined, 'pradeep@classpath.in'), []);
+    assert.deepEqual(
+      resolveBccAddresses('pradeep@classpath.in', 'pradeep@classpath.in'),
+      [],
+    );
   });
 
   it('can be disabled with false or an empty list', () => {
@@ -61,6 +37,30 @@ describe('resolveBccAddresses', () => {
 });
 
 describe('sendEmail BCC wiring', () => {
+  it('omits BccAddresses when bcc is not provided', async () => {
+    const calls = [];
+    const ses = {
+      send: async (command) => {
+        calls.push(command);
+        return { MessageId: 'msg-0' };
+      },
+    };
+
+    await sendEmail({
+      ses,
+      to: 'buyer@example.com',
+      subject: 'Sample',
+      text: 'Hello',
+      category: EMAIL_CATEGORY.TRANSACTIONAL,
+      configurationSetName: '',
+    });
+
+    assert.equal(calls.length, 1);
+    assert.deepEqual(calls[0].input.Destination, {
+      ToAddresses: ['buyer@example.com'],
+    });
+  });
+
   it('adds BccAddresses on simple SendEmailCommand', async () => {
     const calls = [];
     const ses = {

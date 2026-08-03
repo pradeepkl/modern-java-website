@@ -237,8 +237,8 @@ const sendEmail = async ({
     listUnsubscribeUrl,
     category,
     recipientRecord,
-    // Default archive BCC is ADMIN_EMAIL (pradeep@classpath.in) inside sesMail.
-    bcc: bcc === undefined ? ADMIN_EMAIL : bcc,
+    // BCC only when callers opt in (purchase confirmations).
+    bcc,
     tags: {
       environment: APP_ENV,
       ...tags,
@@ -1744,6 +1744,7 @@ const sendPaperbackConfirmationEmails = async (order, invoice = null) => {
       attachments: invoiceAttachments(invoice),
       category: EMAIL_CATEGORY.TRANSACTIONAL,
       recipientRecord: await loadLeadRecord(order.email),
+      bcc: ADMIN_EMAIL,
       tags: { funnel: 'paperback-checkout' },
     }),
   ]);
@@ -1875,6 +1876,7 @@ const sendDigitalConfirmationEmails = async (order, invoice = null) => {
       attachments: invoiceAttachments(invoice),
       category: EMAIL_CATEGORY.TRANSACTIONAL,
       recipientRecord: await loadLeadRecord(order.email),
+      bcc: ADMIN_EMAIL,
       tags: { funnel: 'digital-checkout' },
     }),
   ]);

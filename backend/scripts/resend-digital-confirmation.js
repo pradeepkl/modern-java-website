@@ -388,6 +388,7 @@ async function main() {
     configurationSetName:
       process.env.SES_CONFIGURATION_SET || 'classpath-email-prod',
     category: EMAIL_CATEGORY.TRANSACTIONAL,
+    bcc: adminEmail,
     tags: {
       environment: 'prod',
       funnel: 'digital-checkout-resend',
