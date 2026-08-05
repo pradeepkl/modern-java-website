@@ -60,7 +60,7 @@ describe('SampleChapterSection Meta lead tracking', () => {
     const user = userEvent.setup();
     render(<SampleChapterSection />);
 
-    await user.type(screen.getByLabelText(/email address/i), 'reader@example.com');
+    await user.type(screen.getByLabelText(/email address/i), 'reader@gmail.com');
     await user.click(screen.getByRole('button', { name: /get the preview/i }));
 
     await waitFor(() => {
@@ -96,7 +96,7 @@ describe('SampleChapterSection Meta lead tracking', () => {
     const user = userEvent.setup();
     render(<SampleChapterSection />);
 
-    await user.type(screen.getByLabelText(/email address/i), 'reader@example.com');
+    await user.type(screen.getByLabelText(/email address/i), 'reader@gmail.com');
     await user.click(screen.getByRole('button', { name: /get the preview/i }));
 
     await waitFor(() => {
@@ -120,7 +120,7 @@ describe('SampleChapterSection Meta lead tracking', () => {
     const user = userEvent.setup();
     render(<SampleChapterSection />);
 
-    await user.type(screen.getByLabelText(/email address/i), 'reader@example.com');
+    await user.type(screen.getByLabelText(/email address/i), 'reader@gmail.com');
     await user.click(screen.getByRole('button', { name: /get the preview/i }));
 
     await waitFor(() => {
@@ -129,6 +129,24 @@ describe('SampleChapterSection Meta lead tracking', () => {
       });
     });
 
+    expect(analyticsMocks.trackMetaConversion).not.toHaveBeenCalled();
+  });
+
+  it('rejects non-allowlisted email domains before calling the API', async () => {
+    const user = userEvent.setup();
+    render(<SampleChapterSection />);
+
+    await user.type(screen.getByLabelText(/email address/i), 'x@davopa.com');
+    await user.click(screen.getByRole('button', { name: /get the preview/i }));
+
+    await waitFor(() => {
+      expect(analyticsMocks.track).toHaveBeenCalledWith('sample_form_error', {
+        reason: 'email_domain',
+      });
+    });
+
+    expect(fetch).not.toHaveBeenCalled();
+    expect(screen.getByRole('status').textContent).toMatch(/Gmail/i);
     expect(analyticsMocks.trackMetaConversion).not.toHaveBeenCalled();
   });
 });

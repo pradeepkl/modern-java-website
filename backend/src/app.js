@@ -75,6 +75,10 @@ const {
 } = require('./metaConversionsApi');
 const { recordAnalyticsConsentChoice } = require('./analyticsConsent');
 const {
+  SAMPLE_EMAIL_ALLOWLIST_MESSAGE,
+  isAllowedSampleEmailDomain,
+} = require('./sampleEmailAllowlist');
+const {
   escapeHtml,
   BOOK_FULL_TITLE,
   INSTAGRAM_URL,
@@ -670,6 +674,10 @@ const requestSampleChapter = async (event) => {
 
   if (!EMAIL_PATTERN.test(email)) {
     throw new Error('Invalid email address');
+  }
+
+  if (!isAllowedSampleEmailDomain(email)) {
+    return response(400, { message: SAMPLE_EMAIL_ALLOWLIST_MESSAGE });
   }
 
   await verifyTurnstileCaptcha(event, json.captchaToken);

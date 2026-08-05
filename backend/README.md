@@ -230,6 +230,8 @@ behaves as before.
   payments.
 - `POST /sample-requests` records optional marketing consent and emails a
   time-limited CloudFront signed download link for the chapter preview PDF.
+  Only common consumer domains are accepted (Gmail, Outlook/Hotmail/Live,
+  Yahoo, iCloud, Rediff); others receive `400` with a clear message.
   On successful acceptance it returns `accepted: true` and a stable
   `sampleRequestId`, and may emit Meta CAPI `Lead` when analytics consent
   was granted.

@@ -1,6 +1,10 @@
 import { FormEvent, useRef, useState } from 'react';
 import { BookOpen, Check, Mail } from 'lucide-react';
 import { track, trackMetaConversion, buildMetaAttributionPayload } from '../../lib/analytics';
+import {
+  SAMPLE_EMAIL_ALLOWLIST_MESSAGE,
+  isAllowedSampleEmailDomain,
+} from '../../lib/sampleEmailAllowlist';
 import { isTurnstileConfigured } from '../../lib/turnstile';
 import { SectionEyebrow } from '../shared/SectionEyebrow';
 import {
@@ -28,6 +32,7 @@ export function SampleChapterSection() {
 
     const form = event.currentTarget;
     const data = new FormData(form);
+    const email = String(data.get('email') || '').trim();
     const marketingConsent = data.get('marketingConsent') === 'on';
 
     track('sample_form_submit', { marketing_consent: marketingConsent });
@@ -35,6 +40,14 @@ export function SampleChapterSection() {
       checked: marketingConsent,
       source: 'sample',
     });
+
+    if (!isAllowedSampleEmailDomain(email)) {
+      setStatus('error');
+      setMessage(SAMPLE_EMAIL_ALLOWLIST_MESSAGE);
+      setSubmitting(false);
+      track('sample_form_error', { reason: 'email_domain' });
+      return;
+    }
 
     if (!SAMPLE_API_URL) {
       setStatus('error');
@@ -59,7 +72,7 @@ export function SampleChapterSection() {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          email: String(data.get('email')),
+          email,
           marketingConsent,
           consentVersion: '2026-07-21',
           captchaToken: captchaToken || undefined,
@@ -166,7 +179,7 @@ export function SampleChapterSection() {
                     id="sample-email"
                     type="email"
                     name="email"
-                    placeholder="you@example.com"
+                    placeholder="you@gmail.com"
                     autoComplete="email"
                     required
                     onFocus={() => {
