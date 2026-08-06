@@ -1,15 +1,34 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 const { PDFDocument, StandardFonts } = require('pdf-lib');
-const { insertLicensePage, licensedPdfObjectKey } = require('./licensePdf');
+const {
+  buildLicenseFooterText,
+  stampLicenseFooter,
+  insertLicensePage,
+  licensedPdfObjectKey,
+} = require('./licensePdf');
 
-async function tinyMasterPdf() {
+async function tinyMasterPdf(pageCount = 1) {
   const doc = await PDFDocument.create();
-  const page = doc.addPage([400, 600]);
   const font = await doc.embedFont(StandardFonts.Helvetica);
-  page.drawText('Cover', { x: 40, y: 500, size: 24, font });
+  for (let i = 0; i < pageCount; i += 1) {
+    const page = doc.addPage([400, 600]);
+    page.drawText(`Page ${i + 1}`, { x: 40, y: 500, size: 24, font });
+  }
   return doc.save();
 }
+
+describe('buildLicenseFooterText', () => {
+  it('formats name and email without order id', () => {
+    assert.equal(
+      buildLicenseFooterText({
+        customerName: 'Pradeep',
+        customerEmail: 'pradeep.kumar44@gmail.com',
+      }),
+      'Licensed to Pradeep <pradeep.kumar44@gmail.com> · Personal use only — do not redistribute',
+    );
+  });
+});
 
 describe('licensedPdfObjectKey', () => {
   it('scopes under digital/orders', () => {
@@ -20,18 +39,15 @@ describe('licensedPdfObjectKey', () => {
   });
 });
 
-describe('insertLicensePage', () => {
-  it('prepends a license page before existing content', async () => {
-    const master = await tinyMasterPdf();
-    const stamped = await insertLicensePage(master, {
-      customerName: 'Pradeep Kumar',
+describe('stampLicenseFooter', () => {
+  it('keeps page count and grows the file', async () => {
+    const master = await tinyMasterPdf(3);
+    const stamped = await stampLicenseFooter(master, {
+      customerName: 'Pradeep',
       customerEmail: 'pradeep.kumar44@gmail.com',
-      appOrderId: 'MJ-D-TEST01',
-      year: 2026,
     });
     const doc = await PDFDocument.load(stamped);
-    assert.equal(doc.getPageCount(), 2);
-    // Smoke: bytes grew and remain a valid PDF header
+    assert.equal(doc.getPageCount(), 3);
     assert.ok(stamped.byteLength > master.byteLength);
     assert.equal(Buffer.from(stamped.slice(0, 4)).toString('utf8'), '%PDF');
   });
@@ -40,12 +56,24 @@ describe('insertLicensePage', () => {
     const master = await tinyMasterPdf();
     await assert.rejects(
       () =>
-        insertLicensePage(master, {
+        stampLicenseFooter(master, {
           customerName: 'X',
           customerEmail: '',
-          appOrderId: 'MJ-D-1',
         }),
       /customerEmail/,
     );
+  });
+});
+
+describe('insertLicensePage', () => {
+  it('aliases stampLicenseFooter', async () => {
+    const master = await tinyMasterPdf(2);
+    const stamped = await insertLicensePage(master, {
+      customerName: 'Pradeep',
+      customerEmail: 'pradeep.kumar44@gmail.com',
+      appOrderId: 'MJ-D-TEST01',
+    });
+    const doc = await PDFDocument.load(stamped);
+    assert.equal(doc.getPageCount(), 2);
   });
 });
