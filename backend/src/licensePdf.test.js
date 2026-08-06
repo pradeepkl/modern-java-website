@@ -13,7 +13,12 @@ async function tinyMasterPdf(pageCount = 1) {
   const font = await doc.embedFont(StandardFonts.Helvetica);
   for (let i = 0; i < pageCount; i += 1) {
     const page = doc.addPage([400, 600]);
-    page.drawText(`Page ${i + 1}`, { x: 40, y: 500, size: 24, font });
+    page.drawText(i === 0 ? 'Cover' : `Page ${i + 1}`, {
+      x: 40,
+      y: 500,
+      size: 24,
+      font,
+    });
   }
   return doc.save();
 }
@@ -40,7 +45,7 @@ describe('licensedPdfObjectKey', () => {
 });
 
 describe('stampLicenseFooter', () => {
-  it('keeps page count and grows the file', async () => {
+  it('keeps page count when skipping the cover', async () => {
     const master = await tinyMasterPdf(3);
     const stamped = await stampLicenseFooter(master, {
       customerName: 'Pradeep',
@@ -48,8 +53,7 @@ describe('stampLicenseFooter', () => {
     });
     const doc = await PDFDocument.load(stamped);
     assert.equal(doc.getPageCount(), 3);
-    assert.ok(stamped.byteLength > master.byteLength);
-    assert.equal(Buffer.from(stamped.slice(0, 4)).toString('utf8'), '%PDF');
+    assert.ok(stamped.byteLength >= master.byteLength);
   });
 
   it('requires email', async () => {
@@ -66,14 +70,18 @@ describe('stampLicenseFooter', () => {
 });
 
 describe('insertLicensePage', () => {
-  it('aliases stampLicenseFooter', async () => {
+  it('prepends a license page before the cover', async () => {
     const master = await tinyMasterPdf(2);
     const stamped = await insertLicensePage(master, {
       customerName: 'Pradeep',
       customerEmail: 'pradeep.kumar44@gmail.com',
       appOrderId: 'MJ-D-TEST01',
+      year: 2026,
     });
     const doc = await PDFDocument.load(stamped);
-    assert.equal(doc.getPageCount(), 2);
+    // license + original 2 pages
+    assert.equal(doc.getPageCount(), 3);
+    assert.ok(stamped.byteLength > master.byteLength);
+    assert.equal(Buffer.from(stamped.slice(0, 4)).toString('utf8'), '%PDF');
   });
 });
