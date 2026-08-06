@@ -29,6 +29,7 @@
     "@aws-sdk/client-ssm": "^3.1094.0",
     "@aws-sdk/cloudfront-signer": "^3.873.0",
     "@aws-sdk/lib-dynamodb": "^3.1091.0",
-    "@aws-sdk/s3-request-presigner": "^3.1091.0"
+    "@aws-sdk/s3-request-presigner": "^3.1091.0",
+    "pdf-lib": "^1.17.1"
   }
 }

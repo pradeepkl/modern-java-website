@@ -18,11 +18,12 @@ const {
   GetCommand,
   UpdateCommand,
 } = require('@aws-sdk/lib-dynamodb');
-const { S3Client, HeadObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, HeadObjectCommand, GetObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
 const { SSMClient, GetParameterCommand } = require('@aws-sdk/client-ssm');
 const { SESClient } = require('@aws-sdk/client-ses');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { getSignedUrl: getCloudFrontSignedUrl } = require('@aws-sdk/cloudfront-signer');
+const { insertLicensePage, licensedPdfObjectKey } = require('../src/licensePdf');
 
 const REGION = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || 'ap-south-1';
 const STACK_NAME = process.env.STACK_NAME || 'modern-java-prod';
@@ -311,6 +312,47 @@ async function main() {
     };
   };
 
+  const streamToBuffer = async (body) => {
+    if (Buffer.isBuffer(body)) return body;
+    if (typeof body.transformToByteArray === 'function') {
+      return Buffer.from(await body.transformToByteArray());
+    }
+    const chunks = [];
+    for await (const chunk of body) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+    return Buffer.concat(chunks);
+  };
+
+  const ensureLicensedPdf = async () => {
+    const key = licensedPdfObjectKey(order.appOrderId);
+    if (await objectExists(key)) {
+      console.log('Reusing existing licensed PDF', key);
+      return key;
+    }
+    console.log('Stamping license page onto master PDF…');
+    const masterObj = await s3.send(
+      new GetObjectCommand({ Bucket: bucket, Key: pdfKey }),
+    );
+    const masterBytes = await streamToBuffer(masterObj.Body);
+    const stamped = await insertLicensePage(masterBytes, {
+      customerName: name,
+      customerEmail: order.email,
+      appOrderId: order.appOrderId,
+    });
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        Body: Buffer.from(stamped),
+        ContentType: 'application/pdf',
+        ContentDisposition: 'attachment; filename="modern-java-licensed.pdf"',
+      }),
+    );
+    console.log('Uploaded licensed PDF', key, stamped.length);
+    return key;
+  };
+
   const verifyDownloadUrl = async (label, url, expectedMinBytes = 1) => {
     const head = await fetch(url, { method: 'HEAD', redirect: 'follow' });
     const length = Number(head.headers.get('content-length') || 0);
@@ -330,7 +372,6 @@ async function main() {
         `${label} download link content-length too small: ${length}`,
       );
     }
-    // Confirm a few bytes can be read (HEAD alone can lie on some CDNs).
     const partial = await fetch(url, {
       method: 'GET',
       headers: { Range: 'bytes=0-1023' },
@@ -355,13 +396,17 @@ async function main() {
     throw new Error(`ePub missing in S3: ${epubKey}`);
   }
 
-  const pdfSigned = await createSignedDownloadUrl(pdfKey);
+  const licensedKey = await ensureLicensedPdf();
+  const pdfSigned = await createSignedDownloadUrl(licensedKey);
   const epubSigned = await createSignedDownloadUrl(epubKey);
   const pdfUrl = pdfSigned.url;
   const epubUrl = epubSigned.url;
   const linksExpireAt = pdfSigned.expiresAt;
 
-  console.log('Minted 7-day download links', { expiresAt: linksExpireAt });
+  console.log('Minted 7-day download links', {
+    expiresAt: linksExpireAt,
+    licensedKey,
+  });
   await verifyDownloadUrl('PDF', pdfUrl, 1_000_000);
   await verifyDownloadUrl('ePub', epubUrl, 1_000_000);
   console.log('Download links verified OK — sending email');

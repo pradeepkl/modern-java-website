@@ -220,7 +220,10 @@ Resources:
     Properties:
       CodeUri: .
       Handler: src/app.handler
-      Timeout: 30
+      Timeout: 90
+      MemorySize: 2048
+      EphemeralStorage:
+        Size: 1024
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref OrdersTable
@@ -231,6 +234,8 @@ Resources:
         - DynamoDBCrudPolicy:
             TableName: !Ref VouchersTable
         - S3ReadPolicy:
+            BucketName: !Ref DigitalAssetsBucket
+        - S3WritePolicy:
             BucketName: !Ref DigitalAssetsBucket
         - Statement:
             - Effect: Allow

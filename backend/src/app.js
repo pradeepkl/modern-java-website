@@ -11,6 +11,7 @@ const { SESClient } = require('@aws-sdk/client-ses');
 const {
   GetObjectCommand,
   HeadObjectCommand,
+  PutObjectCommand,
   S3Client,
 } = require('@aws-sdk/client-s3');
 const { SSMClient, GetParameterCommand } = require('@aws-sdk/client-ssm');
@@ -19,6 +20,7 @@ const {
   getSignedUrl: getCloudFrontSignedUrl,
 } = require('@aws-sdk/cloudfront-signer');
 const { createAndSendInvoice } = require('./zohoInvoice');
+const { insertLicensePage, licensedPdfObjectKey } = require('./licensePdf');
 const {
   getDigitalBundlePricePaise,
   getPaperbackUnitPricePaise,
@@ -665,6 +667,105 @@ const objectExists = async (key) => {
     }
     throw error;
   }
+};
+
+const streamToBuffer = async (body) => {
+  if (!body) return Buffer.alloc(0);
+  if (Buffer.isBuffer(body)) return body;
+  if (typeof body.transformToByteArray === 'function') {
+    return Buffer.from(await body.transformToByteArray());
+  }
+  const chunks = [];
+  for await (const chunk of body) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks);
+};
+
+/**
+ * Build (or reuse) a per-order PDF with a personalized license page as page 1.
+ * Uploads to digital/orders/{appOrderId}/ and returns the object key.
+ */
+const ensureLicensedDigitalPdf = async (order) => {
+  const appOrderId = String(order?.appOrderId || '').trim();
+  const email = String(order?.email || '').trim().toLowerCase();
+  if (!appOrderId || !email) {
+    throw new Error('Order appOrderId and email are required to license the PDF');
+  }
+  if (!DIGITAL_ASSETS_BUCKET) {
+    throw new Error('DIGITAL_ASSETS_BUCKET is not configured');
+  }
+
+  const key = licensedPdfObjectKey(appOrderId);
+  if (order.licensedPdfKey && (await objectExists(order.licensedPdfKey))) {
+    return order.licensedPdfKey;
+  }
+  if (await objectExists(key)) {
+    return key;
+  }
+
+  const master = await s3.send(
+    new GetObjectCommand({
+      Bucket: DIGITAL_ASSETS_BUCKET,
+      Key: DIGITAL_PDF_KEY,
+    }),
+  );
+  const masterBytes = await streamToBuffer(master.Body);
+  const stamped = await insertLicensePage(masterBytes, {
+    customerName: order.name,
+    customerEmail: email,
+    appOrderId,
+  });
+
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: DIGITAL_ASSETS_BUCKET,
+      Key: key,
+      Body: Buffer.from(stamped),
+      ContentType: 'application/pdf',
+      ContentDisposition: `attachment; filename="modern-java-licensed.pdf"`,
+      Metadata: {
+        'app-order-id': appOrderId,
+        'licensed-email': email.slice(0, 200),
+      },
+    }),
+  );
+
+  if (ORDERS_TABLE) {
+    try {
+      await dynamo.send(
+        new UpdateCommand({
+          TableName: ORDERS_TABLE,
+          Key: { appOrderId },
+          UpdateExpression:
+            'SET licensedPdfKey = :key, licensedPdfAt = :at, updatedAt = :at',
+          ExpressionAttributeValues: {
+            ':key': key,
+            ':at': new Date().toISOString(),
+          },
+        }),
+      );
+    } catch (error) {
+      console.warn('Could not persist licensedPdfKey on order', {
+        appOrderId,
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  console.info('Licensed PDF ready', { appOrderId, key, bytes: stamped.length });
+  return key;
+};
+
+const createDigitalDownloadLinks = async (order) => {
+  const licensedPdfKey = await ensureLicensedDigitalPdf(order);
+  const pdfUrl = await createSignedDownloadUrl(licensedPdfKey);
+  const hasEpub = await objectExists(DIGITAL_EPUB_KEY);
+  const epubUrl = hasEpub
+    ? await createSignedDownloadUrl(DIGITAL_EPUB_KEY)
+    : null;
+
+  return { pdfUrl, epubUrl, licensedPdfKey };
 };
 
 const requestSampleChapter = async (event) => {
@@ -1543,7 +1644,7 @@ const createDigitalOrder = async (event) => {
       metaAttribution,
       ...voucherFields,
     };
-    const downloads = await createDigitalDownloadLinks();
+    const downloads = await createDigitalDownloadLinks(paidOrder);
     try {
       await sendConfirmationEmails(order);
     } catch (error) {
@@ -1758,18 +1859,8 @@ const sendPaperbackConfirmationEmails = async (order, invoice = null) => {
   ]);
 };
 
-const createDigitalDownloadLinks = async () => {
-  const pdfUrl = await createSignedDownloadUrl(DIGITAL_PDF_KEY);
-  const hasEpub = await objectExists(DIGITAL_EPUB_KEY);
-  const epubUrl = hasEpub
-    ? await createSignedDownloadUrl(DIGITAL_EPUB_KEY)
-    : null;
-
-  return { pdfUrl, epubUrl };
-};
-
 const sendDigitalConfirmationEmails = async (order, invoice = null) => {
-  const { pdfUrl, epubUrl } = await createDigitalDownloadLinks();
+  const { pdfUrl, epubUrl } = await createDigitalDownloadLinks(order);
   const invoiceCopy = invoiceEmailCopy(invoice);
   const adminText = [
     `Order ID: ${order.appOrderId}`,

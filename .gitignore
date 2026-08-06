@@ -52,3 +52,6 @@ public/email-preview.html
 ops/orders.unmasked.json
 ops/orders.unmasked.md
 
+# Local-only license PDF send test (hardcoded test recipients)
+backend/scripts/test-license-pdf-send.js
+
