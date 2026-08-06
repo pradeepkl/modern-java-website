@@ -6,6 +6,7 @@
     "test": "cp ../config/product-prices.json src/product-prices.json && node --test 'src/**/*.test.js'",
     "test:deploy": "../scripts/test-deploy-behaviour.sh",
     "export:waitlist": "node scripts/export-paperback-waitlist.js",
+    "export:orders": "node scripts/export-order-summaries.js",
     "send:review-followup": "node scripts/send-amazon-review-followup.js",
     "send:amazon-education": "node scripts/send-amazon-education-followup.js",
     "send:sample-followup": "node scripts/send-sample-followup.js",

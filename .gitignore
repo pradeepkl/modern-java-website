@@ -48,3 +48,7 @@ classpath-root/
 .payment-test/
 public/email-preview.html
 
+# Local order lookup notes with unmasked PII (never commit)
+ops/orders.unmasked.json
+ops/orders.unmasked.md
+

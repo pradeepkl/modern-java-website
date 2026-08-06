@@ -277,6 +277,22 @@ PAPERBACK_WAITLIST_TABLE=<table-name> node scripts/export-paperback-waitlist.js 
 Table name is the CloudFormation physical ID for `PaperbackWaitlistTable`
 (from `aws cloudformation describe-stack-resources` / console).
 
+### Order summaries export (PII masked)
+
+Rewrites repo-root `ops/orders.json` and `ops/orders.md` with one row per
+order (`appOrderId` key). Email and name are masked; Meta attribution / IP
+are omitted.
+
+```bash
+cd backend
+npm run export:orders
+# or: STACK_NAME=modern-java-prod npm run export:orders
+# or: ORDERS_TABLE=<table-name> npm run export:orders
+```
+
+Run after new paid orders so the local lookup table stays complete.
+
+
 ### Amazon buying-intent follow-up
 
 For readers who entered their email and continued to Amazon
