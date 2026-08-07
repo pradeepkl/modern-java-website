@@ -43,9 +43,12 @@ const {
   CREATED_MESSAGE: MARKETING_CREATED_MESSAGE,
   ALREADY_ON_LIST_MESSAGE,
   AMAZON_EXIT_SOURCE,
+  SAMPLE_CHAPTER_FORM_SOURCE,
+  MODERN_JAVA_CONSENT_VERSION,
   isConditionalCheckFailed: isMarketingConditionalCheckFailed,
   resolveMarketingSource,
   normalizeAttribution,
+  mergeSampleRequestMarketingConsent,
   buildFirstOptInUpdate,
   buildExistingSubscriberUpdate,
   buildWelcomeEmail,
@@ -813,6 +816,7 @@ const requestSampleChapter = async (event) => {
         'The chapter preview was sent recently. Please check your inbox.',
       accepted: false,
       sampleRequestId: existing.Item?.sampleRequestId || undefined,
+      marketingConsent: existing.Item?.marketingConsent === true,
     });
   }
 
@@ -834,6 +838,14 @@ const requestSampleChapter = async (event) => {
   );
   const marketingConsent = json.marketingConsent === true;
   const now = new Date().toISOString();
+  const consentFields = mergeSampleRequestMarketingConsent(
+    existing.Item,
+    marketingConsent,
+    {
+      now,
+      consentVersion: json.consentVersion || MODERN_JAVA_CONSENT_VERSION,
+    },
+  );
   const marketingLine = marketingConsent
     ? `You also asked to receive occasional Modern Java articles and book updates. If you stay opted in, I may send a few short follow-up notes about the book. Unsubscribe anytime: ${SITE_URL}/unsubscribe`
     : 'You have not been subscribed to marketing updates.';
@@ -908,56 +920,42 @@ const requestSampleChapter = async (event) => {
     throw error;
   }
 
-  const consentedNow =
-    existing.Item?.marketingConsent === true || marketingConsent;
+  const nextItem = {
+    ...existing.Item,
+    email,
+    sampleRequestId,
+    firstRequestedAt: existing.Item?.firstRequestedAt || now,
+    lastRequestedAt: now,
+    requestCount: Number(existing.Item?.requestCount || 0) + 1,
+    marketingConsent: consentFields.marketingConsent,
+    marketingConsentStatus: consentFields.marketingConsentStatus,
+    emailDeliveryStatus:
+      existing.Item?.emailDeliveryStatus || EMAIL_DELIVERY.ACTIVE,
+    marketingConsentAt: consentFields.marketingConsentAt,
+    marketingConsentUpdatedAt: consentFields.marketingConsentUpdatedAt,
+    consentVersion: consentFields.consentVersion,
+    marketingConsentSource: consentFields.marketingConsentSource,
+    source: SAMPLE_CHAPTER_FORM_SOURCE,
+  };
+  if (consentFields.clearUnsubscribe) {
+    delete nextItem.marketingUnsubscribedAt;
+  }
 
   await dynamo.send(
     new PutCommand({
       TableName: SAMPLE_REQUESTS_TABLE,
-      Item: {
-        ...existing.Item,
-        email,
-        sampleRequestId,
-        firstRequestedAt: existing.Item?.firstRequestedAt || now,
-        lastRequestedAt: now,
-        requestCount: Number(existing.Item?.requestCount || 0) + 1,
-        marketingConsent: consentedNow,
-        marketingConsentStatus: consentedNow
-          ? MARKETING_CONSENT.CONSENTED
-          : existing.Item?.marketingConsentStatus ||
-            (existing.Item?.marketingConsent === false
-              ? MARKETING_CONSENT.WITHDRAWN
-              : null),
-        emailDeliveryStatus:
-          existing.Item?.emailDeliveryStatus || EMAIL_DELIVERY.ACTIVE,
-        marketingConsentAt: marketingConsent
-          ? now
-          : existing.Item?.marketingConsentAt || null,
-        marketingConsentUpdatedAt: marketingConsent
-          ? now
-          : existing.Item?.marketingConsentUpdatedAt || null,
-        consentVersion: marketingConsent
-          ? String(json.consentVersion || 'unknown')
-          : existing.Item?.consentVersion || null,
-        marketingConsentSource: marketingConsent
-          ? 'sample-chapter-form'
-          : existing.Item?.marketingConsentSource || null,
-        source: 'sample-chapter-form',
-        ...(marketingConsent ? { marketingUnsubscribedAt: undefined } : {}),
-      },
+      Item: nextItem,
     }),
   );
 
   const requestCount = Number(existing.Item?.requestCount || 0) + 1;
-  const storedMarketingConsent =
-    existing.Item?.marketingConsent === true || marketingConsent;
   await notifyAdmin({
     subject: `Chapter preview requested — ${email}`,
     lines: [
       'Event: chapter_preview_requested',
       `Email: ${email}`,
       `Marketing opt-in (this request): ${marketingConsent ? 'Yes' : 'No'}`,
-      `Marketing opt-in (stored): ${storedMarketingConsent ? 'Yes' : 'No'}`,
+      `Marketing opt-in (stored): ${consentFields.marketingConsent ? 'Yes' : 'No'}`,
       `Request count: ${requestCount}`,
       `Time: ${now}`,
     ],
@@ -983,6 +981,7 @@ const requestSampleChapter = async (event) => {
     message: 'Check your inbox—the chapter preview is on its way.',
     accepted: true,
     sampleRequestId,
+    marketingConsent: consentFields.marketingConsent === true,
   });
 };
 

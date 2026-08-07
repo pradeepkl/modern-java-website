@@ -6,21 +6,83 @@
  * amazon_exit_modal with sourceVersion "2".
  */
 
-const { isMarketingSendAllowed } = require('./emailDelivery');
+const { isMarketingSendAllowed, MARKETING_CONSENT } = require('./emailDelivery');
 
 const CREATED_MESSAGE =
   'Your email preferences have been saved. You’re on the Classpath Reader List.';
 const ALREADY_ON_LIST_MESSAGE =
   'You’re already on the Classpath Reader List.';
 const AMAZON_EXIT_SOURCE = 'amazon_exit_modal';
+const SAMPLE_CHAPTER_FORM_SOURCE = 'sample-chapter-form';
+const PREVIEW_SUCCESS_SOURCE = 'preview-success';
+/** Consent copy version for Modern Java preview / reader-list opt-in. */
+const MODERN_JAVA_CONSENT_VERSION = 'modern-java-v1';
 const SOURCE_VERSION = '2';
 const CONSENT_TYPE = 'reader_list_opt_in';
 const ALLOWED_SOURCES = new Set([
   AMAZON_EXIT_SOURCE,
   'amazon-pre-navigation',
   'digital-checkout',
-  'sample-chapter-form',
+  SAMPLE_CHAPTER_FORM_SOURCE,
+  PREVIEW_SUCCESS_SOURCE,
 ]);
+
+/**
+ * Merge preview-form marketingConsent with an existing lead row.
+ * Preview request != marketing consent: never revoke existing true consent
+ * merely because a later preview left the checkbox unchecked.
+ *
+ * @param {object|null|undefined} existingItem
+ * @param {boolean} requestedConsent - true only when checkbox was explicitly checked
+ * @param {{ now?: string, consentVersion?: string }} [options]
+ * @returns {{
+ *   marketingConsent: boolean,
+ *   marketingConsentStatus: string|null,
+ *   marketingConsentAt: string|null,
+ *   marketingConsentUpdatedAt: string|null,
+ *   consentVersion: string|null,
+ *   marketingConsentSource: string|null,
+ *   clearUnsubscribe: boolean,
+ * }}
+ */
+function mergeSampleRequestMarketingConsent(
+  existingItem,
+  requestedConsent,
+  { now = new Date().toISOString(), consentVersion } = {},
+) {
+  const existingConsent = existingItem?.marketingConsent === true;
+  const optInThisRequest = requestedConsent === true;
+  const marketingConsent = existingConsent || optInThisRequest;
+
+  if (optInThisRequest) {
+    return {
+      marketingConsent: true,
+      marketingConsentStatus: MARKETING_CONSENT.CONSENTED,
+      marketingConsentAt: now,
+      marketingConsentUpdatedAt: now,
+      consentVersion: String(
+        consentVersion || MODERN_JAVA_CONSENT_VERSION || 'unknown',
+      ),
+      marketingConsentSource: SAMPLE_CHAPTER_FORM_SOURCE,
+      clearUnsubscribe: true,
+    };
+  }
+
+  return {
+    marketingConsent,
+    marketingConsentStatus: marketingConsent
+      ? existingItem?.marketingConsentStatus || MARKETING_CONSENT.CONSENTED
+      : existingItem?.marketingConsentStatus ||
+        (existingItem?.marketingConsent === false
+          ? MARKETING_CONSENT.WITHDRAWN
+          : null),
+    marketingConsentAt: existingItem?.marketingConsentAt || null,
+    marketingConsentUpdatedAt: existingItem?.marketingConsentUpdatedAt || null,
+    consentVersion: existingItem?.consentVersion || null,
+    marketingConsentSource: existingItem?.marketingConsentSource || null,
+    clearUnsubscribe: false,
+  };
+}
 
 function isConditionalCheckFailed(error) {
   return (
@@ -539,6 +601,9 @@ module.exports = {
   CREATED_MESSAGE,
   ALREADY_ON_LIST_MESSAGE,
   AMAZON_EXIT_SOURCE,
+  SAMPLE_CHAPTER_FORM_SOURCE,
+  PREVIEW_SUCCESS_SOURCE,
+  MODERN_JAVA_CONSENT_VERSION,
   SOURCE_VERSION,
   CONSENT_TYPE,
   ALLOWED_SOURCES,
@@ -548,6 +613,7 @@ module.exports = {
   isConditionalCheckFailed,
   resolveMarketingSource,
   normalizeAttribution,
+  mergeSampleRequestMarketingConsent,
   buildFirstOptInUpdate,
   buildExistingSubscriberUpdate,
   buildWelcomeEmail,

@@ -4,10 +4,14 @@ const {
   CREATED_MESSAGE,
   ALREADY_ON_LIST_MESSAGE,
   AMAZON_EXIT_SOURCE,
+  SAMPLE_CHAPTER_FORM_SOURCE,
+  PREVIEW_SUCCESS_SOURCE,
+  MODERN_JAVA_CONSENT_VERSION,
   SOURCE_VERSION,
   isConditionalCheckFailed,
   resolveMarketingSource,
   normalizeAttribution,
+  mergeSampleRequestMarketingConsent,
   buildFirstOptInUpdate,
   buildExistingSubscriberUpdate,
   buildWelcomeEmail,
@@ -28,6 +32,71 @@ describe('resolveMarketingSource', () => {
   it('preserves allowlisted historical and current sources', () => {
     assert.equal(resolveMarketingSource('amazon-pre-navigation'), 'amazon-pre-navigation');
     assert.equal(resolveMarketingSource(AMAZON_EXIT_SOURCE), AMAZON_EXIT_SOURCE);
+    assert.equal(
+      resolveMarketingSource(SAMPLE_CHAPTER_FORM_SOURCE),
+      SAMPLE_CHAPTER_FORM_SOURCE,
+    );
+    assert.equal(
+      resolveMarketingSource(PREVIEW_SUCCESS_SOURCE),
+      PREVIEW_SUCCESS_SOURCE,
+    );
+  });
+});
+
+describe('mergeSampleRequestMarketingConsent', () => {
+  const now = '2026-08-07T10:00:00.000Z';
+
+  it('defaults missing consent to false without revoking nothing', () => {
+    const result = mergeSampleRequestMarketingConsent(null, false, { now });
+    assert.equal(result.marketingConsent, false);
+    assert.equal(result.marketingConsentAt, null);
+    assert.equal(result.marketingConsentSource, null);
+    assert.equal(result.clearUnsubscribe, false);
+  });
+
+  it('does not revoke existing true consent when checkbox is unchecked', () => {
+    const result = mergeSampleRequestMarketingConsent(
+      {
+        marketingConsent: true,
+        marketingConsentAt: '2026-07-01T00:00:00.000Z',
+        marketingConsentSource: 'amazon_exit_modal',
+        consentVersion: '2026-07-24',
+        marketingConsentStatus: 'CONSENTED',
+      },
+      false,
+      { now },
+    );
+    assert.equal(result.marketingConsent, true);
+    assert.equal(result.marketingConsentAt, '2026-07-01T00:00:00.000Z');
+    assert.equal(result.marketingConsentSource, 'amazon_exit_modal');
+    assert.equal(result.clearUnsubscribe, false);
+  });
+
+  it('upgrades false to true with timestamp source and version', () => {
+    const result = mergeSampleRequestMarketingConsent(
+      { marketingConsent: false },
+      true,
+      { now, consentVersion: MODERN_JAVA_CONSENT_VERSION },
+    );
+    assert.equal(result.marketingConsent, true);
+    assert.equal(result.marketingConsentAt, now);
+    assert.equal(result.marketingConsentSource, SAMPLE_CHAPTER_FORM_SOURCE);
+    assert.equal(result.consentVersion, MODERN_JAVA_CONSENT_VERSION);
+    assert.equal(result.clearUnsubscribe, true);
+  });
+
+  it('keeps false when request is unchecked and prior was false', () => {
+    const result = mergeSampleRequestMarketingConsent(
+      {
+        marketingConsent: false,
+        marketingConsentStatus: 'WITHDRAWN',
+      },
+      false,
+      { now },
+    );
+    assert.equal(result.marketingConsent, false);
+    assert.equal(result.marketingConsentStatus, 'WITHDRAWN');
+    assert.equal(result.clearUnsubscribe, false);
   });
 });
 

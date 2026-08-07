@@ -367,6 +367,37 @@ export function trackMetaConversion(
 }
 
 /**
+ * Meta custom event for marketing / reader-list opt-in.
+ * Distinct from preview Lead so acquisition and newsletter can be measured separately.
+ */
+const marketingSubscribeKeys = new Set<string>();
+
+export function trackMarketingSubscribeConversion(
+  dedupeKey: string,
+  props?: AnalyticsProps,
+  options?: { eventID?: string },
+): void {
+  if (getConsent() !== 'granted') return;
+  const key = dedupeKey.trim();
+  if (!key || marketingSubscribeKeys.has(key)) return;
+  marketingSubscribeKeys.add(key);
+  if (!trackersLoaded) initAnalytics();
+  try {
+    trackMetaCustomEvent(
+      'MarketingSubscribe',
+      sanitizeMetaProps({
+        content_name: 'Classpath Reader List',
+        content_category: 'marketing_opt_in',
+        ...props,
+      }),
+      { eventID: options?.eventID || key },
+    );
+  } catch {
+    /* never break the opt-in UX */
+  }
+}
+
+/**
  * Stable unique Meta event_id for AmazonClick (browser Pixel).
  * Format: AMZ- + 12 uppercase hex chars (matches SR-/MJ- style ids).
  */
