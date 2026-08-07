@@ -1,47 +1,23 @@
 #!/usr/bin/env node
 /**
- * Send the sample-chapter Day 18 final purchase reminder.
- *
- * Requires the Day 10 education email. After this step, stop direct selling
- * for the sample funnel; readers stay on the Classpath Reader List cadence.
+ * Ops CLI for Day 18 sample reminder (part of automated nurture).
+ * Prefer the daily EventBridge job; use this for dry-run / force.
  *
  * Usage:
- *   SAMPLE_REQUESTS_TABLE=... ORDERS_TABLE=... node scripts/send-sample-reminder.js --dry-run
- *   SAMPLE_REQUESTS_TABLE=... ORDERS_TABLE=... node scripts/send-sample-reminder.js
- *   SAMPLE_REQUESTS_TABLE=... ORDERS_TABLE=... node scripts/send-sample-reminder.js --days 18
- *   SAMPLE_REQUESTS_TABLE=... ORDERS_TABLE=... node scripts/send-sample-reminder.js --email reader@example.com --force
+ *   SAMPLE_REQUESTS_TABLE=... ORDERS_TABLE=... PUBLIC_API_URL=... \
+ *     UNSUBSCRIBE_TOKEN_SECRET=... node scripts/send-sample-reminder.js --dry-run
+ *   ... node scripts/send-sample-reminder.js --email reader@example.com --force
  */
-const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const {
-  DynamoDBDocumentClient,
-  ScanCommand,
-  GetCommand,
-  UpdateCommand,
-} = require('@aws-sdk/lib-dynamodb');
 const {
   SAMPLE_REMINDER_DAYS,
-  buildSampleReminderEmail,
-  isEligibleForSampleReminderEmail,
 } = require('../src/sampleChapterFollowUp');
-const { createSesClient, sendMarketingEmail } = require('./nurtureSend');
-
-const sampleTable =
-  process.env.SAMPLE_REQUESTS_TABLE ||
-  process.env.SAMPLE_REQUESTS_TABLE_NAME ||
-  '';
-const ordersTable =
-  process.env.ORDERS_TABLE || process.env.ORDERS_TABLE_NAME || '';
-const siteUrl = (
-  process.env.WEBSITE_URL || 'https://modern-java.classpath.in'
-).replace(/\/$/, '');
-const amazonUrl =
-  process.env.AMAZON_URL || 'https://www.amazon.in/dp/B0H6R4334W';
+const { runSampleNurtureJob, STEPS } = require('../src/sampleNurtureJob');
 
 const argv = process.argv.slice(2);
 const dryRun = argv.includes('--dry-run');
 const force = argv.includes('--force');
 const daysFlag = argv.indexOf('--days');
-const minAgeDays =
+const reminderDays =
   daysFlag >= 0
     ? Number(argv[daysFlag + 1]) || SAMPLE_REMINDER_DAYS
     : Number(process.env.SAMPLE_REMINDER_DAYS || SAMPLE_REMINDER_DAYS);
@@ -49,187 +25,29 @@ const emailFlag = argv.indexOf('--email');
 const onlyEmail =
   emailFlag >= 0 ? String(argv[emailFlag + 1] || '').trim().toLowerCase() : '';
 
-if (!sampleTable) {
+if (
+  !process.env.SAMPLE_REQUESTS_TABLE &&
+  !process.env.SAMPLE_REQUESTS_TABLE_NAME
+) {
   console.error(
     'Set SAMPLE_REQUESTS_TABLE to the deployed DynamoDB table name.',
   );
   process.exit(1);
 }
 
-const dynamo = DynamoDBDocumentClient.from(new DynamoDBClient({}));
-const ses = createSesClient();
-
-const scanAll = async (tableName, params = {}) => {
-  const items = [];
-  let ExclusiveStartKey;
-  do {
-    const page = await dynamo.send(
-      new ScanCommand({
-        TableName: tableName,
-        ExclusiveStartKey,
-        ...params,
-      }),
-    );
-    items.push(...(page.Items || []));
-    ExclusiveStartKey = page.LastEvaluatedKey;
-  } while (ExclusiveStartKey);
-  return items;
-};
-
-const loadPurchaserEmails = async () => {
-  const purchased = new Set();
-  if (!ordersTable) {
-    console.warn(
-      'ORDERS_TABLE not set — cannot exclude existing purchasers from sample reminder.',
-    );
-    return purchased;
-  }
-  const paidOrders = await scanAll(ordersTable, {
-    FilterExpression: '#status = :paid',
-    ExpressionAttributeNames: { '#status': 'status' },
-    ExpressionAttributeValues: { ':paid': 'paid' },
+runSampleNurtureJob({
+  dryRun,
+  onlyEmail,
+  force: force && Boolean(onlyEmail),
+  forceStep: force && onlyEmail ? STEPS.reminder : null,
+  reminderDays,
+  continuityDays: Number.MAX_SAFE_INTEGER,
+  educationDays: force ? 0 : Number.MAX_SAFE_INTEGER,
+})
+  .then((summary) => {
+    if (summary.failed > 0) process.exitCode = 1;
+  })
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
   });
-  for (const order of paidOrders) {
-    if (order.checkoutBypass === true) continue;
-    if (String(order.appOrderId || '').startsWith('MJ-T-')) continue;
-    const email = String(order.email || '')
-      .trim()
-      .toLowerCase();
-    if (email) purchased.add(email);
-  }
-  return purchased;
-};
-
-const deliver = async (item) => {
-  const toEmail = String(item.email).trim().toLowerCase();
-  const email = buildSampleReminderEmail({ siteUrl, amazonUrl });
-  await sendMarketingEmail({
-    ses,
-    to: toEmail,
-    subject: email.subject,
-    text: email.text,
-    html: email.html,
-    recipientRecord: item,
-    tags: { funnel: 'sample', sequenceDay: '18' },
-  });
-};
-
-
-
-const markSent = async (email, { requireUnset = true } = {}) => {
-  const now = new Date().toISOString();
-  await dynamo.send(
-    new UpdateCommand({
-      TableName: sampleTable,
-      Key: { email },
-      UpdateExpression: 'SET sampleReminderEmailSentAt = :now',
-      ...(requireUnset
-        ? {
-            ConditionExpression:
-              'attribute_not_exists(sampleReminderEmailSentAt)',
-            ExpressionAttributeValues: { ':now': now },
-          }
-        : {
-            ExpressionAttributeValues: { ':now': now },
-          }),
-    }),
-  );
-};
-
-const main = async () => {
-  console.log('Sample chapter Day 18 final reminder');
-  console.log('===================================');
-  console.log(`Sample table: ${sampleTable}`);
-  console.log(`Orders table: ${ordersTable || '(not set)'}`);
-  console.log(`Min age days: ${minAgeDays} (default ${SAMPLE_REMINDER_DAYS})`);
-  console.log(`Dry run: ${dryRun}`);
-  console.log(`Force single: ${force && onlyEmail ? onlyEmail : 'no'}`);
-  console.log('');
-
-  let candidates = [];
-  if (onlyEmail) {
-    const result = await dynamo.send(
-      new GetCommand({
-        TableName: sampleTable,
-        Key: { email: onlyEmail },
-      }),
-    );
-    if (!result.Item) {
-      console.error(`No sample-request record found for ${onlyEmail}`);
-      process.exit(1);
-    }
-    candidates = [result.Item];
-  } else {
-    candidates = await scanAll(sampleTable);
-  }
-
-  const purchasers = await loadPurchaserEmails();
-  const now = new Date();
-  const eligible = candidates.filter((item) => {
-    const email = String(item.email || '')
-      .trim()
-      .toLowerCase();
-    const hasPurchased =
-      purchasers.has(email) ||
-      String(item.leadStatus || '').toUpperCase() === 'CUSTOMER';
-    if (force && onlyEmail && email === onlyEmail) {
-      return Boolean(item.sampleEducationEmailSentAt);
-    }
-    return isEligibleForSampleReminderEmail(item, {
-      now,
-      minAgeDays,
-      hasPurchased,
-    });
-  });
-
-  console.log(`Sample leads scanned: ${candidates.length}`);
-  console.log(`Known purchasers excluded via orders: ${purchasers.size}`);
-  console.log(`Eligible: ${eligible.length}`);
-  console.log('');
-
-  if (eligible.length === 0) {
-    console.log('Nothing to send.');
-    return;
-  }
-
-  let sent = 0;
-  let failed = 0;
-
-  for (const item of eligible) {
-    const email = String(item.email).trim().toLowerCase();
-    const requestedAt = item.lastRequestedAt || item.firstRequestedAt;
-    const ageDays = requestedAt
-      ? Math.floor(
-          (now.getTime() - Date.parse(requestedAt)) / (24 * 60 * 60 * 1000),
-        )
-      : '?';
-    if (dryRun) {
-      console.log(
-        `[dry-run] would send to ${email} (last preview ${ageDays}d ago)`,
-      );
-      continue;
-    }
-    try {
-      await deliver(item);
-      await markSent(email, {
-        requireUnset: !(force && onlyEmail === email),
-      });
-      sent += 1;
-      console.log(`Sent to ${email}`);
-    } catch (error) {
-      failed += 1;
-      console.error(`Failed for ${email}:`, error.message || error);
-    }
-  }
-
-  if (!dryRun) {
-    console.log('');
-    console.log(`Sent: ${sent}`);
-    console.log(`Failed: ${failed}`);
-  }
-};
-
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});

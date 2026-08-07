@@ -1,6 +1,7 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 const {
+  SAMPLE_CONTINUITY_DAYS,
   SAMPLE_FOLLOWUP_DAYS,
   SAMPLE_EDUCATION_DAYS,
   SAMPLE_REMINDER_DAYS,
@@ -9,6 +10,7 @@ const {
   buildSampleChapterFollowUpEmail,
   buildSampleEducationEmail,
   buildSampleReminderEmail,
+  isEligibleForSampleContinuityEmail,
   isEligibleForSampleChapterFollowUp,
   isEligibleForSampleEducationEmail,
   isEligibleForSampleReminderEmail,
@@ -16,6 +18,7 @@ const {
 
 describe('sample nurture delays', () => {
   it('uses the trust-first sample cadence (4 / 10 / 18)', () => {
+    assert.equal(SAMPLE_CONTINUITY_DAYS, 4);
     assert.equal(SAMPLE_FOLLOWUP_DAYS, 4);
     assert.equal(SAMPLE_EDUCATION_DAYS, 10);
     assert.equal(SAMPLE_REMINDER_DAYS, 18);
@@ -153,6 +156,67 @@ describe('buildSampleReminderEmail', () => {
   });
 });
 
+describe('isEligibleForSampleContinuityEmail', () => {
+  const now = new Date('2026-07-24T12:00:00.000Z');
+  const base = {
+    email: 'reader@example.com',
+    lastRequestedAt: '2026-07-20T12:00:00.000Z',
+    marketingConsent: true,
+  };
+
+  it('requires age, consent, no prior continuity send, and no purchase', () => {
+    assert.equal(isEligibleForSampleContinuityEmail(base, { now }), true);
+    assert.equal(
+      isEligibleForSampleContinuityEmail(
+        { ...base, lastRequestedAt: '2026-07-21T12:00:00.000Z' },
+        { now },
+      ),
+      false,
+    );
+    assert.equal(
+      isEligibleForSampleContinuityEmail(
+        { ...base, sampleContinuityEmailSentAt: '2026-07-23T12:00:00.000Z' },
+        { now },
+      ),
+      false,
+    );
+    assert.equal(
+      isEligibleForSampleContinuityEmail(base, { now, hasPurchased: true }),
+      false,
+    );
+  });
+
+  it('does not require an open voucher window', () => {
+    assert.equal(
+      isEligibleForSampleContinuityEmail(
+        {
+          ...base,
+          lastRequestedAt: '2026-07-01T12:00:00.000Z',
+        },
+        { now },
+      ),
+      true,
+    );
+  });
+
+  it('skips unsubscribed or withdrawn consent', () => {
+    assert.equal(
+      isEligibleForSampleContinuityEmail(
+        { ...base, marketingUnsubscribedAt: '2026-07-21T12:00:00.000Z' },
+        { now },
+      ),
+      false,
+    );
+    assert.equal(
+      isEligibleForSampleContinuityEmail(
+        { ...base, marketingConsent: false },
+        { now },
+      ),
+      false,
+    );
+  });
+});
+
 describe('isEligibleForSampleChapterFollowUp', () => {
   const now = new Date('2026-07-24T12:00:00.000Z');
   const base = {
@@ -248,15 +312,15 @@ describe('isEligibleForSampleEducationEmail', () => {
   const base = {
     email: 'reader@example.com',
     lastRequestedAt: '2026-07-14T12:00:00.000Z',
-    sampleFollowUpEmailSentAt: '2026-07-18T12:00:00.000Z',
+    sampleContinuityEmailSentAt: '2026-07-18T12:00:00.000Z',
     marketingConsent: true,
   };
 
-  it('requires day-4 send, age, and no prior education send', () => {
+  it('requires continuity send, age, and no prior education send', () => {
     assert.equal(isEligibleForSampleEducationEmail(base, { now }), true);
     assert.equal(
       isEligibleForSampleEducationEmail(
-        { ...base, sampleFollowUpEmailSentAt: undefined },
+        { ...base, sampleContinuityEmailSentAt: undefined },
         { now },
       ),
       false,
@@ -287,7 +351,7 @@ describe('isEligibleForSampleReminderEmail', () => {
   const base = {
     email: 'reader@example.com',
     lastRequestedAt: '2026-07-06T12:00:00.000Z',
-    sampleFollowUpEmailSentAt: '2026-07-10T12:00:00.000Z',
+    sampleContinuityEmailSentAt: '2026-07-10T12:00:00.000Z',
     sampleEducationEmailSentAt: '2026-07-16T12:00:00.000Z',
     marketingConsent: true,
   };

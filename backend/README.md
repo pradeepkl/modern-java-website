@@ -329,20 +329,42 @@ Successful sends set `amazonEducationEmailSentAt`.
 
 ### Sample chapter nurture sequence
 
-Trust-first cadence for chapter-preview downloads (not maximum frequency):
+Trust-first cadence for chapter-preview downloads (automated daily via
+EventBridge → `SampleNurtureFunction`, 09:00 IST). Each lead advances by
+**their own** sample-download timestamp.
 
-| Day | Email | Script |
+| Day | Email | Marker |
 | --: | ----- | ------ |
-| 4 | Exclusive reader voucher (site digital checkout) | `send:sample-followup` |
-| 10 | Educational / philosophy | `send:sample-education` |
-| 18 | Final gentle format reminder | `send:sample-reminder` |
+| 4 | Continuity / curiosity (Email 1) | `sampleContinuityEmailSentAt` |
+| 10 | Educational / philosophy | `sampleEducationEmailSentAt` |
+| 18 | Final gentle format reminder | `sampleReminderEmailSentAt` |
 
 After Day 18, stop direct selling; keep readers on the Classpath Reader List
 editorial cadence instead.
 
-#### Day 4 reader vouchers
+**From / Reply-To:** `pradeep@classpath.in` · **BCC:** `admin@classpath.in`
 
-- Issued idempotently when Day 4 is sent (`VOUCHERS_TABLE`).
+Ops CLIs (dry-run / force) share the same job module:
+
+```bash
+SAMPLE_REQUESTS_TABLE=<table> ORDERS_TABLE=<orders> \
+  PUBLIC_API_URL=<api> UNSUBSCRIBE_TOKEN_SECRET=<secret> \
+  npm run send:sample-continuity -- --dry-run
+```
+
+#### Optional: exclusive reader voucher (manual)
+
+Not part of the automated chain. Issue + send with:
+
+```bash
+SAMPLE_REQUESTS_TABLE=<table> ORDERS_TABLE=<orders-table> \
+  VOUCHERS_TABLE=<vouchers-table> \
+  npm run send:sample-followup -- --dry-run
+```
+
+#### Day 4 reader vouchers (manual campaign details)
+
+- Issued idempotently when the voucher email is sent (`VOUCHERS_TABLE`).
 - Cryptographically random codes (`MJ-XXXX-XXXX`), one-time, email-bound.
 - Fixed exclusive payable amount (`READER_VOUCHER_PAYABLE_INR`, default
   **₹699**) against the current Classpath digital price (`amountInr`, ₹899).
@@ -359,16 +381,16 @@ editorial cadence instead.
 - Paid buyers become `leadStatus = CUSTOMER` on the sample-request record and
   are excluded from remaining Modern Java sample/voucher acquisition emails.
 
-Skips:
+Skips (automated sequence):
 
 - people who already purchased on the website (paid digital/paperback)
 - anyone who already received that step’s sent timestamp
 - unsubscribed leads (`marketingUnsubscribedAt`) or withdrawn marketing consent
   (`marketingConsent === false`)
-- Day 4 leads whose voucher window has already closed
+- Day 4 voucher campaign leads whose voucher window has already closed
 
-Later steps require the previous step’s timestamp
-(`sampleFollowUpEmailSentAt` → `sampleEducationEmailSentAt` →
+Later automated steps require the previous step’s timestamp
+(`sampleContinuityEmailSentAt` → `sampleEducationEmailSentAt` →
 `sampleReminderEmailSentAt`).
 
 Limitation: Amazon-direct purchases cannot be suppressed unless that buyer’s
@@ -376,13 +398,15 @@ email is already known from a site order or lead record.
 
 ```bash
 SAMPLE_REQUESTS_TABLE=<table> ORDERS_TABLE=<orders-table> \
-  VOUCHERS_TABLE=<vouchers-table> \
-  npm run send:sample-followup -- --dry-run
+  PUBLIC_API_URL=<api> UNSUBSCRIBE_TOKEN_SECRET=<secret> \
+  npm run send:sample-continuity -- --dry-run
 
 SAMPLE_REQUESTS_TABLE=<table> ORDERS_TABLE=<orders-table> \
+  PUBLIC_API_URL=<api> UNSUBSCRIBE_TOKEN_SECRET=<secret> \
   npm run send:sample-education -- --dry-run
 
 SAMPLE_REQUESTS_TABLE=<table> ORDERS_TABLE=<orders-table> \
+  PUBLIC_API_URL=<api> UNSUBSCRIBE_TOKEN_SECRET=<secret> \
   npm run send:sample-reminder -- --dry-run
 ```
 

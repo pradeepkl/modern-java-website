@@ -2,13 +2,12 @@
  * Sample-chapter nurture sequence.
  *
  * Day 0  — transactional chapter-preview email (sent by sample request handler)
- * Day 4  — exclusive reader voucher (conversion email; site checkout only)
+ * Day 4  — continuity + curiosity (Email 1; automated)
  * Day 10 — educational / philosophy email (not a sales pitch)
  * Day 18 — final gentle purchase reminder, then stop direct selling
  *
- * Intended Email 1 (continuity + curiosity) lives in
- * buildSampleContinuityEmail — short tease, one formats CTA, inbox promise.
- * Wire timing when the live Day 4/10/18 jobs are realigned.
+ * Exclusive reader voucher remains available via the manual
+ * send:sample-followup script — not part of the automated chain.
  *
  * After Day 18, readers stay on the Classpath Reader List editorial cadence.
  *
@@ -37,7 +36,8 @@ const {
   canIssueVoucherForSample,
 } = require('./readerVoucher');
 
-const SAMPLE_FOLLOWUP_DAYS = 4;
+const SAMPLE_CONTINUITY_DAYS = 4;
+const SAMPLE_FOLLOWUP_DAYS = 4; // manual voucher campaign (optional)
 const SAMPLE_EDUCATION_DAYS = 10;
 const SAMPLE_REMINDER_DAYS = 18;
 
@@ -449,7 +449,27 @@ function buildSampleReminderEmail({
 }
 
 /**
- * Whether a sample-request lead is due for the day-4 chapter-preview nurture.
+ * Day 4 continuity Email 1 — after sample download, if still not purchased.
+ * @param {object} item SAMPLE_REQUESTS_TABLE row
+ * @param {{ now?: Date, minAgeDays?: number, hasPurchased?: boolean }} [options]
+ */
+function isEligibleForSampleContinuityEmail(
+  item,
+  {
+    now = new Date(),
+    minAgeDays = SAMPLE_CONTINUITY_DAYS,
+    hasPurchased = false,
+  } = {},
+) {
+  if (!item || !item.email) return false;
+  if (hasPurchased) return false;
+  if (item.sampleContinuityEmailSentAt) return false;
+  if (hasMarketingSuppression(item)) return false;
+  return isPastMinAge(sampleRequestedAtMs(item), now, minAgeDays);
+}
+
+/**
+ * Manual exclusive reader voucher campaign (not the automated Day-4 step).
  * @param {object} item SAMPLE_REQUESTS_TABLE row
  * @param {{ now?: Date, minAgeDays?: number, hasPurchased?: boolean }} [options]
  */
@@ -462,12 +482,12 @@ function isEligibleForSampleChapterFollowUp(
   if (item.sampleFollowUpEmailSentAt) return false;
   if (hasMarketingSuppression(item)) return false;
   if (!isPastMinAge(sampleRequestedAtMs(item), now, minAgeDays)) return false;
-  // Day 4 is the voucher email — skip once the voucher window has closed.
+  // Voucher campaign — skip once the voucher window has closed.
   return canIssueVoucherForSample(item, { now });
 }
 
 /**
- * Day 10 educational email — after the soft-sell follow-up, if still not purchased.
+ * Day 10 educational email — after continuity Email 1, if still not purchased.
  */
 function isEligibleForSampleEducationEmail(
   item,
@@ -479,7 +499,7 @@ function isEligibleForSampleEducationEmail(
 ) {
   if (!item || !item.email) return false;
   if (hasPurchased) return false;
-  if (!item.sampleFollowUpEmailSentAt) return false;
+  if (!item.sampleContinuityEmailSentAt) return false;
   if (item.sampleEducationEmailSentAt) return false;
   if (hasMarketingSuppression(item)) return false;
   return isPastMinAge(sampleRequestedAtMs(item), now, minAgeDays);
@@ -505,6 +525,7 @@ function isEligibleForSampleReminderEmail(
 }
 
 module.exports = {
+  SAMPLE_CONTINUITY_DAYS,
   SAMPLE_FOLLOWUP_DAYS,
   SAMPLE_EDUCATION_DAYS,
   SAMPLE_REMINDER_DAYS,
@@ -514,6 +535,7 @@ module.exports = {
   buildSampleChapterFollowUpEmail,
   buildSampleEducationEmail,
   buildSampleReminderEmail,
+  isEligibleForSampleContinuityEmail,
   isEligibleForSampleChapterFollowUp,
   isEligibleForSampleEducationEmail,
   isEligibleForSampleReminderEmail,

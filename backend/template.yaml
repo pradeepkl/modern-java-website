@@ -339,6 +339,41 @@ Resources:
             Path: /webhooks/razorpay
             Method: POST
 
+  # Daily sample nurture: Day 4 continuity → Day 10 education → Day 18 reminder.
+  # Each lead advances by their own sample-download timestamp.
+  SampleNurtureFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/sampleNurtureHandler.handler
+      Timeout: 300
+      MemorySize: 512
+      Environment:
+        Variables:
+          PUBLIC_API_URL: !Sub 'https://${OrderApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}'
+          ADMIN_BCC_EMAIL: admin@classpath.in
+          MAIL_FROM_EMAIL: pradeep@classpath.in
+          REPLY_TO_EMAIL: pradeep@classpath.in
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SampleRequestsTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref OrdersTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ses:SendEmail
+                - ses:SendRawEmail
+              Resource: '*'
+      Events:
+        DailySampleNurture:
+          Type: Schedule
+          Properties:
+            # 03:30 UTC = 09:00 IST
+            Schedule: cron(30 3 * * ? *)
+            Description: Daily sample-chapter nurture (continuity / education / reminder)
+            Enabled: true
+
   OrdersTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -563,3 +598,6 @@ Outputs:
   VouchersTableName:
     Description: DynamoDB table for exclusive sample-chapter reader vouchers
     Value: !Ref VouchersTable
+  SampleNurtureFunctionName:
+    Description: Daily EventBridge-triggered sample nurture Lambda
+    Value: !Ref SampleNurtureFunction
