@@ -1,4 +1,6 @@
+import { CAMPAIGN_VOUCHER_PAYABLE_INR } from '../config/campaignVoucher';
 import {
+  formatInrAmount,
   getFormattedListPrice,
   getFormattedPrice,
   productPrices,
@@ -29,6 +31,10 @@ export interface FormatOption {
   ctaUrl?: string;
   ctaVariant: 'amazon' | 'primary';
 }
+
+/** Digital card shows campaign payable with catalog amount struck through. */
+const digitalListPrice = getFormattedPrice('digital');
+const digitalSalePrice = formatInrAmount(CAMPAIGN_VOUCHER_PAYABLE_INR);
 
 export const formatOptions: FormatOption[] = [
   {
@@ -62,8 +68,8 @@ export const formatOptions: FormatOption[] = [
       { text: 'Access to future revised editions', tone: 'upgrade' },
       { text: 'Secure download links by email' },
     ],
-    price: getFormattedPrice('digital'),
-    listPrice: getFormattedListPrice('digital'),
+    price: digitalSalePrice,
+    listPrice: digitalListPrice,
     discountLabel: productPrices.discountLabel,
     availability: 'Delivered directly by email',
     ctaLabel: 'Buy direct',

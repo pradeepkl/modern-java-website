@@ -121,7 +121,14 @@ function StandardFormatCard({ format }: FormatCardProps) {
               {format.listPrice !== format.price ? (
                 <span className="format-card__list-price">{format.listPrice}</span>
               ) : null}
-              <p className="format-card__price" aria-label={format.price}>
+              <p
+                className="format-card__price"
+                aria-label={
+                  format.listPrice !== format.price
+                    ? `${format.price}, was ${format.listPrice}`
+                    : format.price
+                }
+              >
                 <span className="format-card__currency" aria-hidden="true">
                   ₹
                 </span>

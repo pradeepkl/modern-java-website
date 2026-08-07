@@ -4,6 +4,7 @@ import {
   getPaperbackMode,
   isDigitalSalesEnabled,
 } from '../../config/features';
+import { CAMPAIGN_VOUCHER_PAYABLE_INR } from '../../config/campaignVoucher';
 import {
   formatInrAmount,
   getAmountInr,
@@ -19,7 +20,7 @@ import { BrandButtonLogo } from './BrandButtonLogo';
 import './shared.css';
 
 const KINDLE_PRICE_LABEL = formatInrAmount(getAmountInr('kindle'));
-const DIGITAL_PRICE_LABEL = formatInrAmount(getAmountInr('digital'));
+const DIGITAL_PRICE_LABEL = formatInrAmount(CAMPAIGN_VOUCHER_PAYABLE_INR);
 const PAPERBACK_PRICE_LABEL = formatInrAmount(getAmountInr('paperback'));
 
 interface PurchaseButtonsProps {
