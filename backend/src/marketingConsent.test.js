@@ -118,7 +118,10 @@ describe('buildAmazonReviewFollowUpEmail', () => {
     assert.match(email.text, /^Hi Pradeep,/);
     assert.match(email.text, /About a week ago, you showed interest in Modern Java - The Mindset Shift/);
     assert.match(email.text, /Buy directly from Classpath/);
-    assert.match(email.text, /https:\/\/modern-java\.classpath\.in\/#formats/);
+    assert.match(
+      email.text,
+      /https:\/\/modern-java\.classpath\.in\/\?section=formats#formats/,
+    );
     assert.match(email.text, /Buy on Amazon/);
     assert.match(email.text, /If you’ve already purchased the book/);
     assert.match(email.text, /Even a few sentences/);

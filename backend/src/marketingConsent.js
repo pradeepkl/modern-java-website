@@ -263,7 +263,7 @@ function buildAmazonReviewFollowUpEmail({
     /\/$/,
     '',
   );
-  const formatsUrl = `${site}/#formats`;
+  const formatsUrl = `${site}/?section=formats#formats`;
   const amazonLink = String(
     amazonUrl || 'https://www.amazon.in/dp/B0H6R4334W',
   ).trim();
@@ -372,7 +372,7 @@ function buildAmazonEducationEmail({
     /\/$/,
     '',
   );
-  const formatsUrl = `${site}/#formats`;
+  const formatsUrl = `${site}/?section=formats#formats`;
   const amazonLink = String(
     amazonUrl || 'https://www.amazon.in/dp/B0H6R4334W',
   ).trim();

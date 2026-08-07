@@ -6,6 +6,10 @@
  * Day 10 — educational / philosophy email (not a sales pitch)
  * Day 18 — final gentle purchase reminder, then stop direct selling
  *
+ * Intended Email 1 (continuity + curiosity) lives in
+ * buildSampleContinuityEmail — short tease, one formats CTA, inbox promise.
+ * Wire timing when the live Day 4/10/18 jobs are realigned.
+ *
  * After Day 18, readers stay on the Classpath Reader List editorial cadence.
  *
  * Suppression: site purchasers, prior send for that step, unsubscribe /
@@ -20,6 +24,7 @@ const {
   emailParagraph,
   emailButton,
   emailCallout,
+  emailBulletList,
   emailSiteLink,
   emailInstagramFollowText,
   emailInstagramFollow,
@@ -36,6 +41,14 @@ const SAMPLE_FOLLOWUP_DAYS = 4;
 const SAMPLE_EDUCATION_DAYS = 10;
 const SAMPLE_REMINDER_DAYS = 18;
 
+const CONTINUITY_TEASE_ITEMS = [
+  'Type design with records',
+  'Pattern matching and sealed hierarchies',
+  'Streams, nullability, and modern collections',
+  'Concurrency and composition choices that hold a codebase together',
+  'The design decisions that connect language features to architecture',
+];
+
 function normalizeSiteUrl(siteUrl) {
   return String(siteUrl || 'https://modern-java.classpath.in').replace(
     /\/$/,
@@ -45,6 +58,15 @@ function normalizeSiteUrl(siteUrl) {
 
 function normalizeAmazonUrl(amazonUrl) {
   return String(amazonUrl || 'https://www.amazon.in/dp/B0H6R4334W').trim();
+}
+
+/**
+ * Formats deep link for emails. Include `?section=formats` so the target
+ * survives clients that strip `#hash`; keep `#formats` for in-browser nav.
+ */
+function buildFormatsSectionUrl(siteUrl) {
+  const site = normalizeSiteUrl(siteUrl);
+  return `${site}/?section=formats#formats`;
 }
 
 function hasMarketingSuppression(item) {
@@ -60,6 +82,107 @@ function isPastMinAge(timestampMs, now, minAgeDays) {
   if (!Number.isFinite(timestampMs)) return false;
   const minAgeMs = Math.max(0, Number(minAgeDays) || 0) * 24 * 60 * 60 * 1000;
   return timestampMs <= now.getTime() - minAgeMs;
+}
+
+/**
+ * Email 1 — continuity + curiosity after the sample download.
+ * One job: reconnect, short tease, single formats CTA. No voucher/TOC dump.
+ */
+function buildSampleContinuityEmail({ siteUrl }) {
+  const site = normalizeSiteUrl(siteUrl);
+  const formatsUrl = buildFormatsSectionUrl(site);
+  const unsubscribeUrl = `${site}/unsubscribe`;
+
+  const text = [
+    `Thank you for downloading the first two chapters of ${BOOK_FULL_TITLE}.`,
+    '',
+    "Whether you've skimmed them or dug in, the preview is meant to show how I teach Java—not by introducing language features in isolation, but by explaining the reasoning, trade-offs, and design philosophy behind today's language.",
+    '',
+    "You saw that teaching style in the sample. The rest of the book keeps the same question: how should an experienced engineer think when using today's Java? That shift matters most when you are designing an API, reviewing a pull request, or deciding how a system should evolve—not when you are memorizing syntax.",
+    '',
+    'The remaining chapters continue that foundation so you can write Java that is clearer, safer, and easier to maintain—always with judgment ahead of syntax.',
+    '',
+    'What comes next in the full book:',
+    ...CONTINUITY_TEASE_ITEMS.map((item) => `• ${item}`),
+    '',
+    `See formats & continue reading: ${formatsUrl}`,
+    '',
+    'A quick note about these emails',
+    '',
+    'You received this email because you requested the free sample chapter from the Modern Java website. I respect your inbox and have no intention of sending frequent marketing emails.',
+    '',
+    "Over the next two weeks, I'll send at most two more emails to help you decide whether this book is the right fit for you. After that, you won't receive further emails about this book unless you choose to remain subscribed for future Java books, articles, and updates.",
+    '',
+    "If the sample chapter wasn't relevant to your work, or you've already decided this book isn't for you, you can unsubscribe at any time. There are absolutely no hard feelings—I would much rather email readers who genuinely find the content valuable.",
+    '',
+    'Thank you once again for downloading the sample chapter and giving it your time. Whether or not you decide to purchase the full book, I hope the preview has already offered a useful perspective.',
+    '',
+    "P.S. If you've already purchased the book, thank you for your support—a short reply with your thoughts is always welcome.",
+    '',
+    emailInstagramFollowText(),
+    '',
+    `Visit the Modern Java website: ${site}`,
+    '',
+    `Unsubscribe anytime: ${unsubscribeUrl}`,
+    '',
+    'Thank you again — happy learning!',
+  ].join('\n');
+
+  const html = wrapTransactionalEmail(`
+                ${emailHeadline('After the sample chapters…')}
+                ${emailParagraph(
+                  `Thank you for downloading the first two chapters of <strong style="color:#1a2332;">${escapeHtml(BOOK_FULL_TITLE)}</strong>.`,
+                )}
+                ${emailParagraph(
+                  "Whether you've skimmed them or dug in, the preview is meant to show how I teach Java—not by introducing language features in isolation, but by explaining the reasoning, trade-offs, and design philosophy behind today's language.",
+                )}
+                ${emailParagraph(
+                  "You saw that teaching style in the sample. The rest of the book keeps the same question: how should an experienced engineer <em>think</em> when using today's Java? That shift matters most when you are designing an API, reviewing a pull request, or deciding how a system should evolve—not when you are memorizing syntax.",
+                )}
+                ${emailParagraph(
+                  'The remaining chapters continue that foundation so you can write Java that is clearer, safer, and easier to maintain—always with judgment ahead of syntax.',
+                )}
+                ${emailParagraph(
+                  '<strong style="color:#1a2332;">What comes next in the full book</strong>',
+                  '0 0 12px',
+                )}
+                ${emailBulletList(CONTINUITY_TEASE_ITEMS)}
+                ${emailButton({
+                  href: formatsUrl,
+                  label: 'See formats & continue reading',
+                })}
+                ${emailParagraph(
+                  '<strong style="color:#1a2332;">A quick note about these emails</strong>',
+                  '24px 0 12px',
+                )}
+                ${emailParagraph(
+                  'You received this email because you requested the free sample chapter from the Modern Java website. I respect your inbox and have no intention of sending frequent marketing emails.',
+                )}
+                ${emailParagraph(
+                  "Over the next two weeks, I'll send at most two more emails to help you decide whether this book is the right fit for you. After that, you won't receive further emails about this book unless you choose to remain subscribed for future Java books, articles, and updates.",
+                )}
+                ${emailParagraph(
+                  "If the sample chapter wasn't relevant to your work, or you've already decided this book isn't for you, you can unsubscribe at any time. There are absolutely no hard feelings—I would much rather email readers who genuinely find the content valuable.",
+                )}
+                ${emailParagraph(
+                  "P.S. If you've already purchased the book, thank you for your support—a short reply with your thoughts is always welcome.",
+                  '0 0 8px',
+                )}
+                ${emailInstagramFollow('16px 0 0')}
+                ${emailSiteLink(site)}
+                ${emailMutedNote(
+                  `You can <a href="${escapeHtml(unsubscribeUrl)}" style="color:#667085;font-weight:600;">unsubscribe</a> anytime.`,
+                )}
+                ${emailClosing()}
+  `);
+
+  return {
+    subject: 'After the sample chapters…',
+    text,
+    html,
+    unsubscribeUrl,
+    formatsUrl,
+  };
 }
 
 /**
@@ -169,7 +292,7 @@ function buildSampleChapterFollowUpEmail({
  */
 function buildSampleEducationEmail({ siteUrl }) {
   const site = normalizeSiteUrl(siteUrl);
-  const formatsUrl = `${site}/#formats`;
+  const formatsUrl = buildFormatsSectionUrl(site);
   const unsubscribeUrl = `${site}/unsubscribe`;
 
   const text = [
@@ -235,7 +358,7 @@ function buildSampleReminderEmail({
   amazonUrl = 'https://www.amazon.in/dp/B0H6R4334W',
 }) {
   const site = normalizeSiteUrl(siteUrl);
-  const formatsUrl = `${site}/#formats`;
+  const formatsUrl = buildFormatsSectionUrl(site);
   const reviewAmazonUrl = normalizeAmazonUrl(amazonUrl);
   const unsubscribeUrl = `${site}/unsubscribe`;
 
@@ -353,6 +476,8 @@ module.exports = {
   SAMPLE_FOLLOWUP_DAYS,
   SAMPLE_EDUCATION_DAYS,
   SAMPLE_REMINDER_DAYS,
+  CONTINUITY_TEASE_ITEMS,
+  buildSampleContinuityEmail,
   buildSampleChapterFollowUpEmail,
   buildSampleEducationEmail,
   buildSampleReminderEmail,

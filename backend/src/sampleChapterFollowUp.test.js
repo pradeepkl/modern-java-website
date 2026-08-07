@@ -4,6 +4,8 @@ const {
   SAMPLE_FOLLOWUP_DAYS,
   SAMPLE_EDUCATION_DAYS,
   SAMPLE_REMINDER_DAYS,
+  CONTINUITY_TEASE_ITEMS,
+  buildSampleContinuityEmail,
   buildSampleChapterFollowUpEmail,
   buildSampleEducationEmail,
   buildSampleReminderEmail,
@@ -17,6 +19,47 @@ describe('sample nurture delays', () => {
     assert.equal(SAMPLE_FOLLOWUP_DAYS, 4);
     assert.equal(SAMPLE_EDUCATION_DAYS, 10);
     assert.equal(SAMPLE_REMINDER_DAYS, 18);
+  });
+});
+
+describe('buildSampleContinuityEmail', () => {
+  it('is a short continuity Email 1 with one formats CTA and a tease', () => {
+    const email = buildSampleContinuityEmail({
+      siteUrl: 'https://modern-java.classpath.in',
+    });
+    assert.equal(email.subject, 'After the sample chapters…');
+    assert.equal(
+      email.formatsUrl,
+      'https://modern-java.classpath.in/?section=formats#formats',
+    );
+
+    const bodyWords = email.text.split(/\s+/).filter(Boolean).length;
+    assert.ok(
+      bodyWords >= 350 && bodyWords <= 500,
+      `expected ~350–500 words, got ${bodyWords}`,
+    );
+    assert.equal(CONTINUITY_TEASE_ITEMS.length, 5);
+    for (const item of CONTINUITY_TEASE_ITEMS) {
+      assert.match(email.text, new RegExp(item.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    }
+
+    assert.match(email.text, /Whether you've skimmed them or dug in/);
+    assert.match(email.text, /at most two more emails/);
+    assert.match(email.text, /See formats & continue reading:/);
+    assert.match(email.html, /See formats &amp; continue reading|See formats & continue reading/);
+    assert.match(email.html, /\?section=formats#formats/);
+
+    // One primary CTA — no voucher/checkout soft-sell or catalog dump.
+    assert.equal(
+      (email.html.match(/display:inline-block;padding:14px 28px/g) || []).length,
+      1,
+    );
+    assert.doesNotMatch(email.text, /voucher|discount|checkout|✓|👉/i);
+    assert.doesNotMatch(
+      email.text,
+      /Who this book is for|Composition over Inheritance|Putting It All Together/i,
+    );
+    assert.doesNotMatch(email.text, /A few days ago/);
   });
 });
 

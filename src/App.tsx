@@ -18,6 +18,7 @@ import { UnsubscribePage } from './components/UnsubscribePage/UnsubscribePage';
 import { ModalPreviewPage } from './components/ModalPreviewPage';
 import { useActiveSection } from './hooks/useActiveSection';
 import { useEngagementTracking } from './hooks/useEngagementTracking';
+import { useSectionDeepLinkScroll } from './hooks/useSectionDeepLinkScroll';
 
 function App() {
   const path = window.location.pathname.replace(/\/+$/, '') || '/';
@@ -26,6 +27,7 @@ function App() {
   const [scrolled, setScrolled] = useState(false);
   const activeSection = useActiveSection();
   useEngagementTracking(isLanding);
+  useSectionDeepLinkScroll(isLanding);
 
   useEffect(() => {
     const onScroll = () => {

@@ -16,6 +16,7 @@ const {
 } = require('../src/marketingConsent');
 const { buildConfirmationEmail } = require('../src/paperbackWaitlist');
 const {
+  buildSampleContinuityEmail,
   buildSampleChapterFollowUpEmail,
   buildSampleEducationEmail,
   buildSampleReminderEmail,
@@ -169,6 +170,7 @@ const reviewNamed = buildAmazonReviewFollowUpEmail({
   amazonUrl: AMAZON,
   name: 'Pradeep',
 });
+const sampleContinuity = buildSampleContinuityEmail({ siteUrl: SITE });
 const sampleFollowUp = buildSampleChapterFollowUpEmail({
   siteUrl: SITE,
   voucherCode: 'MJ-7X9K-PL42',
@@ -221,32 +223,38 @@ const emails = [
     html: reviewNamed.html,
   },
   {
+    id: 'sample-continuity',
+    label: '7. Sample chapter continuity (Email 1)',
+    subject: sampleContinuity.subject,
+    html: sampleContinuity.html,
+  },
+  {
     id: 'sample-followup',
-    label: '7. Sample chapter reader voucher (day 4)',
+    label: '8. Sample chapter reader voucher (day 4)',
     subject: sampleFollowUp.subject,
     html: sampleFollowUp.html,
   },
   {
     id: 'sample-education',
-    label: '8. Sample chapter education (day 10)',
+    label: '9. Sample chapter education (day 10)',
     subject: sampleEducation.subject,
     html: sampleEducation.html,
   },
   {
     id: 'sample-reminder',
-    label: '9. Sample chapter final reminder (day 18)',
+    label: '10. Sample chapter final reminder (day 18)',
     subject: sampleReminder.subject,
     html: sampleReminder.html,
   },
   {
     id: 'amazon-education',
-    label: '10. Amazon education + soft review (day 21) — Hi,',
+    label: '11. Amazon education + soft review (day 21) — Hi,',
     subject: amazonEducation.subject,
     html: amazonEducation.html,
   },
   {
     id: 'amazon-education-named',
-    label: '10b. Same email with name — Hi Pradeep,',
+    label: '11b. Same email with name — Hi Pradeep,',
     subject: amazonEducationNamed.subject,
     html: amazonEducationNamed.html,
   },
