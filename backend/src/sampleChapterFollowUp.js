@@ -63,10 +63,25 @@ function normalizeAmazonUrl(amazonUrl) {
 /**
  * Formats deep link for emails. Include `?section=formats` so the target
  * survives clients that strip `#hash`; keep `#formats` for in-browser nav.
+ * Optional signed `mj_click` token attributes the click back to SAMPLE_REQUESTS_TABLE.
  */
-function buildFormatsSectionUrl(siteUrl) {
+function buildFormatsSectionUrl(
+  siteUrl,
+  {
+    clickToken,
+    utmSource = 'email',
+    utmMedium = 'sample_nurture',
+    utmCampaign = 'continuity',
+  } = {},
+) {
   const site = normalizeSiteUrl(siteUrl);
-  return `${site}/?section=formats#formats`;
+  const params = new URLSearchParams();
+  params.set('section', 'formats');
+  if (utmSource) params.set('utm_source', utmSource);
+  if (utmMedium) params.set('utm_medium', utmMedium);
+  if (utmCampaign) params.set('utm_campaign', utmCampaign);
+  if (clickToken) params.set('mj_click', String(clickToken));
+  return `${site}/?${params.toString()}#formats`;
 }
 
 function hasMarketingSuppression(item) {
@@ -88,10 +103,23 @@ function isPastMinAge(timestampMs, now, minAgeDays) {
  * Email 1 — continuity + curiosity after the sample download.
  * One job: reconnect, short tease, single formats CTA. No voucher/TOC dump.
  */
-function buildSampleContinuityEmail({ siteUrl }) {
+function buildSampleContinuityEmail({
+  siteUrl,
+  unsubscribeUrl,
+  formatsUrl,
+  clickToken,
+} = {}) {
   const site = normalizeSiteUrl(siteUrl);
-  const formatsUrl = buildFormatsSectionUrl(site);
-  const unsubscribeUrl = `${site}/unsubscribe`;
+  const resolvedFormatsUrl =
+    String(formatsUrl || '').trim() ||
+    buildFormatsSectionUrl(site, {
+      clickToken,
+      utmCampaign: 'continuity',
+    });
+  // Prefer a per-recipient URL from the send path (one-click / site page).
+  // Both update SAMPLE_REQUESTS_TABLE via existing marketing-consent handlers.
+  const unsub = String(unsubscribeUrl || `${site}/unsubscribe`).trim();
+  const unsubscribeUrlSafe = unsub || `${site}/unsubscribe`;
 
   const text = [
     `Thank you for downloading the first two chapters of ${BOOK_FULL_TITLE}.`,
@@ -105,7 +133,7 @@ function buildSampleContinuityEmail({ siteUrl }) {
     'What comes next in the full book:',
     ...CONTINUITY_TEASE_ITEMS.map((item) => `• ${item}`),
     '',
-    `See formats & continue reading: ${formatsUrl}`,
+    `See formats & continue reading: ${resolvedFormatsUrl}`,
     '',
     'A quick note about these emails',
     '',
@@ -123,7 +151,7 @@ function buildSampleContinuityEmail({ siteUrl }) {
     '',
     `Visit the Modern Java website: ${site}`,
     '',
-    `Unsubscribe anytime: ${unsubscribeUrl}`,
+    `Unsubscribe anytime: ${unsubscribeUrlSafe}`,
     '',
     'Thank you again — happy learning!',
   ].join('\n');
@@ -148,7 +176,7 @@ function buildSampleContinuityEmail({ siteUrl }) {
                 )}
                 ${emailBulletList(CONTINUITY_TEASE_ITEMS)}
                 ${emailButton({
-                  href: formatsUrl,
+                  href: resolvedFormatsUrl,
                   label: 'See formats & continue reading',
                 })}
                 ${emailParagraph(
@@ -171,7 +199,7 @@ function buildSampleContinuityEmail({ siteUrl }) {
                 ${emailInstagramFollow('16px 0 0')}
                 ${emailSiteLink(site)}
                 ${emailMutedNote(
-                  `You can <a href="${escapeHtml(unsubscribeUrl)}" style="color:#667085;font-weight:600;">unsubscribe</a> anytime.`,
+                  `You can <a href="${escapeHtml(unsubscribeUrlSafe)}" style="color:#667085;font-weight:600;">unsubscribe</a> anytime.`,
                 )}
                 ${emailClosing()}
   `);
@@ -180,8 +208,8 @@ function buildSampleContinuityEmail({ siteUrl }) {
     subject: 'After the sample chapters…',
     text,
     html,
-    unsubscribeUrl,
-    formatsUrl,
+    unsubscribeUrl: unsubscribeUrlSafe,
+    formatsUrl: resolvedFormatsUrl,
   };
 }
 
@@ -292,7 +320,9 @@ function buildSampleChapterFollowUpEmail({
  */
 function buildSampleEducationEmail({ siteUrl }) {
   const site = normalizeSiteUrl(siteUrl);
-  const formatsUrl = buildFormatsSectionUrl(site);
+  const formatsUrl = buildFormatsSectionUrl(site, {
+    utmCampaign: 'education',
+  });
   const unsubscribeUrl = `${site}/unsubscribe`;
 
   const text = [
@@ -358,7 +388,9 @@ function buildSampleReminderEmail({
   amazonUrl = 'https://www.amazon.in/dp/B0H6R4334W',
 }) {
   const site = normalizeSiteUrl(siteUrl);
-  const formatsUrl = buildFormatsSectionUrl(site);
+  const formatsUrl = buildFormatsSectionUrl(site, {
+    utmCampaign: 'reminder',
+  });
   const reviewAmazonUrl = normalizeAmazonUrl(amazonUrl);
   const unsubscribeUrl = `${site}/unsubscribe`;
 
@@ -477,6 +509,7 @@ module.exports = {
   SAMPLE_EDUCATION_DAYS,
   SAMPLE_REMINDER_DAYS,
   CONTINUITY_TEASE_ITEMS,
+  buildFormatsSectionUrl,
   buildSampleContinuityEmail,
   buildSampleChapterFollowUpEmail,
   buildSampleEducationEmail,

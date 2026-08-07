@@ -1,3 +1,5 @@
+import { CLICK_QUERY_PARAM } from './emailLinkClick';
+
 /**
  * Landing-page section deep links (`/#formats`, `/?section=formats`).
  *
@@ -58,7 +60,26 @@ export function scrollToSectionId(sectionId: string): boolean {
  * Build a resilient formats deep link for emails/outbound CTAs.
  * Query survives hash stripping; hash still works for in-browser nav.
  */
-export function buildFormatsSectionUrl(siteUrl: string): string {
+export function buildFormatsSectionUrl(
+  siteUrl: string,
+  {
+    clickToken,
+    utmSource = 'email',
+    utmMedium = 'sample_nurture',
+    utmCampaign = 'continuity',
+  }: {
+    clickToken?: string;
+    utmSource?: string;
+    utmMedium?: string;
+    utmCampaign?: string;
+  } = {},
+): string {
   const base = String(siteUrl || '').replace(/\/$/, '');
-  return `${base}/?${SECTION_QUERY}=formats#formats`;
+  const params = new URLSearchParams();
+  params.set(SECTION_QUERY, 'formats');
+  if (utmSource) params.set('utm_source', utmSource);
+  if (utmMedium) params.set('utm_medium', utmMedium);
+  if (utmCampaign) params.set('utm_campaign', utmCampaign);
+  if (clickToken) params.set(CLICK_QUERY_PARAM, clickToken);
+  return `${base}/?${params.toString()}#formats`;
 }

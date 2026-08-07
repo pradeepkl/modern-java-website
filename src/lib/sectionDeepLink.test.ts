@@ -39,7 +39,12 @@ describe('sectionDeepLink', () => {
 
   it('builds resilient formats URLs for email CTAs', () => {
     expect(buildFormatsSectionUrl('https://modern-java.classpath.in/')).toBe(
-      'https://modern-java.classpath.in/?section=formats#formats',
+      'https://modern-java.classpath.in/?section=formats&utm_source=email&utm_medium=sample_nurture&utm_campaign=continuity#formats',
     );
+    expect(
+      buildFormatsSectionUrl('https://modern-java.classpath.in', {
+        clickToken: 'abc.def',
+      }),
+    ).toContain('mj_click=abc.def');
   });
 });

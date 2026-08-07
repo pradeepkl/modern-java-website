@@ -10,6 +10,7 @@
     "send:review-followup": "node scripts/send-amazon-review-followup.js",
     "send:amazon-education": "node scripts/send-amazon-education-followup.js",
     "send:sample-followup": "node scripts/send-sample-followup.js",
+    "send:sample-continuity": "node scripts/send-sample-continuity.js",
     "send:sample-education": "node scripts/send-sample-education.js",
     "send:sample-reminder": "node scripts/send-sample-reminder.js",
     "preview:emails": "node scripts/preview-emails.js",

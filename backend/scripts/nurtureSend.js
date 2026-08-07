@@ -35,6 +35,9 @@ async function sendMarketingEmail({
   html,
   recipientRecord,
   tags = {},
+  mailFromEmail = process.env.MAIL_FROM_EMAIL,
+  replyTo = process.env.REPLY_TO_EMAIL,
+  bcc,
 }) {
   return sendEmail({
     ses: ses || createSesClient(),
@@ -45,6 +48,9 @@ async function sendMarketingEmail({
     category: 'MARKETING',
     recipientRecord: recipientRecord || { email: to },
     listUnsubscribeUrl: buildListUnsubscribeUrl(to),
+    mailFromEmail,
+    replyTo,
+    bcc,
     configurationSetName:
       process.env.SES_CONFIGURATION_SET ||
       `classpath-email-${process.env.APP_ENV || 'prod'}`,

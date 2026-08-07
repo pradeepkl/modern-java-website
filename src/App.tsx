@@ -19,6 +19,7 @@ import { ModalPreviewPage } from './components/ModalPreviewPage';
 import { useActiveSection } from './hooks/useActiveSection';
 import { useEngagementTracking } from './hooks/useEngagementTracking';
 import { useSectionDeepLinkScroll } from './hooks/useSectionDeepLinkScroll';
+import { useEmailLinkClickBeacon } from './hooks/useEmailLinkClickBeacon';
 
 function App() {
   const path = window.location.pathname.replace(/\/+$/, '') || '/';
@@ -28,6 +29,7 @@ function App() {
   const activeSection = useActiveSection();
   useEngagementTracking(isLanding);
   useSectionDeepLinkScroll(isLanding);
+  useEmailLinkClickBeacon(isLanding);
 
   useEffect(() => {
     const onScroll = () => {

@@ -30,7 +30,7 @@ describe('buildSampleContinuityEmail', () => {
     assert.equal(email.subject, 'After the sample chapters…');
     assert.equal(
       email.formatsUrl,
-      'https://modern-java.classpath.in/?section=formats#formats',
+      'https://modern-java.classpath.in/?section=formats&utm_source=email&utm_medium=sample_nurture&utm_campaign=continuity#formats',
     );
 
     const bodyWords = email.text.split(/\s+/).filter(Boolean).length;
@@ -47,7 +47,8 @@ describe('buildSampleContinuityEmail', () => {
     assert.match(email.text, /at most two more emails/);
     assert.match(email.text, /See formats & continue reading:/);
     assert.match(email.html, /See formats &amp; continue reading|See formats & continue reading/);
-    assert.match(email.html, /\?section=formats#formats/);
+    assert.match(email.html, /section=formats/);
+    assert.match(email.html, /utm_campaign=continuity/);
 
     // One primary CTA — no voucher/checkout soft-sell or catalog dump.
     assert.equal(
@@ -60,6 +61,19 @@ describe('buildSampleContinuityEmail', () => {
       /Who this book is for|Composition over Inheritance|Putting It All Together/i,
     );
     assert.doesNotMatch(email.text, /A few days ago/);
+  });
+
+  it('accepts a per-recipient unsubscribe URL that updates SAMPLE_REQUESTS_TABLE flows', () => {
+    const email = buildSampleContinuityEmail({
+      siteUrl: 'https://modern-java.classpath.in',
+      unsubscribeUrl:
+        'https://api.example.com/marketing-consents/one-click/token123',
+    });
+    assert.match(
+      email.text,
+      /https:\/\/api\.example\.com\/marketing-consents\/one-click\/token123/,
+    );
+    assert.match(email.html, /one-click\/token123/);
   });
 });
 

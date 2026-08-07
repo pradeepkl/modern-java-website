@@ -61,6 +61,10 @@ const {
   verifyUnsubscribeToken,
   buildOneClickUnsubscribeUrl,
 } = require('./unsubscribeToken');
+const {
+  verifyEmailClickToken,
+  buildEmailLinkClickUpdate,
+} = require('./emailClickToken');
 const { sendEmail: sendSesEmail } = require('./sesMail');
 const {
   createRazorpayOrder,
@@ -1280,6 +1284,51 @@ const oneClickUnsubscribe = async (event) => {
   };
 };
 
+/**
+ * Record an email CTA click on SAMPLE_REQUESTS_TABLE.
+ * Body: { token } from signed ?mj_click= query param (no raw email in URL).
+ */
+const recordEmailLinkClick = async (event) => {
+  const { json } = parseBody(event);
+  const token = String(json.token || '').trim();
+
+  if (!SAMPLE_REQUESTS_TABLE || !UNSUBSCRIBE_TOKEN_SECRET) {
+    return response(503, {
+      message: 'Email link tracking is not configured yet.',
+    });
+  }
+
+  const verified = verifyEmailClickToken(token, {
+    secret: UNSUBSCRIBE_TOKEN_SECRET,
+  });
+  // Always 200 for invalid tokens so scanners / guessers learn nothing.
+  if (!verified?.email || !verified?.sequence) {
+    return response(200, { recorded: false });
+  }
+
+  const clickUpdate = buildEmailLinkClickUpdate({
+    sequence: verified.sequence,
+  });
+  try {
+    await dynamo.send(
+      new UpdateCommand({
+        TableName: SAMPLE_REQUESTS_TABLE,
+        Key: { email: verified.email },
+        ...clickUpdate,
+      }),
+    );
+  } catch (error) {
+    console.error('Email link click update failed', {
+      email: verified.email,
+      sequence: verified.sequence,
+      error,
+    });
+    return response(200, { recorded: false });
+  }
+
+  return response(200, { recorded: true });
+};
+
 const submitContactMessage = async (event) => {
   const { json } = parseBody(event);
   const name = String(json.name || '').trim();
@@ -2404,6 +2453,9 @@ exports.handler = async (event) => {
     }
     if (method === 'POST' && path === '/marketing-consents/unsubscribe') {
       return await unsubscribeMarketing(event);
+    }
+    if (method === 'POST' && path === '/email-link-clicks') {
+      return await recordEmailLinkClick(event);
     }
     if (
       (method === 'POST' || method === 'GET') &&
