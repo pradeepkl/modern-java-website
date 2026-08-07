@@ -116,38 +116,75 @@ function verifyEmailClickToken(token, { secret } = {}) {
 }
 
 /**
+ * Pair of timestamps for DynamoDB: UTC ISO-8601 + human-readable IST.
+ * @param {string | Date | number} [input]
+ * @returns {{ utc: string, ist: string }}
+ */
+function formatUtcAndIst(input = new Date()) {
+  const date =
+    input instanceof Date
+      ? input
+      : new Date(typeof input === 'number' ? input : String(input));
+  if (Number.isNaN(date.getTime())) {
+    throw new Error('Invalid timestamp for UTC/IST formatting');
+  }
+
+  const utc = date.toISOString();
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).formatToParts(date);
+  const get = (type) => parts.find((part) => part.type === type)?.value || '';
+  const ist = `${get('year')}-${get('month')}-${get('day')} ${get('hour')}:${get('minute')}:${get('second')} IST`;
+  return { utc, ist };
+}
+
+/**
  * DynamoDB update for SAMPLE_REQUESTS_TABLE when an email CTA is clicked.
  * Sequence-specific first-click timestamp + rolling last-click fields.
+ * Each click time is stored as UTC (`*At`) and IST (`*AtIst`) columns.
  */
 function buildEmailLinkClickUpdate({ sequence, now } = {}) {
-  const timestamp = now || new Date().toISOString();
+  const { utc, ist } = formatUtcAndIst(now || new Date());
   const seq = normalizeSequence(sequence);
   const values = {
-    ':now': timestamp,
+    ':nowUtc': utc,
+    ':nowIst': ist,
     ':seq': seq,
     ':zero': 0,
     ':one': 1,
   };
 
   let expression =
-    'SET lastEmailLinkClickedAt = :now, ' +
+    'SET lastEmailLinkClickedAt = :nowUtc, ' +
+    'lastEmailLinkClickedAtIst = :nowIst, ' +
     'lastEmailLinkSequence = :seq, ' +
     'emailLinkClickCount = if_not_exists(emailLinkClickCount, :zero) + :one, ' +
-    'updatedAt = :now';
+    'updatedAt = :nowUtc';
 
   // Named first-click attributes for known sample nurture steps.
   if (seq === 'sample-continuity' || seq === 'continuity') {
     expression +=
-      ', sampleContinuityLinkClickedAt = if_not_exists(sampleContinuityLinkClickedAt, :now)';
+      ', sampleContinuityLinkClickedAt = if_not_exists(sampleContinuityLinkClickedAt, :nowUtc)' +
+      ', sampleContinuityLinkClickedAtIst = if_not_exists(sampleContinuityLinkClickedAtIst, :nowIst)';
   } else if (seq === 'sample-education' || seq === 'education') {
     expression +=
-      ', sampleEducationLinkClickedAt = if_not_exists(sampleEducationLinkClickedAt, :now)';
+      ', sampleEducationLinkClickedAt = if_not_exists(sampleEducationLinkClickedAt, :nowUtc)' +
+      ', sampleEducationLinkClickedAtIst = if_not_exists(sampleEducationLinkClickedAtIst, :nowIst)';
   } else if (seq === 'sample-reminder' || seq === 'reminder') {
     expression +=
-      ', sampleReminderLinkClickedAt = if_not_exists(sampleReminderLinkClickedAt, :now)';
+      ', sampleReminderLinkClickedAt = if_not_exists(sampleReminderLinkClickedAt, :nowUtc)' +
+      ', sampleReminderLinkClickedAtIst = if_not_exists(sampleReminderLinkClickedAtIst, :nowIst)';
   } else if (seq === 'sample-followup' || seq === 'voucher') {
     expression +=
-      ', sampleFollowUpLinkClickedAt = if_not_exists(sampleFollowUpLinkClickedAt, :now)';
+      ', sampleFollowUpLinkClickedAt = if_not_exists(sampleFollowUpLinkClickedAt, :nowUtc)' +
+      ', sampleFollowUpLinkClickedAtIst = if_not_exists(sampleFollowUpLinkClickedAtIst, :nowIst)';
   }
 
   return {
@@ -161,6 +198,7 @@ module.exports = {
   CLICK_QUERY_PARAM,
   normalizeEmail,
   normalizeSequence,
+  formatUtcAndIst,
   createEmailClickToken,
   verifyEmailClickToken,
   buildEmailLinkClickUpdate,

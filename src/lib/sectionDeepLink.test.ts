@@ -44,6 +44,12 @@ describe('sectionDeepLink', () => {
     expect(
       buildFormatsSectionUrl('https://modern-java.classpath.in', {
         clickToken: 'abc.def',
+        utmMedium: 'email',
+      }),
+    ).toContain('utm_medium=email');
+    expect(
+      buildFormatsSectionUrl('https://modern-java.classpath.in', {
+        clickToken: 'abc.def',
       }),
     ).toContain('mj_click=abc.def');
   });

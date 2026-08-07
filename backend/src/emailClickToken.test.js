@@ -4,6 +4,7 @@ const {
   createEmailClickToken,
   verifyEmailClickToken,
   buildEmailLinkClickUpdate,
+  formatUtcAndIst,
   CLICK_QUERY_PARAM,
 } = require('./emailClickToken');
 
@@ -42,8 +43,26 @@ describe('emailClickToken', () => {
       now: '2026-08-07T12:00:00.000Z',
     });
     assert.match(update.UpdateExpression, /sampleContinuityLinkClickedAt/);
+    assert.match(update.UpdateExpression, /sampleContinuityLinkClickedAtIst/);
+    assert.match(update.UpdateExpression, /lastEmailLinkClickedAtIst/);
     assert.match(update.UpdateExpression, /emailLinkClickCount/);
     assert.equal(update.ExpressionAttributeValues[':seq'], 'sample-continuity');
+    assert.equal(
+      update.ExpressionAttributeValues[':nowUtc'],
+      '2026-08-07T12:00:00.000Z',
+    );
+    assert.equal(
+      update.ExpressionAttributeValues[':nowIst'],
+      '2026-08-07 17:30:00 IST',
+    );
+  });
+
+  it('formats UTC and IST timestamp pairs', () => {
+    // 10:00 UTC = 15:30 IST
+    assert.deepEqual(formatUtcAndIst('2026-08-07T10:00:00.000Z'), {
+      utc: '2026-08-07T10:00:00.000Z',
+      ist: '2026-08-07 15:30:00 IST',
+    });
   });
 
   it('exports the query param name used in email CTAs', () => {

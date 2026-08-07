@@ -296,6 +296,12 @@ Resources:
             ApiId: !Ref OrderApi
             Path: /marketing-consents/unsubscribe
             Method: POST
+        RecordEmailLinkClick:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref OrderApi
+            Path: /email-link-clicks
+            Method: POST
         OneClickUnsubscribePost:
           Type: HttpApi
           Properties:
