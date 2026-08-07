@@ -24,6 +24,10 @@ import {
   track,
   trackMetaConversion,
 } from '../../lib/analytics';
+import {
+  CONSUMER_EMAIL_ALLOWLIST_MESSAGE,
+  isAllowedSampleEmailDomain,
+} from '../../lib/sampleEmailAllowlist';
 import { isTurnstileConfigured } from '../../lib/turnstile';
 import {
   ModalStatusIcon,
@@ -222,6 +226,15 @@ export function AmazonConsentLink({
       track('amazon_exit_email_error', {
         ...analyticsBase,
         error_type: 'validation',
+      });
+      return;
+    }
+
+    if (!isAllowedSampleEmailDomain(normalizedEmail)) {
+      setEmailError(CONSUMER_EMAIL_ALLOWLIST_MESSAGE);
+      track('amazon_exit_email_error', {
+        ...analyticsBase,
+        error_type: 'email_domain',
       });
       return;
     }

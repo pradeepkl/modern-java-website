@@ -51,6 +51,10 @@ export function Footer() {
               Terms of Use
             </a>
             <span aria-hidden="true">·</span>
+            <a href="/subscribe" className="site-footer__legal-link">
+              Stay Updated
+            </a>
+            <span aria-hidden="true">·</span>
             <a href="/unsubscribe" className="site-footer__legal-link">
               Unsubscribe
             </a>

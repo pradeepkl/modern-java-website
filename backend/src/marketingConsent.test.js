@@ -40,6 +40,8 @@ describe('resolveMarketingSource', () => {
       resolveMarketingSource(PREVIEW_SUCCESS_SOURCE),
       PREVIEW_SUCCESS_SOURCE,
     );
+    assert.equal(resolveMarketingSource('preview-pdf'), 'preview-pdf');
+    assert.equal(resolveMarketingSource('website-subscribe'), 'website-subscribe');
   });
 });
 
@@ -97,6 +99,22 @@ describe('mergeSampleRequestMarketingConsent', () => {
     assert.equal(result.marketingConsent, false);
     assert.equal(result.marketingConsentStatus, 'WITHDRAWN');
     assert.equal(result.clearUnsubscribe, false);
+  });
+
+  it('does not reactivate a previously unsubscribed lead via preview form', () => {
+    const result = mergeSampleRequestMarketingConsent(
+      {
+        marketingConsent: false,
+        marketingConsentStatus: 'WITHDRAWN',
+        marketingUnsubscribedAt: '2026-07-20T00:00:00.000Z',
+        marketingConsentSource: 'sample-chapter-form',
+      },
+      true,
+      { now, consentVersion: MODERN_JAVA_CONSENT_VERSION },
+    );
+    assert.equal(result.marketingConsent, false);
+    assert.equal(result.clearUnsubscribe, false);
+    assert.equal(result.marketingConsentStatus, 'WITHDRAWN');
   });
 });
 

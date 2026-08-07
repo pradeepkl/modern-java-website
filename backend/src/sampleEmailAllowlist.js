@@ -1,12 +1,16 @@
 /**
- * Consumer-mailbox allowlist for chapter-preview delivery.
- * Blocks disposable / unknown domains from collecting the sample PDF.
+ * Consumer-mailbox allowlist for chapter-preview delivery and reader-list
+ * opt-ins. Blocks disposable / unknown domains.
  */
 
 const SAMPLE_EMAIL_ALLOWLIST_MESSAGE =
   'Chapter previews are only sent to Gmail, Outlook, Hotmail, Live, Yahoo, iCloud, or Rediff addresses. Please use one of those and try again.';
 
-/** Exact domains (lowercase) accepted for sample-chapter requests. */
+/** Same domain set as the preview form — for /marketing-consents and /subscribe. */
+const CONSUMER_EMAIL_ALLOWLIST_MESSAGE =
+  'Only Gmail, Outlook, Hotmail, Live, Yahoo, iCloud, or Rediff addresses are accepted. Please use one of those and try again.';
+
+/** Exact domains (lowercase) accepted for sample-chapter and reader-list requests. */
 const SAMPLE_EMAIL_ALLOWED_DOMAINS = new Set([
   // Google
   'gmail.com',
@@ -51,6 +55,7 @@ function isAllowedSampleEmailDomain(email) {
 
 module.exports = {
   SAMPLE_EMAIL_ALLOWLIST_MESSAGE,
+  CONSUMER_EMAIL_ALLOWLIST_MESSAGE,
   SAMPLE_EMAIL_ALLOWED_DOMAINS,
   emailDomain,
   isAllowedSampleEmailDomain,

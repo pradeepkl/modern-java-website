@@ -1,10 +1,14 @@
 /**
- * Consumer-mailbox allowlist for chapter-preview delivery.
- * Keep in sync with backend/src/sampleEmailAllowlist.js.
+ * Consumer-mailbox allowlist for chapter-preview delivery and reader-list
+ * opt-ins. Keep in sync with backend/src/sampleEmailAllowlist.js.
  */
 
 export const SAMPLE_EMAIL_ALLOWLIST_MESSAGE =
   'Chapter previews are only sent to Gmail, Outlook, Hotmail, Live, Yahoo, iCloud, or Rediff addresses. Please use one of those and try again.';
+
+/** Same domain set as the preview form — for /subscribe and other reader-list signups. */
+export const CONSUMER_EMAIL_ALLOWLIST_MESSAGE =
+  'Only Gmail, Outlook, Hotmail, Live, Yahoo, iCloud, or Rediff addresses are accepted. Please use one of those and try again.';
 
 const SAMPLE_EMAIL_ALLOWED_DOMAINS = new Set([
   // Google

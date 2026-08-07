@@ -15,6 +15,7 @@ import { Footer } from './components/Footer/Footer';
 import { LegalPage } from './components/LegalPage/LegalPage';
 import { ContactPage } from './components/ContactPage/ContactPage';
 import { UnsubscribePage } from './components/UnsubscribePage/UnsubscribePage';
+import { SubscribePage } from './components/SubscribePage/SubscribePage';
 import { ModalPreviewPage } from './components/ModalPreviewPage';
 import { useActiveSection } from './hooks/useActiveSection';
 import { useEngagementTracking } from './hooks/useEngagementTracking';
@@ -79,6 +80,16 @@ function App() {
         <MetaPageViewTracker />
         <AnalyticsConsentBanner />
         <UnsubscribePage />
+      </>
+    );
+  }
+
+  if (path === '/subscribe') {
+    return (
+      <>
+        <MetaPageViewTracker />
+        <AnalyticsConsentBanner />
+        <SubscribePage />
       </>
     );
   }

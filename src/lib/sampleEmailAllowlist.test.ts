@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   SAMPLE_EMAIL_ALLOWLIST_MESSAGE,
+  CONSUMER_EMAIL_ALLOWLIST_MESSAGE,
   isAllowedSampleEmailDomain,
   emailDomain,
 } from './sampleEmailAllowlist';
@@ -38,6 +39,7 @@ describe('sampleEmailAllowlist', () => {
       'x@company.com',
       'x@gmail.com.evil.example',
       'x@notgmail.com',
+      'x@example.com',
     ]) {
       expect(isAllowedSampleEmailDomain(email)).toBe(false);
     }
@@ -46,5 +48,7 @@ describe('sampleEmailAllowlist', () => {
   it('exposes a clear rejection message', () => {
     expect(SAMPLE_EMAIL_ALLOWLIST_MESSAGE).toMatch(/Gmail/i);
     expect(SAMPLE_EMAIL_ALLOWLIST_MESSAGE).toMatch(/Rediff/i);
+    expect(CONSUMER_EMAIL_ALLOWLIST_MESSAGE).toMatch(/Gmail/i);
+    expect(CONSUMER_EMAIL_ALLOWLIST_MESSAGE).toMatch(/Rediff/i);
   });
 });

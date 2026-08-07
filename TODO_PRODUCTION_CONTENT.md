@@ -56,6 +56,8 @@ See `docs/ANALYTICS.md`. Mark `sample_form_success`, `purchase`, and `amazon_exi
 |-------|------|--------|
 | Preview PDF (repo source) | `assets/books/modern-java-preview.pdf` | ✅ Added |
 | S3 object key | `sample/modern-java-preview.pdf` | ✅ Upload via `backend/npm run upload:assets` |
+| Stay Updated CTA page | Stamped at upload by `scripts/stamp-preview-subscribe-cta.py` → `/subscribe?source=preview-pdf` | ✅ Stamp on upload |
+| Dedicated subscribe page | `/subscribe` | ✅ |
 
 ## Noscript Fallback
 

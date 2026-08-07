@@ -7,6 +7,7 @@ const {
 } = require('./unsubscribeToken');
 const {
   isMarketingSendAllowed,
+  isMarketingEligible,
   classifySesBounce,
   EMAIL_DELIVERY,
   buildUnsubscribeUpdate,
@@ -60,8 +61,13 @@ describe('isMarketingSendAllowed', () => {
 
   it('requires consent, no unsubscribe, and ACTIVE delivery', () => {
     assert.equal(isMarketingSendAllowed(base), true);
+    assert.equal(isMarketingEligible(base), true);
     assert.equal(
       isMarketingSendAllowed({ ...base, marketingConsent: false }),
+      false,
+    );
+    assert.equal(
+      isMarketingEligible({ ...base, marketingConsent: false }),
       false,
     );
     assert.equal(

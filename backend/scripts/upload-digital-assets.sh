@@ -8,6 +8,7 @@ REGION="${AWS_REGION:-${AWS_DEFAULT_REGION:-ap-south-1}}"
 STACK_NAME="${STACK_NAME:-sam-app}"
 SAMPLE_PDF="${SAMPLE_PDF:-$ROOT_DIR/assets/books/modern-java-preview.pdf}"
 SAMPLE_KEY="${SAMPLE_KEY:-sample/modern-java-preview.pdf}"
+STAMP_SCRIPT="${STAMP_SCRIPT:-$ROOT_DIR/scripts/stamp-preview-subscribe-cta.py}"
 DIGITAL_PDF="${DIGITAL_PDF:-$ROOT_DIR/assets/books/modern-java-drm-free_v1.0.pdf}"
 DIGITAL_PDF_KEY="${DIGITAL_PDF_KEY:-digital/modern-java-drm-free_v1.0.pdf}"
 DIGITAL_EPUB="${DIGITAL_EPUB:-$ROOT_DIR/assets/books/modern-java-drm-free_v1.0.epub}"
@@ -62,8 +63,28 @@ if [[ -z "$BUCKET" || "$BUCKET" == "None" ]]; then
   exit 1
 fi
 
+UPLOAD_SAMPLE="$SAMPLE_PDF"
+STAMPED_TMP=""
+cleanup_stamp() {
+  if [[ -n "$STAMPED_TMP" && -f "$STAMPED_TMP" ]]; then
+    rm -f "$STAMPED_TMP"
+  fi
+}
+trap cleanup_stamp EXIT
+
+if [[ -f "$STAMP_SCRIPT" ]]; then
+  STAMPED_TMP="$(mktemp -t modern-java-preview-stamped.XXXXXX.pdf)"
+  echo "Stamping Stay Updated CTA into chapter preview…"
+  if python3 "$STAMP_SCRIPT" --input "$SAMPLE_PDF" --output "$STAMPED_TMP"; then
+    UPLOAD_SAMPLE="$STAMPED_TMP"
+  else
+    echo "Warning: stamp script failed; uploading unstamped preview." >&2
+    UPLOAD_SAMPLE="$SAMPLE_PDF"
+  fi
+fi
+
 echo "Uploading chapter preview -> s3://$BUCKET/$SAMPLE_KEY"
-aws s3 cp "$SAMPLE_PDF" "s3://$BUCKET/$SAMPLE_KEY" \
+aws s3 cp "$UPLOAD_SAMPLE" "s3://$BUCKET/$SAMPLE_KEY" \
   --region "$REGION" \
   --content-type application/pdf \
   --cache-control "public, max-age=31536000, immutable" \

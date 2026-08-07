@@ -85,6 +85,7 @@ const {
 const { recordAnalyticsConsentChoice } = require('./analyticsConsent');
 const {
   SAMPLE_EMAIL_ALLOWLIST_MESSAGE,
+  CONSUMER_EMAIL_ALLOWLIST_MESSAGE,
   isAllowedSampleEmailDomain,
 } = require('./sampleEmailAllowlist');
 const {
@@ -1050,6 +1051,9 @@ const recordMarketingConsent = async (event) => {
 
   if (!EMAIL_PATTERN.test(email)) {
     throw new Error('Invalid email address');
+  }
+  if (!isAllowedSampleEmailDomain(email)) {
+    return response(400, { message: CONSUMER_EMAIL_ALLOWLIST_MESSAGE });
   }
   if (json.marketingConsent !== true) {
     throw new Error('Marketing consent is required');

@@ -315,14 +315,14 @@ export function SampleChapterSection() {
                 {showSecondaryInvite ? (
                   <div className="sample-success__opt-in">
                     <p className="sample-success__opt-heading">
-                      Want to keep learning?
+                      Want more practical Java insights?
                     </p>
                     <p className="sample-success__opt-copy">
-                      Get practical Java insights, new chapter updates and
-                      occasional book announcements.
+                      Get occasional Java design insights, Modern Java updates
+                      and new book announcements.
                     </p>
                     <p className="sample-success__opt-note">
-                      No spam. Unsubscribe anytime.
+                      Unsubscribe anytime.
                     </p>
 
                     <TurnstileWidget
@@ -341,7 +341,7 @@ export function SampleChapterSection() {
                       >
                         {secondarySubmitting
                           ? 'Saving…'
-                          : 'Keep Me Updated'}
+                          : 'Yes, Keep Me Updated'}
                       </button>
                       <button
                         type="button"
@@ -370,8 +370,8 @@ export function SampleChapterSection() {
                       You’re subscribed.
                     </p>
                     <p className="sample-success__opt-copy">
-                      We’ll occasionally send practical Java insights and Modern
-                      Java updates.
+                      We’ll send you occasional practical Java insights and
+                      Modern Java updates.
                     </p>
                   </div>
                 ) : null}
@@ -433,8 +433,8 @@ export function SampleChapterSection() {
                   />
                   <label htmlFor="marketingConsent">
                     <span>
-                      Keep me updated with practical Java insights, new book
-                      releases and occasional offers.
+                      Send me practical Java insights, Modern Java updates and
+                      occasional book offers.
                     </span>
                     <span className="sample-form__consent-note">
                       Unsubscribe anytime.

@@ -247,9 +247,15 @@ Also useful for funnels (do not need to be key events):
 
 - `cta_click` → `section_view` (`formats`) → `format_cta_click` → `checkout_open` → `checkout_submit` → `checkout_payment_start` → `purchase`
 - `sample_form_start` → `sample_form_submit` → `sample_form_success`
+- `marketing_opt_in_preview_form` / `marketing_opt_in_success_screen` / `marketing_opt_in_preview_pdf` → `marketing_opt_in_success` (newsletter only; distinct from preview Lead)
 - `paperback_waitlist_card_view` → `paperback_waitlist_open` → `paperback_waitlist_submit` → `paperback_waitlist_success`
 - `amazon_exit_modal_open` → `amazon_exit_email_submit` / `amazon_exit_continue_without_email` → `amazon_exit_email_success` → `amazon_exit_continue_after_signup` → `amazon_exit` (navigation)
 - `amazon_exit_email_error`, `amazon_exit_turnstile_error`, `checkout_abandon`, `checkout_fail`, `form_field_abandon`, `scroll_depth`, `paperback_waitlist_error`
+
+Preview Lead and newsletter subscription are separate conversions. Meta `Lead`
+fires only after `/sample-requests` returns `accepted: true`. Meta custom
+`MarketingSubscribe` fires only after marketing consent is stored
+(form checkbox, success-screen opt-in, `/subscribe`, or Amazon exit modal).
 
 ### Amazon exit modal (Classpath Reader List)
 

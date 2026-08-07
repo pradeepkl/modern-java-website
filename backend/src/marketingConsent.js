@@ -14,9 +14,12 @@ const ALREADY_ON_LIST_MESSAGE =
   'You’re already on the Classpath Reader List.';
 const AMAZON_EXIT_SOURCE = 'amazon_exit_modal';
 const SAMPLE_CHAPTER_FORM_SOURCE = 'sample-chapter-form';
+const PREVIEW_FORM_SOURCE = SAMPLE_CHAPTER_FORM_SOURCE;
 const PREVIEW_SUCCESS_SOURCE = 'preview-success';
+const PREVIEW_PDF_SOURCE = 'preview-pdf';
+const WEBSITE_SUBSCRIBE_SOURCE = 'website-subscribe';
 /** Consent copy version for Modern Java preview / reader-list opt-in. */
-const MODERN_JAVA_CONSENT_VERSION = 'modern-java-v1';
+const MODERN_JAVA_CONSENT_VERSION = 'modern-java-email-v1';
 const SOURCE_VERSION = '2';
 const CONSENT_TYPE = 'reader_list_opt_in';
 const ALLOWED_SOURCES = new Set([
@@ -25,6 +28,8 @@ const ALLOWED_SOURCES = new Set([
   'digital-checkout',
   SAMPLE_CHAPTER_FORM_SOURCE,
   PREVIEW_SUCCESS_SOURCE,
+  PREVIEW_PDF_SOURCE,
+  WEBSITE_SUBSCRIBE_SOURCE,
 ]);
 
 /**
@@ -52,6 +57,25 @@ function mergeSampleRequestMarketingConsent(
 ) {
   const existingConsent = existingItem?.marketingConsent === true;
   const optInThisRequest = requestedConsent === true;
+  const previouslyUnsubscribed = Boolean(existingItem?.marketingUnsubscribedAt);
+
+  // Preview request must never silently reactivate a withdrawn subscriber.
+  // Explicit re-subscription goes through POST /marketing-consents
+  // (success-screen opt-in, /subscribe, Amazon exit modal).
+  if (optInThisRequest && previouslyUnsubscribed) {
+    return {
+      marketingConsent: false,
+      marketingConsentStatus:
+        existingItem?.marketingConsentStatus || MARKETING_CONSENT.WITHDRAWN,
+      marketingConsentAt: existingItem?.marketingConsentAt || null,
+      marketingConsentUpdatedAt:
+        existingItem?.marketingConsentUpdatedAt || null,
+      consentVersion: existingItem?.consentVersion || null,
+      marketingConsentSource: existingItem?.marketingConsentSource || null,
+      clearUnsubscribe: false,
+    };
+  }
+
   const marketingConsent = existingConsent || optInThisRequest;
 
   if (optInThisRequest) {
@@ -602,7 +626,10 @@ module.exports = {
   ALREADY_ON_LIST_MESSAGE,
   AMAZON_EXIT_SOURCE,
   SAMPLE_CHAPTER_FORM_SOURCE,
+  PREVIEW_FORM_SOURCE,
   PREVIEW_SUCCESS_SOURCE,
+  PREVIEW_PDF_SOURCE,
+  WEBSITE_SUBSCRIBE_SOURCE,
   MODERN_JAVA_CONSENT_VERSION,
   SOURCE_VERSION,
   CONSENT_TYPE,

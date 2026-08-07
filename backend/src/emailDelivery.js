@@ -84,6 +84,11 @@ function isMarketingSendAllowed(item) {
   return resolveEmailDeliveryStatus(item) === EMAIL_DELIVERY.ACTIVE;
 }
 
+/** Spec alias — prefer this name at call sites that gate nurture eligibility. */
+function isMarketingEligible(contact) {
+  return isMarketingSendAllowed(contact);
+}
+
 /**
  * @param {'TRANSACTIONAL'|'MARKETING'} category
  * @param {object|null|undefined} item
@@ -277,6 +282,7 @@ module.exports = {
   isDeliverySuppressed,
   isTransactionalSendAllowed,
   isMarketingSendAllowed,
+  isMarketingEligible,
   evaluateSendEligibility,
   assertSendEligible,
   classifySesBounce,

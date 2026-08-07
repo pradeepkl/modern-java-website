@@ -65,7 +65,7 @@ describe('SampleChapterSection', () => {
   it('defaults the marketing checkbox to unchecked', () => {
     render(<SampleChapterSection />);
     const checkbox = screen.getByRole('checkbox', {
-      name: /keep me updated with practical java insights/i,
+      name: /send me practical java insights/i,
     }) as HTMLInputElement;
     expect(checkbox.checked).toBe(false);
   });
@@ -93,7 +93,7 @@ describe('SampleChapterSection', () => {
       await screen.findByText(/your preview is on its way/i),
     ).toBeTruthy();
     expect(
-      screen.getByRole('button', { name: /keep me updated/i }),
+      screen.getByRole('button', { name: /yes, keep me updated/i }),
     ).toBeTruthy();
     expect(analyticsMocks.trackMetaConversion).toHaveBeenCalledWith(
       'lead:sample-preview:SR-TEST1234',
@@ -129,7 +129,7 @@ describe('SampleChapterSection', () => {
     await user.type(screen.getByLabelText(/email address/i), 'reader@gmail.com');
     await user.click(
       screen.getByRole('checkbox', {
-        name: /keep me updated with practical java insights/i,
+        name: /send me practical java insights/i,
       }),
     );
     await user.click(screen.getByRole('button', { name: /get the preview/i }));
@@ -150,7 +150,7 @@ describe('SampleChapterSection', () => {
       await screen.findByText(/your preview is on its way/i),
     ).toBeTruthy();
     expect(
-      screen.queryByRole('button', { name: /keep me updated/i }),
+      screen.queryByRole('button', { name: /yes, keep me updated/i }),
     ).not.toBeTruthy();
     expect(analyticsMocks.track).toHaveBeenCalledWith('marketing_opt_in_success', {
       source: 'sample-chapter-form',
@@ -182,7 +182,7 @@ describe('SampleChapterSection', () => {
       await screen.findByText(/your preview is on its way/i),
     ).toBeTruthy();
     expect(
-      screen.queryByRole('button', { name: /keep me updated/i }),
+      screen.queryByRole('button', { name: /yes, keep me updated/i }),
     ).not.toBeTruthy();
   });
 
@@ -194,12 +194,12 @@ describe('SampleChapterSection', () => {
     await user.click(screen.getByRole('button', { name: /get the preview/i }));
 
     expect(
-      await screen.findByRole('button', { name: /keep me updated/i }),
+      await screen.findByRole('button', { name: /yes, keep me updated/i }),
     ).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: /not now/i }));
     expect(
-      screen.queryByRole('button', { name: /keep me updated/i }),
+      screen.queryByRole('button', { name: /yes, keep me updated/i }),
     ).not.toBeTruthy();
     expect(fetch).toHaveBeenCalledTimes(1);
 
@@ -232,7 +232,7 @@ describe('SampleChapterSection', () => {
     await user.type(screen.getByLabelText(/email address/i), 'reader@gmail.com');
     await user.click(screen.getByRole('button', { name: /get the preview/i }));
     await user.click(
-      await screen.findByRole('button', { name: /keep me updated/i }),
+      await screen.findByRole('button', { name: /yes, keep me updated/i }),
     );
 
     await waitFor(() => {
@@ -319,7 +319,7 @@ describe('SampleChapterSection', () => {
 
     expect(analyticsMocks.trackMetaConversion).not.toHaveBeenCalled();
     expect(
-      await screen.findByRole('button', { name: /keep me updated/i }),
+      await screen.findByRole('button', { name: /yes, keep me updated/i }),
     ).toBeTruthy();
   });
 
@@ -346,7 +346,7 @@ describe('SampleChapterSection', () => {
 
     expect(analyticsMocks.trackMetaConversion).not.toHaveBeenCalled();
     expect(
-      screen.queryByRole('button', { name: /keep me updated/i }),
+      screen.queryByRole('button', { name: /yes, keep me updated/i }),
     ).not.toBeTruthy();
   });
 
@@ -394,7 +394,7 @@ describe('SampleChapterSection', () => {
     await user.type(screen.getByLabelText(/email address/i), 'reader@gmail.com');
     await user.click(screen.getByRole('button', { name: /get the preview/i }));
     await user.click(
-      await screen.findByRole('button', { name: /keep me updated/i }),
+      await screen.findByRole('button', { name: /yes, keep me updated/i }),
     );
 
     expect(

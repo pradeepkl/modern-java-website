@@ -2,6 +2,7 @@ const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 const {
   SAMPLE_EMAIL_ALLOWLIST_MESSAGE,
+  CONSUMER_EMAIL_ALLOWLIST_MESSAGE,
   isAllowedSampleEmailDomain,
   emailDomain,
 } = require('./sampleEmailAllowlist');
@@ -40,6 +41,7 @@ describe('sampleEmailAllowlist', () => {
       'x@thoughtworks.com',
       'x@gmail.com.evil.example',
       'x@notgmail.com',
+      'x@example.com',
     ]) {
       assert.equal(isAllowedSampleEmailDomain(email), false, email);
     }
@@ -48,5 +50,7 @@ describe('sampleEmailAllowlist', () => {
   it('exposes a clear rejection message', () => {
     assert.match(SAMPLE_EMAIL_ALLOWLIST_MESSAGE, /Gmail/i);
     assert.match(SAMPLE_EMAIL_ALLOWLIST_MESSAGE, /Rediff/i);
+    assert.match(CONSUMER_EMAIL_ALLOWLIST_MESSAGE, /Gmail/i);
+    assert.match(CONSUMER_EMAIL_ALLOWLIST_MESSAGE, /Rediff/i);
   });
 });

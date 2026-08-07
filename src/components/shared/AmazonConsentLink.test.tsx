@@ -177,6 +177,24 @@ describe('AmazonConsentLink', () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
+  it('rejects non-allowlisted email domains without submitting', async () => {
+    const user = userEvent.setup();
+    render(
+      <AmazonConsentLink href={book.amazonUrl}>Buy on Amazon</AmazonConsentLink>,
+    );
+
+    await user.click(screen.getByRole('link', { name: /buy on amazon/i }));
+    await user.type(screen.getByTestId('amazon-exit-email'), 'x@davopa.com');
+    await user.click(screen.getByTestId('amazon-exit-submit'));
+
+    expect(await screen.findByText(/Gmail/i)).toBeTruthy();
+    expect(fetch).not.toHaveBeenCalled();
+    expect(track).toHaveBeenCalledWith(
+      'amazon_exit_email_error',
+      expect.objectContaining({ error_type: 'email_domain' }),
+    );
+  });
+
   it('shows success after a valid email submission and continues to Amazon', async () => {
     const user = userEvent.setup();
     render(
@@ -186,7 +204,7 @@ describe('AmazonConsentLink', () => {
     await user.click(screen.getByRole('link', { name: /buy on amazon/i }));
     await user.type(
       screen.getByTestId('amazon-exit-email'),
-      'reader@example.com',
+      'reader@gmail.com',
     );
     await user.click(screen.getByTestId('amazon-exit-submit'));
 
@@ -206,7 +224,7 @@ describe('AmazonConsentLink', () => {
     );
 
     const body = JSON.parse(String(options?.body));
-    expect(body.email).toBe('reader@example.com');
+    expect(body.email).toBe('reader@gmail.com');
     expect(body.source).toBe('amazon_exit_modal');
     expect(body.sourceVersion).toBe('2');
 
@@ -232,7 +250,7 @@ describe('AmazonConsentLink', () => {
     await user.click(screen.getByRole('link', { name: /buy on amazon/i }));
     await user.type(
       screen.getByTestId('amazon-exit-email'),
-      'reader@example.com',
+      'reader@gmail.com',
     );
     await user.click(screen.getByTestId('amazon-exit-submit'));
 
@@ -278,7 +296,7 @@ describe('AmazonConsentLink', () => {
     await user.click(screen.getByRole('link', { name: /buy on amazon/i }));
     await user.type(
       screen.getByTestId('amazon-exit-email'),
-      'reader@example.com',
+      'reader@gmail.com',
     );
     await user.click(screen.getByTestId('amazon-exit-submit'));
 
@@ -333,7 +351,7 @@ describe('AmazonConsentLink', () => {
     await user.click(screen.getByRole('link', { name: /buy on amazon/i }));
     await user.type(
       screen.getByTestId('amazon-exit-email'),
-      'reader@example.com',
+      'reader@gmail.com',
     );
     await user.click(screen.getByTestId('amazon-exit-submit'));
 
