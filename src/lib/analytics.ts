@@ -367,8 +367,10 @@ export function trackMetaConversion(
 }
 
 /**
- * Meta custom event for marketing / reader-list opt-in.
- * Distinct from preview Lead so acquisition and newsletter can be measured separately.
+ * Meta custom event for a marketing / reader-list acquisition
+ * (not-subscribed → subscribed). Callers must gate on backend transition
+ * signals (`newMarketingSubscriber` or status === 'created') — never on
+ * mere UX success or already_registered.
  */
 const marketingSubscribeKeys = new Set<string>();
 

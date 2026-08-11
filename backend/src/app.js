@@ -49,6 +49,7 @@ const {
   resolveMarketingSource,
   normalizeAttribution,
   mergeSampleRequestMarketingConsent,
+  isNewMarketingSubscriberTransition,
   buildFirstOptInUpdate,
   buildExistingSubscriberUpdate,
   buildWelcomeEmail,
@@ -820,6 +821,8 @@ const requestSampleChapter = async (event) => {
       newLead: false,
       sampleRequestId: existing.Item?.sampleRequestId || undefined,
       marketingConsent: existing.Item?.marketingConsent === true,
+      // Cooldown never mutates marketing consent — not a subscribe transition.
+      newMarketingSubscriber: false,
     });
   }
 
@@ -848,6 +851,10 @@ const requestSampleChapter = async (event) => {
       now,
       consentVersion: json.consentVersion || MODERN_JAVA_CONSENT_VERSION,
     },
+  );
+  const newMarketingSubscriber = isNewMarketingSubscriberTransition(
+    existing.Item,
+    consentFields,
   );
   const marketingLine = marketingConsent
     ? `You also asked to receive occasional Modern Java articles and book updates. If you stay opted in, I may send a few short follow-up notes about the book. Unsubscribe anytime: ${SITE_URL}/unsubscribe`
@@ -996,6 +1003,7 @@ const requestSampleChapter = async (event) => {
     newLead,
     sampleRequestId: leadEventId,
     marketingConsent: consentFields.marketingConsent === true,
+    newMarketingSubscriber,
   });
 };
 

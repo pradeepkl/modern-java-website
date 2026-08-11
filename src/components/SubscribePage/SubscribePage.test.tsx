@@ -91,7 +91,39 @@ describe('SubscribePage', () => {
     expect(
       await screen.findByText(/you.?re subscribed/i),
     ).toBeTruthy();
-    expect(analyticsMocks.trackMarketingSubscribeConversion).toHaveBeenCalled();
+    expect(analyticsMocks.trackMarketingSubscribeConversion).toHaveBeenCalledWith(
+      `marketing:subscribe:${WEBSITE_SUBSCRIBE_SOURCE}`,
+      { source: WEBSITE_SUBSCRIBE_SOURCE },
+    );
+  });
+
+  it('does not fire MarketingSubscribe when already_registered', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          success: true,
+          status: 'already_registered',
+          registration_status: 'already_registered',
+          message: 'You’re already on the Classpath Reader List.',
+        }),
+      }),
+    );
+
+    const user = userEvent.setup();
+    render(<SubscribePage />);
+
+    await user.type(screen.getByLabelText(/^email$/i), 'reader@gmail.com');
+    await user.click(screen.getByRole('button', { name: /^subscribe$/i }));
+
+    await waitFor(() => {
+      expect(analyticsMocks.track).toHaveBeenCalledWith('marketing_opt_in_success', {
+        source: WEBSITE_SUBSCRIBE_SOURCE,
+        registration_status: 'already_registered',
+      });
+    });
+    expect(analyticsMocks.trackMarketingSubscribeConversion).not.toHaveBeenCalled();
   });
 
   it('rejects non-allowlisted email domains before calling the API', async () => {

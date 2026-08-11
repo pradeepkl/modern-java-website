@@ -108,6 +108,17 @@ function mergeSampleRequestMarketingConsent(
   };
 }
 
+/**
+ * True when this sample-request merge moved the lead from not subscribed
+ * (missing/false) to subscribed (true). Used for Meta MarketingSubscribe.
+ */
+function isNewMarketingSubscriberTransition(existingItem, consentFields) {
+  const wasSubscribed = existingItem?.marketingConsent === true;
+  return (
+    wasSubscribed === false && consentFields?.marketingConsent === true
+  );
+}
+
 function isConditionalCheckFailed(error) {
   return (
     error?.name === 'ConditionalCheckFailedException' ||
@@ -641,6 +652,7 @@ module.exports = {
   resolveMarketingSource,
   normalizeAttribution,
   mergeSampleRequestMarketingConsent,
+  isNewMarketingSubscriberTransition,
   buildFirstOptInUpdate,
   buildExistingSubscriberUpdate,
   buildWelcomeEmail,

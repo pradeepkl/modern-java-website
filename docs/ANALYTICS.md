@@ -258,8 +258,13 @@ Also useful for funnels (do not need to be key events):
 Preview Lead and newsletter subscription are separate conversions. Meta `Lead`
 fires only after `/sample-requests` returns `accepted: true` and
 `newLead: true`. Meta custom
-`MarketingSubscribe` fires only after marketing consent is stored
-(form checkbox, success-screen opt-in, `/subscribe`, or Amazon exit modal).
+`MarketingSubscribe` fires only when marketing consent **newly becomes true**
+(not-subscribed → subscribed): sample form when `newMarketingSubscriber:
+true`, success-screen/`/subscribe` when `status: created`. Repeat submits,
+`already_registered`, cooldown responses, and already-subscribed checkbox
+resends must not emit. Amazon exit modal and digital checkout are separate
+follow-ups (Amazon currently emits `Lead`; checkout stores consent without
+`MarketingSubscribe`).
 
 ### Amazon exit modal (Classpath Reader List)
 

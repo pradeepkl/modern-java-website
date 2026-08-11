@@ -121,6 +121,7 @@ describe('SampleChapterSection', () => {
           newLead: true,
           sampleRequestId: 'SR-OPTIN1',
           marketingConsent: true,
+          newMarketingSubscriber: true,
         }),
       }),
     );
@@ -266,9 +267,57 @@ describe('SampleChapterSection', () => {
       source: PREVIEW_SUCCESS_SOURCE,
       registration_status: 'created',
     });
+    expect(analyticsMocks.trackMarketingSubscribeConversion).toHaveBeenCalledWith(
+      'marketing:preview-success:SR-TEST1234',
+      { source: PREVIEW_SUCCESS_SOURCE },
+    );
     expect(
       await screen.findByText(/you.?re subscribed/i),
     ).toBeTruthy();
+  });
+
+  it('does not fire MarketingSubscribe when secondary opt-in is already_registered', async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async (url: string) => {
+        if (String(url).includes('/marketing-consents')) {
+          return {
+            ok: true,
+            json: async () => ({
+              success: true,
+              status: 'already_registered',
+              registration_status: 'already_registered',
+            }),
+          };
+        }
+        return {
+          ok: true,
+          json: async () => ({
+            accepted: true,
+            newLead: true,
+            sampleRequestId: 'SR-SEC-ALREADY',
+            marketingConsent: false,
+            newMarketingSubscriber: false,
+          }),
+        };
+      }),
+    );
+
+    render(<SampleChapterSection />);
+    await user.type(screen.getByLabelText(/email address/i), 'reader@gmail.com');
+    await user.click(screen.getByRole('button', { name: /get the preview/i }));
+    await user.click(
+      await screen.findByRole('button', { name: /yes, keep me updated/i }),
+    );
+
+    await waitFor(() => {
+      expect(analyticsMocks.track).toHaveBeenCalledWith('marketing_opt_in_success', {
+        source: PREVIEW_SUCCESS_SOURCE,
+        registration_status: 'already_registered',
+      });
+    });
+    expect(analyticsMocks.trackMarketingSubscribeConversion).not.toHaveBeenCalled();
   });
 
   it('fires Lead after a successful sample request', async () => {
@@ -400,6 +449,8 @@ describe('SampleChapterSection', () => {
           newLead: false,
           sampleRequestId: 'SR-EXISTING',
           marketingConsent: true,
+          // Already subscribed — no marketing acquisition on this request.
+          newMarketingSubscriber: false,
         }),
       }),
     );
@@ -416,13 +467,86 @@ describe('SampleChapterSection', () => {
     await user.click(screen.getByRole('button', { name: /get the preview/i }));
 
     await waitFor(() => {
-      expect(analyticsMocks.trackMarketingSubscribeConversion).toHaveBeenCalled();
+      expect(analyticsMocks.track).toHaveBeenCalledWith('marketing_opt_in_success', {
+        source: 'sample-chapter-form',
+      });
     });
 
+    expect(analyticsMocks.trackMarketingSubscribeConversion).not.toHaveBeenCalled();
     expect(analyticsMocks.trackMetaConversion).not.toHaveBeenCalled();
     expect(
       await screen.findByText(/your preview is on its way/i),
     ).toBeTruthy();
+  });
+
+  it('fires MarketingSubscribe only when newMarketingSubscriber is true', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          accepted: true,
+          newLead: false,
+          sampleRequestId: 'SR-EXISTING-OPTIN',
+          marketingConsent: true,
+          newMarketingSubscriber: true,
+        }),
+      }),
+    );
+
+    const user = userEvent.setup();
+    render(<SampleChapterSection />);
+
+    await user.type(screen.getByLabelText(/email address/i), 'reader@gmail.com');
+    await user.click(
+      screen.getByRole('checkbox', {
+        name: /send me practical java insights/i,
+      }),
+    );
+    await user.click(screen.getByRole('button', { name: /get the preview/i }));
+
+    await waitFor(() => {
+      expect(analyticsMocks.trackMarketingSubscribeConversion).toHaveBeenCalledWith(
+        'marketing:sample-form:SR-EXISTING-OPTIN',
+        { source: 'sample-chapter-form' },
+      );
+    });
+    expect(analyticsMocks.trackMetaConversion).not.toHaveBeenCalled();
+  });
+
+  it('does not fire MarketingSubscribe on cooldown responses', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          accepted: false,
+          newLead: false,
+          sampleRequestId: 'SR-COOLDOWN',
+          marketingConsent: true,
+          newMarketingSubscriber: false,
+          message: 'The chapter preview was sent recently. Please check your inbox.',
+        }),
+      }),
+    );
+
+    const user = userEvent.setup();
+    render(<SampleChapterSection />);
+
+    await user.type(screen.getByLabelText(/email address/i), 'reader@gmail.com');
+    await user.click(
+      screen.getByRole('checkbox', {
+        name: /send me practical java insights/i,
+      }),
+    );
+    await user.click(screen.getByRole('button', { name: /get the preview/i }));
+
+    await waitFor(() => {
+      expect(analyticsMocks.track).toHaveBeenCalledWith('sample_form_success', {
+        marketing_consent: true,
+      });
+    });
+    expect(analyticsMocks.trackMarketingSubscribeConversion).not.toHaveBeenCalled();
   });
 
   it('does not fire Lead when the request fails', async () => {

@@ -233,11 +233,14 @@ behaves as before.
   Only common consumer domains are accepted (Gmail, Outlook/Hotmail/Live,
   Yahoo, iCloud, Rediff); others receive `400` with a clear message.
   On successful acceptance it returns `accepted: true`, `newLead` (`true`
-  only for the email's first successful preview), and a stable
-  `sampleRequestId` (original Meta Lead event ID). Meta CAPI / browser
-  `Lead` emit only when `newLead` is true and analytics consent was granted.
-  Repeat preview deliveries after cooldown may resend the PDF and increment
-  `requestCount` without creating another Meta Lead.
+  only for the email's first successful preview), `newMarketingSubscriber`
+  (`true` only when this request moved marketingConsent from not-true to
+  true), and a stable `sampleRequestId` (original Meta Lead event ID). Meta
+  CAPI / browser `Lead` emit only when `newLead` is true and analytics consent
+  was granted. Browser `MarketingSubscribe` emits only when
+  `newMarketingSubscriber` is true. Repeat preview deliveries after cooldown
+  may resend the PDF and increment `requestCount` without creating another
+  Meta Lead or MarketingSubscribe.
 - `POST /orders/verify` / Razorpay webhook / authorized bypass: after an order
   is marked paid, may emit Meta CAPI `Purchase` once (`metaPurchaseSentAt`
   claim). See `docs/ANALYTICS.md` for SSM token setup, Test Events, and the
@@ -247,8 +250,9 @@ behaves as before.
   (`marketingConsent` missing or false → true); only that write sends the
   transactional welcome email via SES. Duplicates return
   `already_registered` / `registration_status: already_registered` without a
-  second welcome. SES failure is logged and does not undo consent or change
-  the success response. New Amazon exit-modal signups use
+  second welcome. Browser `MarketingSubscribe` must fire only on `created`,
+  never on `already_registered`. SES failure is logged and does not undo
+  consent or change the success response. New Amazon exit-modal signups use
   `marketingConsentSource = amazon_exit_modal` and `sourceVersion = "2"`;
   historical `amazon-pre-navigation` rows are not rewritten.
 - `POST /marketing-consents/unsubscribe` opts the address out of marketing

@@ -158,6 +158,9 @@ export function SampleChapterSection() {
         track('marketing_opt_in_success', {
           source: 'sample-chapter-form',
         });
+      }
+      // Meta MarketingSubscribe only on not-subscribed → subscribed.
+      if (payload.newMarketingSubscriber === true) {
         trackMarketingSubscribeConversion(
           `marketing:sample-form:${resolvedRequestId || 'unknown'}`,
           { source: 'sample-chapter-form' },
@@ -237,10 +240,16 @@ export function SampleChapterSection() {
         source: PREVIEW_SUCCESS_SOURCE,
         registration_status: payload.status || payload.registration_status,
       });
-      trackMarketingSubscribeConversion(
-        `marketing:preview-success:${sampleRequestId || 'unknown'}`,
-        { source: PREVIEW_SUCCESS_SOURCE },
-      );
+      // Only first opt-in transition (created), never already_registered.
+      if (
+        payload.status === 'created' ||
+        payload.registration_status === 'created'
+      ) {
+        trackMarketingSubscribeConversion(
+          `marketing:preview-success:${sampleRequestId || 'unknown'}`,
+          { source: PREVIEW_SUCCESS_SOURCE },
+        );
+      }
     } catch {
       setSecondaryStatus('error');
       setSecondaryCaptchaToken(null);

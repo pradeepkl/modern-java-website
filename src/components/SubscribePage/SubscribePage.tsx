@@ -120,10 +120,16 @@ export function SubscribePage() {
         source: subscribeSource,
         registration_status: payload.status || payload.registration_status,
       });
-      trackMarketingSubscribeConversion(
-        `marketing:subscribe:${subscribeSource}:${payload.status || payload.registration_status || 'ok'}`,
-        { source: subscribeSource },
-      );
+      // Backend already distinguishes created vs already_registered.
+      if (
+        payload.status === 'created' ||
+        payload.registration_status === 'created'
+      ) {
+        trackMarketingSubscribeConversion(
+          `marketing:subscribe:${subscribeSource}`,
+          { source: subscribeSource },
+        );
+      }
     } catch (error) {
       setStatus('error');
       setCaptchaToken(null);

@@ -12,6 +12,7 @@ const {
   resolveMarketingSource,
   normalizeAttribution,
   mergeSampleRequestMarketingConsent,
+  isNewMarketingSubscriberTransition,
   buildFirstOptInUpdate,
   buildExistingSubscriberUpdate,
   buildWelcomeEmail,
@@ -119,6 +120,42 @@ describe('mergeSampleRequestMarketingConsent', () => {
 });
 
 describe('buildFirstOptInUpdate', () => {
+  it('detects first marketing opt-in from preview merge as a subscriber transition', () => {
+    const now = '2026-07-24T12:00:00.000Z';
+    const result = mergeSampleRequestMarketingConsent(
+      { marketingConsent: false },
+      true,
+      { now },
+    );
+    assert.equal(isNewMarketingSubscriberTransition({ marketingConsent: false }, result), true);
+    assert.equal(
+      isNewMarketingSubscriberTransition(null, result),
+      true,
+    );
+  });
+
+  it('does not treat already-subscribed preview checkbox as a new subscriber', () => {
+    const existing = {
+      marketingConsent: true,
+      marketingConsentAt: '2026-07-01T00:00:00.000Z',
+      marketingConsentSource: 'amazon_exit_modal',
+    };
+    const result = mergeSampleRequestMarketingConsent(existing, true);
+    assert.equal(result.marketingConsent, true);
+    assert.equal(isNewMarketingSubscriberTransition(existing, result), false);
+  });
+
+  it('does not treat withdrawn preview checkbox as a new subscriber', () => {
+    const existing = {
+      marketingConsent: false,
+      marketingConsentStatus: 'WITHDRAWN',
+      marketingUnsubscribedAt: '2026-07-20T00:00:00.000Z',
+    };
+    const result = mergeSampleRequestMarketingConsent(existing, true);
+    assert.equal(result.marketingConsent, false);
+    assert.equal(isNewMarketingSubscriberTransition(existing, result), false);
+  });
+
   it('requires marketingConsent not already true and sets sourceVersion 2 for exit modal', () => {
     const update = buildFirstOptInUpdate({
       source: AMAZON_EXIT_SOURCE,
