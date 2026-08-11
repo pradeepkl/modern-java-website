@@ -232,9 +232,12 @@ behaves as before.
   time-limited CloudFront signed download link for the chapter preview PDF.
   Only common consumer domains are accepted (Gmail, Outlook/Hotmail/Live,
   Yahoo, iCloud, Rediff); others receive `400` with a clear message.
-  On successful acceptance it returns `accepted: true` and a stable
-  `sampleRequestId`, and may emit Meta CAPI `Lead` when analytics consent
-  was granted.
+  On successful acceptance it returns `accepted: true`, `newLead` (`true`
+  only for the email's first successful preview), and a stable
+  `sampleRequestId` (original Meta Lead event ID). Meta CAPI / browser
+  `Lead` emit only when `newLead` is true and analytics consent was granted.
+  Repeat preview deliveries after cooldown may resend the PDF and increment
+  `requestCount` without creating another Meta Lead.
 - `POST /orders/verify` / Razorpay webhook / authorized bypass: after an order
   is marked paid, may emit Meta CAPI `Purchase` once (`metaPurchaseSentAt`
   claim). See `docs/ANALYTICS.md` for SSM token setup, Test Events, and the

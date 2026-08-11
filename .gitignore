@@ -56,3 +56,6 @@ ops/orders.unmasked.md
 backend/scripts/test-license-pdf-send.js
 backend/scripts/test-license-footer-every-page.js
 
+
+# Temporary local audit exports (may contain sensitive fields)
+audit/

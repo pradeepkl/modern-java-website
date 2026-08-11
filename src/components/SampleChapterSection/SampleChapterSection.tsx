@@ -137,8 +137,12 @@ export function SampleChapterSection() {
       );
       track('sample_form_success', { marketing_consent: marketingConsent });
 
-      // Fire browser Lead only for newly accepted sends; eventID matches CAPI.
-      if (payload.accepted === true && resolvedRequestId) {
+      // Fire browser Lead only for first-time sample leads; eventID matches CAPI.
+      if (
+        payload.accepted === true &&
+        payload.newLead === true &&
+        resolvedRequestId
+      ) {
         trackMetaConversion(
           `lead:sample-preview:${resolvedRequestId}`,
           'Lead',

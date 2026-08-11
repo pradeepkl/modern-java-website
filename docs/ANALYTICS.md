@@ -55,10 +55,13 @@ third-party scripts load.
     `content_ids`, `content_type=product`, `value`, `currency=INR`).
     Deduped by `view-content:formats` (not every IntersectionObserver tick).
   - `Lead`: only after the sample-chapter API returns `accepted: true`
-    (not form open, submit click, validation failure, duplicate/cooldown
-    rejection, or API failure). Params:
+    **and** `newLead: true` (first successful preview for that email — not
+    form open, submit click, validation failure, cooldown rejection,
+    repeat PDF delivery, or API failure). Params:
     `content_name=Modern Java Sample Chapter`,
-    `content_category=Book sample`, `eventID = sampleRequestId`.
+    `content_category=Book sample`, `eventID = sampleRequestId`
+    (stable original Lead event ID). Repeat accepted preview resends
+    return `newLead: false` and must not fire browser or CAPI `Lead`.
     Amazon modal / paperback waitlist may also emit browser `Lead` with
     their own content names.
   - `InitiateCheckout`: only after the backend successfully creates a
@@ -89,7 +92,7 @@ Phase 1 scope: **Lead** + **Purchase** only. Do not send server
 
 | Event | When sent | `event_id` |
 |-------|-----------|------------|
-| `Lead` | After chapter preview email is accepted (not cooldown / validation / SES failure) | Stable `sampleRequestId` (`SR-…`) |
+| `Lead` | After the **first** accepted chapter preview for an email (not cooldown, validation, SES failure, or repeat PDF resend) | Stable `sampleRequestId` (`SR-…`) — original Lead event ID |
 | `Purchase` | After `/orders/verify` succeeds **or** verified `payment.captured` webhook **or** authorized checkout bypass marks the order paid | Internal `appOrderId` (`MJ-…` / `MJ-D-…`) |
 
 Browser and server must use the **same** `event_name` + `event_id` pair for
@@ -210,7 +213,7 @@ include access tokens, raw emails, `_fbp`, `_fbc`, or hashed identifiers.
 | 1 | Scroll to **Formats** (`#formats`) | one `ViewContent` | `content_name=Modern Java`, `content_category=Book`, `content_type=product`, `content_ids` includes Kindle/digital ids, `currency=INR`, `value` = digital catalog amount in **rupees** |
 | 2 | Open DRM-free checkout, submit form, wait until Razorpay Checkout opens | one `InitiateCheckout` | `content_name=Modern Java PDF + ePub`, `content_ids=["modern_java_digital"]`, `content_type=product`, `currency=INR`, `value` = order amount in **rupees**, `num_items=1`, `event_id` / `eventID` = Razorpay order id |
 | 3 | Dismiss Razorpay, reopen checkout, create another order | one new `InitiateCheckout` for the new Razorpay order id | opening the dialog alone must **not** fire `InitiateCheckout` |
-| 4 | Submit chapter preview with a real inbox you control | one logical `Lead` (Browser + Server) | shared `event_id` / `sampleRequestId`; browser params: `content_name=Modern Java Sample Chapter`, `content_category=Book sample` |
+| 4 | Submit chapter preview with a **new** inbox you control | one logical `Lead` (Browser + Server) | shared `event_id` / `sampleRequestId`; response `newLead: true`; browser params: `content_name=Modern Java Sample Chapter`, `content_category=Book sample`. A second accepted preview for the same email must not emit another Lead. |
 | 5 | (Optional) Join Amazon exit signup, then close without buying | one more browser `Lead` | `content_name=amazon_exit_signup` (browser-only in this phase) |
 | 5b | Click **Continue without joining** *or* **Continue to Amazon** after signup | one browser custom `AmazonClick` | `content_name=Modern Java Kindle`, `content_ids=["modern_java_kindle"]`, `content_type=product`, `destination=amazon`, `event_id` / `eventID` starts with `AMZ-`. Do **not** treat Meta auto button events (buttonText / classList) as this conversion. |
 | 6 | Complete one real Razorpay payment (current digital amount) **or** a known bypass order only if you intentionally use that path | one logical `Purchase` (Browser + Server) | shared `event_id` = `appOrderId`; `currency=INR`, `value` = **charged order total in rupees** (`order.amount` paise ÷ 100 — never a stale catalog hardcode); `content_name=Modern Java PDF + ePub` |
@@ -253,7 +256,8 @@ Also useful for funnels (do not need to be key events):
 - `amazon_exit_email_error`, `amazon_exit_turnstile_error`, `checkout_abandon`, `checkout_fail`, `form_field_abandon`, `scroll_depth`, `paperback_waitlist_error`
 
 Preview Lead and newsletter subscription are separate conversions. Meta `Lead`
-fires only after `/sample-requests` returns `accepted: true`. Meta custom
+fires only after `/sample-requests` returns `accepted: true` and
+`newLead: true`. Meta custom
 `MarketingSubscribe` fires only after marketing consent is stored
 (form checkbox, success-screen opt-in, `/subscribe`, or Amazon exit modal).
 

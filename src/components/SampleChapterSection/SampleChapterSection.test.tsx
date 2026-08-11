@@ -47,6 +47,7 @@ describe('SampleChapterSection', () => {
         json: async () => ({
           success: true,
           accepted: true,
+          newLead: true,
           sampleRequestId: 'SR-TEST1234',
           marketingConsent: false,
           message: 'Check your inbox—the chapter preview is on its way.',
@@ -117,6 +118,7 @@ describe('SampleChapterSection', () => {
         ok: true,
         json: async () => ({
           accepted: true,
+          newLead: true,
           sampleRequestId: 'SR-OPTIN1',
           marketingConsent: true,
         }),
@@ -165,6 +167,7 @@ describe('SampleChapterSection', () => {
         ok: true,
         json: async () => ({
           accepted: true,
+          newLead: false,
           sampleRequestId: 'SR-EXISTING',
           marketingConsent: true,
           message: 'Check your inbox.',
@@ -221,6 +224,7 @@ describe('SampleChapterSection', () => {
           ok: true,
           json: async () => ({
             accepted: true,
+            newLead: true,
             sampleRequestId: 'SR-TEST1234',
             marketingConsent: false,
           }),
@@ -291,6 +295,68 @@ describe('SampleChapterSection', () => {
     );
   });
 
+  it('fires Lead exactly once for newLead responses (Test F)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          accepted: true,
+          newLead: true,
+          sampleRequestId: 'SR-NEW123',
+          marketingConsent: false,
+        }),
+      }),
+    );
+
+    const user = userEvent.setup();
+    render(<SampleChapterSection />);
+
+    await user.type(screen.getByLabelText(/email address/i), 'reader@gmail.com');
+    await user.click(screen.getByRole('button', { name: /get the preview/i }));
+
+    await waitFor(() => {
+      expect(analyticsMocks.trackMetaConversion).toHaveBeenCalledTimes(1);
+    });
+
+    expect(analyticsMocks.trackMetaConversion).toHaveBeenCalledWith(
+      'lead:sample-preview:SR-NEW123',
+      'Lead',
+      {
+        content_name: 'Modern Java Sample Chapter',
+        content_category: 'Book sample',
+      },
+      { eventID: 'SR-NEW123' },
+    );
+  });
+
+  it('does not fire Lead for existing-lead resends (Test G)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          accepted: true,
+          newLead: false,
+          sampleRequestId: 'SR-EXISTING',
+          marketingConsent: false,
+          message: 'Check your inbox—the chapter preview is on its way.',
+        }),
+      }),
+    );
+
+    const user = userEvent.setup();
+    render(<SampleChapterSection />);
+
+    await user.type(screen.getByLabelText(/email address/i), 'reader@gmail.com');
+    await user.click(screen.getByRole('button', { name: /get the preview/i }));
+
+    expect(
+      await screen.findByText(/your preview is on its way/i),
+    ).toBeTruthy();
+    expect(analyticsMocks.trackMetaConversion).not.toHaveBeenCalled();
+  });
+
   it('does not fire Lead on cooldown / non-accepted responses', async () => {
     vi.stubGlobal(
       'fetch',
@@ -299,6 +365,7 @@ describe('SampleChapterSection', () => {
         json: async () => ({
           message: 'The chapter preview was sent recently. Please check your inbox.',
           accepted: false,
+          newLead: false,
           sampleRequestId: 'SR-OLD',
           marketingConsent: false,
         }),
@@ -320,6 +387,41 @@ describe('SampleChapterSection', () => {
     expect(analyticsMocks.trackMetaConversion).not.toHaveBeenCalled();
     expect(
       await screen.findByRole('button', { name: /yes, keep me updated/i }),
+    ).toBeTruthy();
+  });
+
+  it('keeps MarketingSubscribe independent of Lead for existing leads (Test I)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          accepted: true,
+          newLead: false,
+          sampleRequestId: 'SR-EXISTING',
+          marketingConsent: true,
+        }),
+      }),
+    );
+
+    const user = userEvent.setup();
+    render(<SampleChapterSection />);
+
+    await user.type(screen.getByLabelText(/email address/i), 'reader@gmail.com');
+    await user.click(
+      screen.getByRole('checkbox', {
+        name: /send me practical java insights/i,
+      }),
+    );
+    await user.click(screen.getByRole('button', { name: /get the preview/i }));
+
+    await waitFor(() => {
+      expect(analyticsMocks.trackMarketingSubscribeConversion).toHaveBeenCalled();
+    });
+
+    expect(analyticsMocks.trackMetaConversion).not.toHaveBeenCalled();
+    expect(
+      await screen.findByText(/your preview is on its way/i),
     ).toBeTruthy();
   });
 
@@ -383,6 +485,7 @@ describe('SampleChapterSection', () => {
           ok: true,
           json: async () => ({
             accepted: true,
+            newLead: true,
             sampleRequestId: 'SR-TEST1234',
             marketingConsent: false,
           }),

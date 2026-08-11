@@ -88,6 +88,7 @@ const {
   CONSUMER_EMAIL_ALLOWLIST_MESSAGE,
   isAllowedSampleEmailDomain,
 } = require('./sampleEmailAllowlist');
+const { persistSampleRequestLead } = require('./sampleRequestLead');
 const {
   escapeHtml,
   BOOK_FULL_TITLE,
@@ -816,6 +817,7 @@ const requestSampleChapter = async (event) => {
       message:
         'The chapter preview was sent recently. Please check your inbox.',
       accepted: false,
+      newLead: false,
       sampleRequestId: existing.Item?.sampleRequestId || undefined,
       marketingConsent: existing.Item?.marketingConsent === true,
     });
@@ -921,35 +923,36 @@ const requestSampleChapter = async (event) => {
     throw error;
   }
 
-  const nextItem = {
-    ...existing.Item,
+  const persisted = await persistSampleRequestLead({
+    existingItem: existing.Item,
     email,
     sampleRequestId,
-    firstRequestedAt: existing.Item?.firstRequestedAt || now,
-    lastRequestedAt: now,
-    requestCount: Number(existing.Item?.requestCount || 0) + 1,
-    marketingConsent: consentFields.marketingConsent,
-    marketingConsentStatus: consentFields.marketingConsentStatus,
-    emailDeliveryStatus:
-      existing.Item?.emailDeliveryStatus || EMAIL_DELIVERY.ACTIVE,
-    marketingConsentAt: consentFields.marketingConsentAt,
-    marketingConsentUpdatedAt: consentFields.marketingConsentUpdatedAt,
-    consentVersion: consentFields.consentVersion,
-    marketingConsentSource: consentFields.marketingConsentSource,
+    now,
+    consentFields,
     source: SAMPLE_CHAPTER_FORM_SOURCE,
-  };
-  if (consentFields.clearUnsubscribe) {
-    delete nextItem.marketingUnsubscribedAt;
+    emailDeliveryActive: EMAIL_DELIVERY.ACTIVE,
+    tableName: SAMPLE_REQUESTS_TABLE,
+    dynamo,
+    PutCommand,
+    GetCommand,
+  });
+  const leadEventId = persisted.leadEventId;
+  const requestCount = persisted.requestCount;
+  const newLead = persisted.newLead === true;
+
+  if (newLead) {
+    console.info('sample_lead_created', {
+      lead_event_id: leadEventId,
+      request_count: requestCount,
+    });
+  } else {
+    console.info('sample_preview_resent', {
+      lead_event_id: leadEventId,
+      request_count: requestCount,
+      meta_lead_emitted: false,
+    });
   }
 
-  await dynamo.send(
-    new PutCommand({
-      TableName: SAMPLE_REQUESTS_TABLE,
-      Item: nextItem,
-    }),
-  );
-
-  const requestCount = Number(existing.Item?.requestCount || 0) + 1;
   await notifyAdmin({
     subject: `Chapter preview requested — ${email}`,
     lines: [
@@ -958,30 +961,40 @@ const requestSampleChapter = async (event) => {
       `Marketing opt-in (this request): ${marketingConsent ? 'Yes' : 'No'}`,
       `Marketing opt-in (stored): ${consentFields.marketingConsent ? 'Yes' : 'No'}`,
       `Request count: ${requestCount}`,
+      `New lead: ${newLead ? 'Yes' : 'No'}`,
       `Time: ${now}`,
     ],
   });
 
-  // Meta CAPI Lead — never fails the sample workflow.
-  try {
-    await sendLeadConversion({
-      sampleRequestId,
-      email,
-      attribution: metaAttribution,
-      source: 'sample_request',
-    });
-  } catch (error) {
-    console.error('meta_capi_lead_failed', {
+  // Meta CAPI Lead — first sample lead only; never fails the sample workflow.
+  if (newLead) {
+    try {
+      await sendLeadConversion({
+        sampleRequestId: leadEventId,
+        email,
+        attribution: metaAttribution,
+        source: 'sample_request',
+      });
+    } catch (error) {
+      console.error('meta_capi_lead_failed', {
+        event_name: 'Lead',
+        event_id: leadEventId,
+        errorName: error?.name || 'Error',
+      });
+    }
+  } else {
+    console.info('meta_capi_lead_skipped', {
       event_name: 'Lead',
-      event_id: sampleRequestId,
-      errorName: error?.name || 'Error',
+      event_id: leadEventId,
+      reason: 'existing_lead',
     });
   }
 
   return response(200, {
     message: 'Check your inbox—the chapter preview is on its way.',
     accepted: true,
-    sampleRequestId,
+    newLead,
+    sampleRequestId: leadEventId,
     marketingConsent: consentFields.marketingConsent === true,
   });
 };
