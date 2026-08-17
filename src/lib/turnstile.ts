@@ -1,22 +1,24 @@
 const TURNSTILE_SCRIPT_SRC =
   'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
 
-export const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim();
+/** Cloudflare visible always-pass key — local Vite only, never used in builds. */
+const TURNSTILE_DEV_SITE_KEY = '1x00000000000000000000AA';
+
+export const TURNSTILE_SITE_KEY =
+  import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim() ||
+  (import.meta.env.DEV ? TURNSTILE_DEV_SITE_KEY : undefined);
 
 function isLocalHostname(hostname: string) {
   return hostname === 'localhost' || hostname === '127.0.0.1';
 }
 
 /**
- * Local Vite, Amplify APP_ENV=dev builds, and localhost hosts skip Turnstile.
- * Production builds always require captcha when VITE_TURNSTILE_SITE_KEY is set.
+ * Amplify APP_ENV=dev builds skip Turnstile. Local Vite and production builds
+ * show captcha whenever a site key is available (Vite DEV uses Cloudflare's
+ * visible test key if VITE_TURNSTILE_SITE_KEY is unset).
  */
 export function shouldDisableTurnstile() {
-  if (import.meta.env.DEV) return true;
   if (import.meta.env.VITE_APP_ENV === 'dev') return true;
-  if (typeof window !== 'undefined' && isLocalHostname(window.location.hostname)) {
-    return true;
-  }
   return false;
 }
 

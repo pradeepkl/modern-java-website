@@ -1,10 +1,8 @@
-import { ArrowRight } from 'lucide-react';
 import {
   getPaperbackMode,
   isDigitalSalesEnabled,
 } from '../../config/features';
 import { assets } from '../../data/assets';
-import { trackCtaClick } from '../../lib/analytics';
 import { DecorativeImage } from '../shared/Icon';
 import { SectionEyebrow } from '../shared/SectionEyebrow';
 import './Hero.css';
@@ -35,7 +33,7 @@ export function Hero() {
       <div className="hero-inner page-container">
         <div className="hero-copy">
           <SectionEyebrow className="hero-eyebrow">
-            FOR EXPERIENCED JAVA DEVELOPERS
+            FOR EVERY JAVA DEVELOPER
           </SectionEyebrow>
 
           <h1 id="hero-heading" className="hero-title">
@@ -51,15 +49,6 @@ export function Hero() {
             Less ceremony. Stronger models. More help from the compiler.
           </p>
 
-          <a
-            href="#formats"
-            className="button button-primary button-large hero-cta"
-            onClick={() => trackCtaClick('choose_format', 'hero')}
-          >
-            Choose your format
-            <ArrowRight size={20} strokeWidth={2} aria-hidden="true" />
-          </a>
-
           <p className="hero-meta">
             Java 21+ examples · Concepts through Java 25 · Companion source
             included
@@ -67,17 +56,19 @@ export function Hero() {
         </div>
 
         <div className="hero-visual">
-          <img
-            src={assets.hero.paperback}
-            srcSet={assets.hero.paperbackSrcSet}
-            sizes={assets.hero.paperbackSizes}
-            alt="Modern Java: The Mindset Shift — 3D book cover"
-            width={1200}
-            height={1200}
-            fetchPriority="high"
-            loading="eager"
-            decoding="async"
-          />
+          <div className="hero-visual__glow">
+            <img
+              src={assets.hero.paperback}
+              srcSet={assets.hero.paperbackSrcSet}
+              sizes={assets.hero.paperbackSizes}
+              alt="Modern Java: The Mindset Shift — 3D book cover"
+              width={1200}
+              height={1200}
+              fetchPriority="high"
+              loading="eager"
+              decoding="async"
+            />
+          </div>
           <p className="hero-product-context">{formatLine}</p>
         </div>
       </div>

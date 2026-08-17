@@ -107,6 +107,24 @@
   color: var(--color-muted-light);
 }
 
+.site-footer__dpdp {
+  margin: 4px 0 0;
+  max-width: 40rem;
+  color: var(--color-muted-light);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.site-footer__dpdp a {
+  color: var(--color-blue-700);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.site-footer__dpdp a:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 900px) {
   .site-footer__inner {
     grid-template-columns: 1fr;

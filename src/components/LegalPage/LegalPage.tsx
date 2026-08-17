@@ -70,6 +70,17 @@ function PrivacyPolicy() {
       </section>
 
       <section>
+        <h2>India&apos;s DPDP Act</h2>
+        <p>
+          We aim to handle personal data in line with India&apos;s Digital
+          Personal Data Protection Act, 2023 (DPDP): collect only what we need
+          to send a chapter preview, process orders, and related updates, use
+          it for that purpose, and not sell it. This statement describes our
+          intent and current practices; it is not a certified compliance seal.
+        </p>
+      </section>
+
+      <section>
         <h2>Analytics and cookies</h2>
         <p>
           If you choose <strong>Accept</strong> on the cookie banner, we load

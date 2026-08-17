@@ -6,6 +6,7 @@ import {
 import { track, trackOutboundClick } from '../../lib/analytics';
 import { SectionEyebrow } from '../shared/SectionEyebrow';
 import { FormatCard } from './FormatCard';
+import { PreviewChapterLead } from './PreviewChapterLead';
 import './FormatsSection.css';
 
 function formatsCopy(options: {
@@ -30,7 +31,6 @@ function formatsGridClass(count: number): string {
 export function FormatsSection() {
   const paperbackMode = getPaperbackMode();
   const digitalEnabled = isDigitalSalesEnabled();
-  const availableOnly = paperbackMode !== 'sales' || !digitalEnabled;
   const availableFormats = formatOptions.filter((format) => {
     if (format.id === 'paperback') return paperbackMode === 'sales';
     if (format.id === 'digital') return digitalEnabled;
@@ -51,7 +51,7 @@ export function FormatsSection() {
         <div className="formats-header">
           <div className="formats-header__intro">
             <SectionEyebrow className="formats-header__eyebrow">
-              {availableOnly ? 'Available Today' : 'Get your copy'}
+              Get your copy
             </SectionEyebrow>
             <h2 id="formats-heading" className="formats-header__title">
               Choose the format that works best for you
@@ -70,6 +70,8 @@ export function FormatsSection() {
             <FormatCard key={format.id} format={format} />
           ))}
         </div>
+
+        <PreviewChapterLead />
 
         <p className="formats-bulk">
           {formatBulkOrder.prompt}{' '}

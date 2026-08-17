@@ -1,14 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnalyticsConsentBanner } from './components/AnalyticsConsent/AnalyticsConsentBanner';
 import { MetaPageViewTracker } from './components/analytics/MetaPageViewTracker';
 import { Header } from './components/Header/Header';
 import { Hero } from './components/Hero/Hero';
-import { PurposeSection } from './components/PurposeSection/PurposeSection';
-import { GuideSection } from './components/GuideSection/GuideSection';
+import { PositioningSection } from './components/PositioningSection/PositioningSection';
 import { InsideBookSection } from './components/InsideBookSection/InsideBookSection';
-import { SampleChapterSection } from './components/SampleChapterSection/SampleChapterSection';
-import { AuthorSection } from './components/AuthorSection/AuthorSection';
-import { TrustSection } from './components/TrustSection/TrustSection';
+import { AudienceSection } from './components/AudienceSection/AudienceSection';
 import { FormatsSection } from './components/FormatsSection/FormatsSection';
 import { PaperbackWaitlistSection } from './components/FormatsSection/PaperbackWaitlistSection';
 import { Footer } from './components/Footer/Footer';
@@ -17,7 +14,6 @@ import { ContactPage } from './components/ContactPage/ContactPage';
 import { UnsubscribePage } from './components/UnsubscribePage/UnsubscribePage';
 import { SubscribePage } from './components/SubscribePage/SubscribePage';
 import { ModalPreviewPage } from './components/ModalPreviewPage';
-import { useActiveSection } from './hooks/useActiveSection';
 import { useEngagementTracking } from './hooks/useEngagementTracking';
 import { useSectionDeepLinkScroll } from './hooks/useSectionDeepLinkScroll';
 import { useEmailLinkClickBeacon } from './hooks/useEmailLinkClickBeacon';
@@ -25,9 +21,7 @@ import { useEmailLinkClickBeacon } from './hooks/useEmailLinkClickBeacon';
 function App() {
   const path = window.location.pathname.replace(/\/+$/, '') || '/';
   const isLanding = path === '/';
-  const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const activeSection = useActiveSection();
   useEngagementTracking(isLanding);
   useSectionDeepLinkScroll(isLanding);
   useEmailLinkClickBeacon(isLanding);
@@ -40,14 +34,6 @@ function App() {
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  const handleMenuToggle = useCallback(() => {
-    setMenuOpen((prev) => !prev);
-  }, []);
-
-  const handleMenuClose = useCallback(() => {
-    setMenuOpen(false);
   }, []);
 
   if (path === '/modal-preview') {
@@ -108,21 +94,12 @@ function App() {
     <div className="site-shell">
       <MetaPageViewTracker />
       <AnalyticsConsentBanner />
-      <Header
-        menuOpen={menuOpen}
-        onMenuToggle={handleMenuToggle}
-        onMenuClose={handleMenuClose}
-        scrolled={scrolled}
-        activeSection={activeSection}
-      />
+      <Header scrolled={scrolled} />
       <main>
         <Hero />
-        <PurposeSection />
-        <GuideSection />
+        <PositioningSection />
         <InsideBookSection />
-        <SampleChapterSection />
-        <AuthorSection />
-        <TrustSection />
+        <AudienceSection />
         <FormatsSection />
         <PaperbackWaitlistSection />
       </main>

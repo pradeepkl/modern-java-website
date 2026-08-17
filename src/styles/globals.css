@@ -138,6 +138,29 @@ a:hover {
   }
 }
 
+.landing-heading {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
+  color: var(--color-section-heading);
+  font-family: var(--font-heading);
+  font-size: clamp(1.55rem, 2.4vw, 2rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.landing-heading::after {
+  content: '';
+  display: block;
+  width: 60%;
+  height: 2px;
+  margin: 14px auto 0;
+  background: currentColor;
+  border-radius: 999px;
+}
+
 .noscript-fallback {
   padding: var(--space-8);
   max-width: var(--page-max-width);

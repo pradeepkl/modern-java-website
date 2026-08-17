@@ -1,31 +1,25 @@
+import { Check } from 'lucide-react';
 import { audiences } from '../../data/audiences';
-import { SectionHeading } from '../shared/SectionHeading';
-import './AudienceCard.css';
 import './AudienceSection.css';
 
 export function AudienceSection() {
   return (
-    <section
-      className="audience-section"
-      aria-labelledby="audience-heading"
-    >
-      <div className="section-inner">
-        <SectionHeading id="audience-heading">WHO THIS BOOK IS FOR</SectionHeading>
+    <section className="audience" aria-labelledby="audience-heading">
+      <div className="page-container audience__inner">
+        <h2 id="audience-heading" className="landing-heading">
+          This book is for you if...
+        </h2>
 
-        <div className="audience-grid">
-          {audiences.map((audience) => {
-            const AudienceIcon = audience.icon;
-
-            return (
-              <article key={audience.id} className="audience-card">
-                <span className="audience-card__icon" aria-hidden="true">
-                  <AudienceIcon size={22} strokeWidth={1.75} />
-                </span>
-                <p className="audience-card__label">{audience.label}</p>
-              </article>
-            );
-          })}
-        </div>
+        <ul className="audience-list">
+          {audiences.map((audience) => (
+            <li key={audience.id} className="audience-list__item">
+              <span className="audience-list__check" aria-hidden="true">
+                <Check size={18} strokeWidth={2.5} />
+              </span>
+              <span>{audience.label}</span>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );

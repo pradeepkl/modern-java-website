@@ -36,6 +36,11 @@ export function Footer() {
                 </a>
               </li>
             ))}
+            <li>
+              <a href="/#formats" className="site-footer__nav-link">
+                Formats
+              </a>
+            </li>
           </ul>
         </div>
       </div>
@@ -65,6 +70,12 @@ export function Footer() {
           </div>
           <p className="site-footer__copyright">
             © {book.copyrightYear} {book.author}. All rights reserved.
+          </p>
+          <p id="dpdp-note" className="site-footer__dpdp">
+            <span aria-hidden="true">*</span> We don&apos;t spam. We aim to
+            handle personal data in line with India&apos;s Digital Personal Data
+            Protection Act, 2023 (DPDP). Read our{' '}
+            <a href="/privacy-policy">Privacy Policy</a>.
           </p>
         </div>
       </div>

@@ -3,11 +3,9 @@ import { getAmountInr } from '../config/prices';
 import { getConsent, track, trackMetaConversion } from '../lib/analytics';
 
 const SECTION_TRACK_IDS = [
-  'why-this-book',
+  'about',
   'inside-the-book',
-  'chapter-preview',
   'formats',
-  'author',
 ] as const;
 
 const SCROLL_BUCKETS = [25, 50, 75, 100] as const;

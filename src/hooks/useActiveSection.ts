@@ -2,12 +2,8 @@ import { useEffect, useState } from 'react';
 
 const SECTION_IDS = [
   'top',
-  'why-this-book',
-  'about-the-book',
+  'about',
   'inside-the-book',
-  'chapter-preview',
-  'author',
-  'why-trust-this-book',
   'formats',
 ] as const;
 

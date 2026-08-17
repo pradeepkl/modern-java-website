@@ -51,12 +51,7 @@ export function MobileMenu({ open, onClose, activeSection }: MobileMenuProps) {
                   href={link.href}
                   className={`mobile-menu__link ${isActive ? 'mobile-menu__link--active' : ''}`}
                   aria-current={isActive ? 'true' : undefined}
-                  onClick={() => {
-                    if (link.href === '#formats') {
-                      trackCtaClick('nav_formats', 'mobile_menu');
-                    }
-                    onClose();
-                  }}
+                  onClick={onClose}
                 >
                   {link.label}
                 </a>

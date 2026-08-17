@@ -1,37 +1,33 @@
-import { positioningChecklist } from '../../data/learning';
-import { CheckList } from '../shared/CheckList';
+import { purposeGoal, purposeIntro, purposePoints } from '../../data/purpose';
 import './PositioningSection.css';
 
 export function PositioningSection() {
   return (
-    <section
-      id="about-the-book"
-      className="positioning-section"
-      aria-labelledby="positioning-heading"
-    >
-      <div className="section-inner positioning-section__inner">
-        <div className="positioning-section__left">
-          <h2 id="positioning-heading" className="positioning-section__heading">
-            MODERN JAVA IS NOT A VERSION NUMBER.
-            <span className="positioning-section__highlight"> IT IS A MINDSET.</span>
-          </h2>
-          <div className="positioning-section__body">
-            <p>
-              Modern Java isn&apos;t about fewer lines. It&apos;s about less code you
-              have to reason about—and a compiler that enforces what you used to
-              keep in your head.
-            </p>
-            <p>
-              Modern Java: The Mindset Shift is for developers who know classes,
-              collections, and inheritance but still carry habits from older Java
-              codebases.
-            </p>
-          </div>
-        </div>
+    <section id="about" className="positioning" aria-labelledby="positioning-heading">
+      <div className="page-container positioning__inner">
+        <h2 id="positioning-heading" className="landing-heading">
+          {purposeIntro.eyebrow}
+        </h2>
 
-        <div className="positioning-section__divider" aria-hidden="true" />
+        <p className="positioning__lead">{purposeIntro.title}</p>
 
-        <CheckList items={positioningChecklist} light className="positioning-section__checklist" />
+        <p className="positioning__body">{purposeIntro.description}</p>
+
+        <ol className="positioning-points" aria-label="Why this book exists">
+          {purposePoints.map((point, index) => (
+            <li key={point.id} className="positioning-point">
+              <span className="positioning-point__number" aria-hidden="true">
+                {String(index + 1).padStart(2, '0')}
+              </span>
+              <div className="positioning-point__copy">
+                <h3 className="positioning-point__title">{point.title}</h3>
+                <p className="positioning-point__description">{point.description}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+
+        <p className="positioning__close">{purposeGoal.title}</p>
       </div>
     </section>
   );

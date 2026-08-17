@@ -65,7 +65,9 @@ export const formatOptions: FormatOption[] = [
     subtitle: 'Own the files. Keep every revision',
     features: [
       { text: 'DRM-free PDF + ePub included', tone: 'upgrade' },
-      { text: 'Access to future revised editions', tone: 'upgrade' },
+      { text: 'New version released every 6 months', tone: 'upgrade' },
+      { text: 'Companion codebase in a GitHub repo', tone: 'upgrade' },
+      { text: 'Preview access to future books and courses', tone: 'upgrade' },
       { text: 'Secure download links by email' },
     ],
     price: digitalSalePrice,
