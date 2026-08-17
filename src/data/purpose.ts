@@ -17,7 +17,7 @@ export interface PurposePoint {
 
 export const purposeIntro = {
   eyebrow: 'Why this book exists',
-  title: 'This is not just another Java book.',
+  title: 'This is definitely not another Java book.',
   description:
     'Most Java books show you what to use. This book explains why it exists—and how to think, design, and code with intent.',
 } as const;

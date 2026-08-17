@@ -6,6 +6,7 @@ const SECTION_TRACK_IDS = [
   'about',
   'inside-the-book',
   'formats',
+  'author',
 ] as const;
 
 const SCROLL_BUCKETS = [25, 50, 75, 100] as const;

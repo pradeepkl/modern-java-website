@@ -8,6 +8,7 @@ import { InsideBookSection } from './components/InsideBookSection/InsideBookSect
 import { AudienceSection } from './components/AudienceSection/AudienceSection';
 import { FormatsSection } from './components/FormatsSection/FormatsSection';
 import { PaperbackWaitlistSection } from './components/FormatsSection/PaperbackWaitlistSection';
+import { AuthorSection } from './components/AuthorSection/AuthorSection';
 import { Footer } from './components/Footer/Footer';
 import { LegalPage } from './components/LegalPage/LegalPage';
 import { ContactPage } from './components/ContactPage/ContactPage';
@@ -102,6 +103,7 @@ function App() {
         <AudienceSection />
         <FormatsSection />
         <PaperbackWaitlistSection />
+        <AuthorSection />
       </main>
       <Footer />
     </div>
