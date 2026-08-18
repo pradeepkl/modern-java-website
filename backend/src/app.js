@@ -1330,8 +1330,14 @@ const recordEmailLinkClick = async (event) => {
     return response(200, { recorded: false });
   }
 
+  const headerUa =
+    event.headers?.['user-agent'] ||
+    event.headers?.['User-Agent'] ||
+    event.headers?.['user-Agent'] ||
+    '';
   const clickUpdate = buildEmailLinkClickUpdate({
     sequence: verified.sequence,
+    userAgent: String(json.userAgent || headerUa || ''),
   });
   try {
     await dynamo.send(

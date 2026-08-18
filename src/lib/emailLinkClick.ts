@@ -54,7 +54,11 @@ export function reportEmailLinkClick(token = readEmailClickToken()): void {
     void fetch(`${apiBase}/email-link-clicks`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ token: value }),
+      body: JSON.stringify({
+        token: value,
+        userAgent:
+          typeof navigator !== 'undefined' ? navigator.userAgent : '',
+      }),
       keepalive: true,
       mode: 'cors',
     }).catch(() => {

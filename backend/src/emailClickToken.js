@@ -146,26 +146,71 @@ function formatUtcAndIst(input = new Date()) {
 }
 
 /**
+ * Coarse OS + device from a User-Agent string (no extra UA library).
+ * @param {unknown} userAgent
+ * @returns {{ os: string, device: string }}
+ */
+function parseClientDevice(userAgent) {
+  const ua = String(userAgent || '');
+  if (!ua.trim()) return { os: 'Unknown', device: 'Unknown' };
+
+  if (/iPhone/i.test(ua)) return { os: 'iOS', device: 'iPhone' };
+  if (/iPad/i.test(ua) || (/Macintosh/i.test(ua) && /Mobile/i.test(ua))) {
+    return { os: 'iOS', device: 'iPad' };
+  }
+  if (/Android/i.test(ua)) {
+    return {
+      os: 'Android',
+      device: /Mobile/i.test(ua) ? 'Android phone' : 'Android tablet',
+    };
+  }
+  if (/CrOS/i.test(ua)) return { os: 'ChromeOS', device: 'Chromebook' };
+  if (/Mac OS X|Macintosh/i.test(ua)) return { os: 'macOS', device: 'Mac' };
+  if (/Windows/i.test(ua)) return { os: 'Windows', device: 'Windows PC' };
+  if (/Linux/i.test(ua)) return { os: 'Linux', device: 'Linux PC' };
+  return { os: 'Unknown', device: 'Unknown' };
+}
+
+/**
  * DynamoDB update for SAMPLE_REQUESTS_TABLE when an email CTA is clicked.
  * Sequence-specific first-click timestamp + rolling last-click fields.
- * Each click time is stored as UTC (`*At`) and IST (`*AtIst`) columns.
+ * Each click time is stored as UTC (`*At`) and IST (`*AtIst`) columns,
+ * plus OS/device on the last click and an append-only click history.
  */
-function buildEmailLinkClickUpdate({ sequence, now } = {}) {
+function buildEmailLinkClickUpdate({ sequence, now, userAgent } = {}) {
   const { utc, ist } = formatUtcAndIst(now || new Date());
   const seq = normalizeSequence(sequence);
+  const { os, device } = parseClientDevice(userAgent);
   const values = {
     ':nowUtc': utc,
     ':nowIst': ist,
     ':seq': seq,
+    ':os': os,
+    ':device': device,
     ':zero': 0,
     ':one': 1,
+    ':empty': [],
+    ':click': [
+      {
+        atUtc: utc,
+        atIst: ist,
+        sequence: seq,
+        os,
+        device,
+      },
+    ],
   };
 
   let expression =
     'SET lastEmailLinkClickedAt = :nowUtc, ' +
     'lastEmailLinkClickedAtIst = :nowIst, ' +
     'lastEmailLinkSequence = :seq, ' +
+    'lastEmailLinkOs = :os, ' +
+    'lastEmailLinkDevice = :device, ' +
+    'firstEmailLinkOs = if_not_exists(firstEmailLinkOs, :os), ' +
+    'firstEmailLinkDevice = if_not_exists(firstEmailLinkDevice, :device), ' +
     'emailLinkClickCount = if_not_exists(emailLinkClickCount, :zero) + :one, ' +
+    'emailLinkClicks = list_append(if_not_exists(emailLinkClicks, :empty), :click), ' +
     'updatedAt = :nowUtc';
 
   // Named first-click attributes for known sample nurture steps.
@@ -185,6 +230,10 @@ function buildEmailLinkClickUpdate({ sequence, now } = {}) {
     expression +=
       ', sampleFollowUpLinkClickedAt = if_not_exists(sampleFollowUpLinkClickedAt, :nowUtc)' +
       ', sampleFollowUpLinkClickedAtIst = if_not_exists(sampleFollowUpLinkClickedAtIst, :nowIst)';
+  } else if (seq === 'edition-announcement' || seq === 'second-edition') {
+    expression +=
+      ', editionAnnouncementLinkClickedAt = if_not_exists(editionAnnouncementLinkClickedAt, :nowUtc)' +
+      ', editionAnnouncementLinkClickedAtIst = if_not_exists(editionAnnouncementLinkClickedAtIst, :nowIst)';
   }
 
   return {
@@ -199,6 +248,7 @@ module.exports = {
   normalizeEmail,
   normalizeSequence,
   formatUtcAndIst,
+  parseClientDevice,
   createEmailClickToken,
   verifyEmailClickToken,
   buildEmailLinkClickUpdate,

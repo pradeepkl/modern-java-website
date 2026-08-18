@@ -37,7 +37,10 @@ describe('emailLinkClick', () => {
       'https://api.example.com/email-link-clicks',
       expect.objectContaining({
         method: 'POST',
-        body: JSON.stringify({ token: 'signed.token' }),
+        body: JSON.stringify({
+          token: 'signed.token',
+          userAgent: navigator.userAgent,
+        }),
       }),
     );
     expect(window.location.search).not.toContain('mj_click=');
