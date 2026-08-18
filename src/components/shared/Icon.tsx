@@ -35,7 +35,8 @@ export function DecorativeImage({
   className = '',
   width,
   height,
-}: DecorativeImageProps) {
+  loading = 'lazy',
+}: DecorativeImageProps & { loading?: 'lazy' | 'eager' }) {
   return (
     <img
       src={src}
@@ -44,6 +45,7 @@ export function DecorativeImage({
       className={className}
       width={width}
       height={height}
+      loading={loading}
       decoding="async"
     />
   );

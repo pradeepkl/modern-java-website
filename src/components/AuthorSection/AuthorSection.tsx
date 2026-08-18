@@ -20,8 +20,8 @@ export function AuthorSection() {
             <img
               src={assets.author.portrait}
               alt={authorProfile.name}
-              width={270}
-              height={404}
+              width={148}
+              height={148}
               loading="lazy"
               decoding="async"
             />

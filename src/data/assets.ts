@@ -15,7 +15,7 @@ export const assets = {
     paperback: '/assets/hero/modern-java-3D-768.webp',
     paperbackSrcSet:
       '/assets/hero/modern-java-3D-480.webp 480w, /assets/hero/modern-java-3D-768.webp 768w, /assets/hero/modern-java-3D.webp 1200w',
-    paperbackSizes: '(max-width: 820px) 90vw, 620px',
+    paperbackSizes: '(max-width: 560px) 390px, (max-width: 820px) 480px, 620px',
     paperbackEdition: '/assets/hero/paperback-3D.webp',
   },
 

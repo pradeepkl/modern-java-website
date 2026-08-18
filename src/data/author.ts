@@ -1,11 +1,7 @@
-import type { LucideIcon } from 'lucide-react';
-import { Building2, GraduationCap, PenLine } from 'lucide-react';
-
 export interface AuthorFocus {
   id: string;
   title: string;
   description: string;
-  icon: LucideIcon;
 }
 
 export const authorProfile = {
@@ -26,20 +22,17 @@ export const authorFocus: AuthorFocus[] = [
     title: 'Enterprise architecture',
     description:
       'Designing resilient platforms and guiding systems through long-term change.',
-    icon: Building2,
   },
   {
     id: 'education',
     title: 'Developer education',
     description:
       'Turning complex language and design concepts into decisions teams can apply.',
-    icon: GraduationCap,
   },
   {
     id: 'writing',
     title: 'Practitioner-led writing',
     description:
       'Grounding every lesson in the trade-offs developers encounter in real codebases.',
-    icon: PenLine,
   },
 ];

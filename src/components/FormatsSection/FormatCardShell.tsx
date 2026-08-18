@@ -25,6 +25,22 @@ export function FormatBadgeIcon({ type }: { type: FormatOption['badgeIcon'] }) {
   return <BookOpen size={26} strokeWidth={1.75} aria-hidden="true" />;
 }
 
+function FeatureText({ feature }: { feature: FormatFeature }) {
+  const phrase = feature.underline;
+  if (!phrase || !feature.text.includes(phrase)) {
+    return <>{feature.text}</>;
+  }
+
+  const index = feature.text.indexOf(phrase);
+  return (
+    <>
+      {feature.text.slice(0, index)}
+      <span className="format-card__feature-underline">{phrase}</span>
+      {feature.text.slice(index + phrase.length)}
+    </>
+  );
+}
+
 function FeatureItem({
   feature,
   isUpgrade,
@@ -45,7 +61,7 @@ function FeatureItem({
         <Check size={14} strokeWidth={2.5} />
       </span>
       <span>
-        {feature.text}
+        <FeatureText feature={feature} />
         {isUpgrade ? (
           <span className="sr-only"> (upgrade benefit)</span>
         ) : null}

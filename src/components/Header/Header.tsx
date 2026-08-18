@@ -17,6 +17,7 @@ export function Header({ scrolled }: HeaderProps) {
             width={300}
             height={72}
             className="header-logo"
+            decoding="async"
           />
         </a>
 

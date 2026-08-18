@@ -93,6 +93,12 @@
   flex: 1 1 auto;
 }
 
+.format-card__feature-underline {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+}
+
 .format-card__features li {
   display: flex;
   align-items: flex-start;
@@ -140,6 +146,42 @@
   gap: 16px;
   margin-top: auto;
   padding-top: 20px;
+}
+
+.format-card__purchase {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+}
+
+.format-card__purchase .format-card__pricing {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  flex: 0 0 auto;
+  width: auto;
+  text-align: left;
+}
+
+.format-card__purchase .format-card__price {
+  margin: 0;
+  white-space: nowrap;
+  font-size: clamp(1.7rem, 2.1vw, 2.4rem);
+  text-align: left;
+}
+
+.format-card__purchase .format-card__cta {
+  flex: 1 1 180px;
+  width: auto;
+  min-width: 0;
+}
+
+@media (min-width: 561px) {
+  .format-card__purchase {
+    flex-wrap: nowrap;
+  }
 }
 
 .format-card__pricing {
@@ -215,13 +257,49 @@
 }
 
 .format-card__discount {
-  padding: 4px 7px;
-  color: var(--color-blue-700);
-  background: var(--color-blue-100);
+  padding: 4px 8px;
+  color: var(--color-ink);
+  background: #ffe8a3;
   border-radius: 999px;
   font-size: 0.72rem;
   font-weight: 700;
   white-space: nowrap;
+}
+
+.format-card__benefit {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px;
+  color: #14532d;
+  background: #eef8ee;
+  border: 1px solid #c6e6c8;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.format-card__benefit strong {
+  font-weight: 700;
+}
+
+.format-card__benefit-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #15803d;
+}
+
+.format-card__trust {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-muted-light);
 }
 
 .format-card__version-slot {

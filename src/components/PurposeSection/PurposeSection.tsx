@@ -1,4 +1,13 @@
-import { Star } from 'lucide-react';
+import {
+  BookX,
+  Braces,
+  CircleHelp,
+  Layers3,
+  Rocket,
+  Settings2,
+  Star,
+  type LucideIcon,
+} from 'lucide-react';
 import {
   purposeGoal,
   purposeIntro,
@@ -6,6 +15,15 @@ import {
 } from '../../data/purpose';
 import { SectionEyebrow } from '../shared/SectionEyebrow';
 import './PurposeSection.css';
+
+const purposeIcons: Record<string, LucideIcon> = {
+  catalog: BookX,
+  versions: Layers3,
+  mindset: Settings2,
+  why: CircleHelp,
+  compiler: Braces,
+  expressive: Rocket,
+};
 
 export function PurposeSection() {
   return (
@@ -31,7 +49,7 @@ export function PurposeSection() {
 
           <ul className="purpose-points">
             {purposePoints.map((point) => {
-              const Icon = point.icon;
+              const Icon = purposeIcons[point.id];
 
               return (
                 <li key={point.id} className="purpose-point">

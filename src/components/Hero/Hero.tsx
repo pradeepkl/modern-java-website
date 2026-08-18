@@ -22,12 +22,14 @@ export function Hero() {
         className="hero-background-left"
         width={520}
         height={520}
+        loading="lazy"
       />
       <DecorativeImage
         src={assets.hero.circuitRight}
         className="hero-background-right"
         width={380}
         height={380}
+        loading="lazy"
       />
 
       <div className="hero-inner page-container">
@@ -66,7 +68,7 @@ export function Hero() {
               height={1200}
               fetchPriority="high"
               loading="eager"
-              decoding="async"
+              decoding="sync"
             />
           </div>
           <p className="hero-product-context">{formatLine}</p>

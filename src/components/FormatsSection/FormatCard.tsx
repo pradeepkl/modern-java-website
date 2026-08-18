@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { Download } from 'lucide-react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { CheckCircle, Download, ShieldCheck } from 'lucide-react';
 import {
   getPaperbackMode,
   isDigitalSalesEnabled,
@@ -13,10 +13,13 @@ import {
 } from '../../lib/digitalCheckoutDeepLink';
 import { AmazonConsentLink } from '../shared/AmazonConsentLink';
 import { BrandButtonLogo } from '../shared/BrandButtonLogo';
-import { DigitalOrderDialog } from './DigitalOrderDialog';
 import { FormatCardShell } from './FormatCardShell';
 import { PaperbackPurchaseCard } from './PaperbackPurchaseCard';
 import './FormatCard.css';
+
+const DigitalOrderDialog = lazy(() =>
+  import('./DigitalOrderDialog').then((m) => ({ default: m.DigitalOrderDialog })),
+);
 
 interface FormatCardProps {
   format: FormatOption;
@@ -116,19 +119,28 @@ function StandardFormatCard({ format }: FormatCardProps) {
         features={format.features}
       >
         <div className="format-card__footer">
-          <div className="format-card__pricing">
-            <div className="format-card__price-row">
-              {format.listPrice !== format.price ? (
-                <span className="format-card__list-price">{format.listPrice}</span>
-              ) : null}
-              <p
-                className="format-card__price"
-                aria-label={
-                  format.listPrice !== format.price
-                    ? `${format.price}, was ${format.listPrice}`
-                    : format.price
-                }
-              >
+          {format.benefit ? (
+            <p className="format-card__benefit">
+              <span className="format-card__benefit-icon" aria-hidden="true">
+                <CheckCircle size={16} strokeWidth={2.4} />
+              </span>
+              <span>
+                {format.benefit.includes('no extra cost') ? (
+                  <>
+                    {format.benefit.split('no extra cost')[0]}
+                    <strong>no extra cost</strong>
+                    {format.benefit.split('no extra cost')[1]}
+                  </>
+                ) : (
+                  format.benefit
+                )}
+              </span>
+            </p>
+          ) : null}
+
+          <div className="format-card__purchase">
+            <div className="format-card__pricing">
+              <p className="format-card__price" aria-label={format.price}>
                 <span className="format-card__currency" aria-hidden="true">
                   ₹
                 </span>
@@ -138,47 +150,57 @@ function StandardFormatCard({ format }: FormatCardProps) {
                 <span className="format-card__discount">{format.discountLabel}</span>
               ) : null}
             </div>
-            {format.versionLabel ? (
-              <div className="format-card__version-slot">
-                <span className="format-card__version">{format.versionLabel}</span>
-              </div>
+            {isDirectDigital ? (
+              <button
+                type="button"
+                className={`${ctaClass} format-card__cta`}
+                onClick={() => openCheckout('format_card')}
+              >
+                <Download size={18} strokeWidth={2} aria-hidden="true" />
+                {format.ctaLabel}
+              </button>
+            ) : format.ctaUrl ? (
+              <AmazonConsentLink
+                href={format.ctaUrl}
+                className={`${ctaClass} format-card__cta`}
+                buttonLocation="format_card"
+                onIntent={() =>
+                  track('format_cta_click', { format: format.id })
+                }
+              >
+                <BrandButtonLogo brand="amazon" />
+                {format.ctaLabel}
+              </AmazonConsentLink>
             ) : null}
-            <p className="format-card__availability">{format.availability}</p>
           </div>
+          {format.versionLabel ? (
+            <div className="format-card__version-slot">
+              <span className="format-card__version">{format.versionLabel}</span>
+            </div>
+          ) : null}
+          {format.availability ? (
+            <p className="format-card__availability">{format.availability}</p>
+          ) : null}
 
-          {isDirectDigital ? (
-            <button
-              type="button"
-              className={`${ctaClass} format-card__cta`}
-              onClick={() => openCheckout('format_card')}
-            >
-              <Download size={18} strokeWidth={2} aria-hidden="true" />
-              {format.ctaLabel}
-            </button>
-          ) : format.ctaUrl ? (
-            <AmazonConsentLink
-              href={format.ctaUrl}
-              className={`${ctaClass} format-card__cta`}
-              buttonLocation="format_card"
-              onIntent={() =>
-                track('format_cta_click', { format: format.id })
-              }
-            >
-              <BrandButtonLogo brand="amazon" />
-              {format.ctaLabel}
-            </AmazonConsentLink>
+          {format.trustNote ? (
+            <p className="format-card__trust">
+              <ShieldCheck size={14} strokeWidth={2} aria-hidden="true" />
+              {format.trustNote}
+            </p>
           ) : null}
         </div>
       </FormatCardShell>
 
-      {isDirectDigital ? (
-        <DigitalOrderDialog
-          open={orderFormOpen}
-          onClose={() => {
-            clearCapturedDigitalCheckoutIntent();
-            setOrderFormOpen(false);
-          }}
-        />
+      {isDirectDigital && orderFormOpen ? (
+        <Suspense fallback={null}>
+          <DigitalOrderDialog
+            open={orderFormOpen}
+            onClose={() => {
+              clearCapturedDigitalCheckoutIntent();
+              setOrderFormOpen(false);
+            }}
+          />
+        </Suspense>
       ) : null}
     </>
   );
