@@ -45,18 +45,18 @@ function saveLabel(listAmountInr: number, saleAmountInr: number): string {
   return saved > 0 ? `Save ₹${saved}` : '';
 }
 
-/** Promotional window before the 25 August edition launch. */
+/** WeAreDevelopers attendee offer, valid 25 Nov – 1 Dec 2026. */
 export const editionLaunch = {
-  title: 'Get Modern Java before the Second edition launches',
+  title: 'Get Modern Java with the WeAreDevelopers attendee offer',
   chooseLine: 'Choose Kindle or the DRM-free PDF + ePub bundle.',
-  pricingEndsPrefix: 'Current pricing ends',
-  pricingEndsDate: '24 August',
-  bannerTitle: 'Second edition launches 25 August',
+  pricingEndsPrefix: 'WeAreDevelopers attendee offer valid',
+  pricingEndsDate: '25 Nov – 1 Dec 2026',
+  bannerTitle: 'WeAreDevelopers attendee offer — valid 25 Nov to 1 Dec 2026',
   bannerBody:
-    "Buy the current edition today and you'll receive the Second edition at no extra cost when it launches.",
-  bannerBodyHighlight: 'at no extra cost',
-  pricesEndLabel: 'Current prices end 24 August',
-  newEditionDate: '25 August',
+    'Special prices for WeAreDevelopers attendees — Kindle and the DRM-free PDF + ePub go up after 1 December 2026.',
+  bannerBodyHighlight: 'Special prices',
+  pricesEndLabel: 'Attendee prices valid until 1 Dec 2026',
+  newEditionDate: '2 December',
   kindleFutureAmountInr: 799,
   digitalFutureAmountInr: getAmountInr('digital'),
   benefit:

@@ -92,11 +92,11 @@ export function FormatsSection() {
         </div>
 
         {digitalEnabled ? (
-          <aside className="formats-promo" aria-label="Second edition launch offer">
+          <aside className="formats-promo" aria-label="WeAreDevelopers attendee offer">
             <div className="formats-promo__offer">
               <span className="formats-promo__date" aria-hidden="true">
-                <span className="formats-promo__date-month">AUG</span>
-                <span className="formats-promo__date-day">25</span>
+                <span className="formats-promo__date-month">UNTIL</span>
+                <span className="formats-promo__date-day">1 Dec</span>
               </span>
               <div>
                 <p className="formats-promo__title">{editionLaunch.bannerTitle}</p>

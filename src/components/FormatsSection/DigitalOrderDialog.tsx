@@ -32,6 +32,9 @@ import {
 import './PaperbackOrderDialog.css';
 import './DigitalOrderDialog.css';
 
+const CAPTCHA_FAILED_MESSAGE =
+  'Verification could not load. Please refresh the page and try again. If it keeps failing, email admin@classpath.in.';
+
 interface DigitalOrderDialogProps {
   open: boolean;
   onClose: () => void;
@@ -67,6 +70,7 @@ export function DigitalOrderDialog({
   const [confirmedOrderId, setConfirmedOrderId] = useState<string | null>(null);
   const [usedBypass, setUsedBypass] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaFailed, setCaptchaFailed] = useState(false);
   const [promoCode, setPromoCode] = useState('');
   const [appliedVoucher, setAppliedVoucher] = useState<AppliedVoucher | null>(
     null,
@@ -241,7 +245,11 @@ export function DigitalOrderDialog({
     }
 
     if (isTurnstileConfigured() && !captchaToken) {
-      setErrorMessage('Please complete the captcha check before continuing.');
+      setErrorMessage(
+        captchaFailed
+          ? CAPTCHA_FAILED_MESSAGE
+          : 'Please complete the captcha check before continuing.',
+      );
       setProcessing(false);
       track('checkout_fail', { format: 'digital', reason: 'captcha_missing' });
       return;
@@ -629,8 +637,18 @@ export function DigitalOrderDialog({
             <TurnstileWidget
               ref={turnstileRef}
               theme="light"
-              onTokenChange={setCaptchaToken}
+              onTokenChange={(token) => {
+                setCaptchaToken(token);
+                if (token) setCaptchaFailed(false);
+              }}
+              onError={() => setCaptchaFailed(true)}
             />
+
+            {captchaFailed ? (
+              <p className="order-form__error" role="alert">
+                {CAPTCHA_FAILED_MESSAGE}
+              </p>
+            ) : null}
 
             <label className="digital-order__consent">
               <input type="checkbox" name="marketingConsent" />
